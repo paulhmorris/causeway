@@ -66,18 +66,16 @@ enum MembershipRole {
 }
 
 model Organization {
-  id                 String  @id @default(cuid())
-  name               String
-  /// e.g. "example.com"
-  host               String  @unique
-  /// e.g. "admin" will be used as "admin.example.com"
-  subdomain          String?
+  id           String  @id @default(cuid())
+  name         String
+  subdomain    String? @unique
+  primaryEmail String?
+
+  // Deprecated
+  host               String?
   replyToEmail       String  @default("no-reply")
   administratorEmail String?
   inquiriesEmail     String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   accounts               Account[]
   memberships            Membership[]
@@ -97,7 +95,10 @@ model Organization {
   announcements          Announcement[]
   transactionCategories  TransactionCategory[]
 
-  @@unique([host, subdomain])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([subdomain])
 }
 
 model Password {
@@ -297,18 +298,19 @@ enum ReimbursementRequestStatus {
 }
 
 model Contact {
-  id                   String                @id @default(cuid())
-  email                String?
-  alternateEmail       String?
-  firstName            String?
-  lastName             String?
-  organizationName     String?
-  phone                String?
-  alternatePhone       String?
+  id               String  @id @default(cuid())
+  email            String?
+  alternateEmail   String?
+  firstName        String?
+  lastName         String?
+  organizationName String?
+  phone            String?
+  alternatePhone   String?
+  typeId           Int
+
+  user                 User?
   address              Address?
   type                 ContactType           @relation(fields: [typeId], references: [id])
-  typeId               Int
-  user                 User?
   transactions         Transaction[]
   engagements          Engagement[]
   accountSubscriptions AccountSubscription[]
