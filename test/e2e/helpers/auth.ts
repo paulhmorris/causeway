@@ -12,11 +12,11 @@ export async function createAdmin() {
     username: `e2e-admin-${faker.internet.email().toLowerCase()}`,
     password: faker.internet.password(),
   };
-  let org = await prisma.organization.findUnique({ where: { host: "E2E-Test.org" } });
+  let org = await prisma.organization.findUnique({ where: { subdomain: "e2e-test" } });
   if (!org) {
     org = await prisma.organization.create({
       data: {
-        host: "E2E-Test.org",
+        subdomain: "e2e-test",
         name: "E2E Test Organization",
       },
     });
