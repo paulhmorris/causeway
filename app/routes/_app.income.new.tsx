@@ -27,7 +27,7 @@ import { Sentry } from "~/integrations/sentry";
 import { TransactionItemType } from "~/lib/constants";
 import { getPrismaErrorText } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
-import { constructOrgMailFrom, constructOrgURL, formatCentsAsDollars, getToday } from "~/lib/utils";
+import { formatCentsAsDollars, getToday } from "~/lib/utils";
 import { CheckboxSchema, TransactionSchema } from "~/models/schemas";
 import { getContactTypes } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
@@ -122,14 +122,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             },
           },
         },
-        org: {
-          select: {
-            name: true,
-            host: true,
-            subdomain: true,
-            replyToEmail: true,
-          },
-        },
       },
     });
 
@@ -145,14 +137,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         );
       }
 
-      const org = transaction.org;
       await sendEmail({
-        from: constructOrgMailFrom(org),
         to: email,
         subject: "You have new income!",
         html: render(
           <IncomeNotificationEmail
-            url={constructOrgURL("/", org).toString()}
+            url={process.env.BASE_URL}
             accountName={transaction.account.code}
             amountInCents={transaction.amountInCents}
             userFirstname={transaction.account.user?.contact.firstName ?? "User"}

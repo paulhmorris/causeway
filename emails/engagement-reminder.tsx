@@ -6,7 +6,6 @@ interface Props {
     id: string;
     firstName: string | null;
     lastName: string | null;
-    org: { name: string; host: string; replyToEmail: string };
   }>;
 }
 
@@ -43,13 +42,11 @@ EngagementReminderEmail.PreviewProps = {
       id: "abc123",
       firstName: "John",
       lastName: "Doe",
-      org: { name: "Test Org", host: "test.org", replyToEmail: "no-reply" },
     },
     {
       id: "abc124",
       firstName: "Jane",
       lastName: "Smith",
-      org: { name: "Test Org", host: "test.org", replyToEmail: "no-reply" },
     },
   ],
 } as Props;

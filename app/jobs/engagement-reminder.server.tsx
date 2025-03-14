@@ -8,7 +8,6 @@ import { SendEmailInput, sendEmail } from "~/integrations/email.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
-import { constructOrgMailFrom } from "~/lib/utils";
 
 const DAYS_CUTOFF = 30;
 
@@ -39,13 +38,6 @@ export const reminderTask = schedules.task({
             id: true,
             firstName: true,
             lastName: true,
-            org: {
-              select: {
-                name: true,
-                host: true,
-                replyToEmail: true,
-              },
-            },
           },
         },
         user: {
@@ -79,7 +71,6 @@ export const reminderTask = schedules.task({
           id: string;
           firstName: string | null;
           lastName: string | null;
-          org: { name: string; host: string; replyToEmail: string };
         }>;
       }
     >;
@@ -107,9 +98,7 @@ export const reminderTask = schedules.task({
 
     // Convert the map into an array of emails.
     const mappedEmails: Array<SendEmailInput & { to: string }> = Object.values(temp).map(({ user, contacts }) => {
-      const org = contacts[0].org;
       return {
-        from: constructOrgMailFrom(org),
         to: user.email,
         subject: "Contact Reminder",
         html: render(<EngagementReminderEmail contacts={contacts} userFirstName={user.firstName} />),

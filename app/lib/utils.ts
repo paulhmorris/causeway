@@ -1,4 +1,4 @@
-import { Contact, Organization } from "@prisma/client";
+import { Contact } from "@prisma/client";
 import { rankItem } from "@tanstack/match-sorter-utils";
 import { FilterFn } from "@tanstack/react-table";
 import clsx, { ClassValue } from "clsx";
@@ -113,12 +113,4 @@ export function isArray(value: unknown): value is Array<unknown> {
 
 export function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
-}
-
-export function constructOrgMailFrom(org: Pick<Organization, "name" | "replyToEmail" | "host">) {
-  return `${org.name} <${org.replyToEmail}@${org.host}>`;
-}
-
-export function constructOrgURL(path: string, org: Pick<Organization, "subdomain" | "host">) {
-  return new URL(path, `https://${org.subdomain ? org.subdomain + "." : ""}${org.host}`);
 }

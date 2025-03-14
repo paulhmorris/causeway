@@ -22,7 +22,7 @@ import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod } from "~/lib/constants";
 import { getPrismaErrorText } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
-import { constructOrgMailFrom, constructOrgURL, getToday } from "~/lib/utils";
+import { getToday } from "~/lib/utils";
 import { CurrencySchema } from "~/models/schemas";
 import { generateS3Urls } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
@@ -118,28 +118,25 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         org: {
           select: {
             name: true,
-            host: true,
             subdomain: true,
-            replyToEmail: true,
-            administratorEmail: true,
+            primaryEmail: true,
           },
         },
       },
     });
 
     await generateS3Urls(rr.receipts);
-    const url = constructOrgURL("/dashboards/admin", rr.org).toString();
     const { contact } = rr.user;
 
     await sendEmail({
-      from: constructOrgMailFrom(rr.org),
-      to: `${rr.org.administratorEmail}@${rr.org.host}`,
+      // TODO: remove exclamation after migrations
+      to: rr.org.primaryEmail!,
       subject: "New Reimbursement Request",
       html: render(
         <ReimbursementRequestEmail
+          url={process.env.BASE_URL}
           accountName={rr.account.code}
           amountInCents={rr.amountInCents}
-          url={url}
           requesterName={`${contact.firstName} ${contact.lastName}`}
         />,
       ),

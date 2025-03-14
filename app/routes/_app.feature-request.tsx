@@ -15,7 +15,6 @@ import { Linear } from "~/integrations/linear.server";
 import { Sentry } from "~/integrations/sentry";
 import { LinearLabelID, LinearTeamID } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
-import { constructOrgMailFrom } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
 
 const validator = withZod(
@@ -56,7 +55,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
   await sendEmail({
     to: "paul@paulmorris.dev",
-    from: constructOrgMailFrom(user.org),
     subject: `New Feature Request: ${title}`,
     html: `A new feature request has been submitted by ${user.contact.email}.\n\n${description}`,
   });
