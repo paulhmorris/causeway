@@ -10,6 +10,7 @@ import { ErrorComponent } from "~/components/error-component";
 import { FormField } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { Toasts } from "~/lib/toast.server";
+import { safeRedirect } from "~/lib/utils";
 import { generateVerificationCode, verifyLogin } from "~/services.server/auth";
 import { SessionService } from "~/services.server/session";
 
@@ -66,6 +67,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         description: "You are not a member of any organizations. Please contact your administrator.",
       },
     );
+  }
+
+  // Skip verification code step in dev/qa
+  if (process.env.VERCEL_ENV !== "production") {
+    return SessionService.createUserSession({
+      request,
+      userId: user.id,
+      orgId: user.memberships[0].orgId,
+      redirectTo: safeRedirect(redirectTo, "/"),
+      remember: false,
+    });
   }
 
   await generateVerificationCode(user.id);

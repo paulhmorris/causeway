@@ -23,9 +23,6 @@ const serverEnvValidation = z.object({
   // Database
   DATABASE_URL: z.string().min(1),
 
-  // Linear
-  LINEAR_API_KEY: z.string().min(1).startsWith("lin_api_"),
-
   // Trigger.dev
   TRIGGER_SECRET_KEY: z.string().startsWith("tr_"),
 

@@ -179,16 +179,6 @@ export const defaultAccounts: Array<Omit<Prisma.AccountUncheckedCreateInput, "or
   { code: "1003", description: "International", typeId: AccountType.Operating },
 ];
 
-export enum LinearTeamID {
-  Alliance = "8349d9bf-176e-4f6a-a841-181c31a4ff9d",
-}
-
-export enum LinearLabelID {
-  Bug = "b97e1140-3f36-4f85-a014-01146171451d",
-  Feature = "25229fd3-a050-443b-9baf-c17acb08ef90",
-  Improvement = "d7b2166a-61dd-4f25-995d-7288f9c162fc",
-}
-
 export interface AppNavLink {
   name: string;
   to: string;

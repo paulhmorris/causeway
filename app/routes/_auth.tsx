@@ -10,14 +10,9 @@ export default function AuthLayout() {
       <footer className="mx-auto mb-8 mt-auto shrink">
         <p className="text-xs">
           {new Date().getFullYear()} •{" "}
-          <a
-            href="https://getcosmic.dev"
-            target="_blank"
-            rel="noreferrer"
-            className="decoration-2 underline-offset-2 hover:underline"
-          >
+          <span>
             Cosmic Development <IconPlanet className="mb-0.5 inline size-3.5" />
-          </a>
+          </span>
         </p>
       </footer>
     </div>

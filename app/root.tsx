@@ -177,7 +177,8 @@ function App() {
         <Links />
       </head>
       <body className="h-full min-h-full bg-background font-sans">
-        <Analytics debug={false} />
+        {/* eslint-disable-next-line @typescript-eslint/no-unnecessary-condition */}
+        {import.meta.env.PROD ? <Analytics debug={false} /> : null}
         <Outlet />
         <Notifications />
         <GlobalLoader />
