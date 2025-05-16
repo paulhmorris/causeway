@@ -1,6 +1,9 @@
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import { z } from "zod";
 import { zfd } from "zod-form-data";
+
+dayjs.extend(utc);
 
 import { ContactType, TransactionItemMethod, TransactionItemType } from "~/lib/constants";
 
@@ -33,8 +36,10 @@ export const TransactionItemSchema = z.object({
   description: z.string().optional(),
 });
 
+// (d) => dayjs(d).startOf("day").toDate()
+
 export const TransactionSchema = z.object({
-  date: z.coerce.date().transform((d) => dayjs(d).startOf("day").toDate()),
+  date: z.coerce.date().transform((d) => dayjs.utc(d).startOf("day").toDate()),
   description: z.string().optional(),
   categoryId: z.coerce.number(),
   accountId: z.string().cuid({ message: "Account required" }),

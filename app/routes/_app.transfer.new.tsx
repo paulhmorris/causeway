@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import type { MetaFunction } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
@@ -12,7 +13,9 @@ import { PageContainer } from "~/components/page-container";
 import { FormField, FormSelect } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { db } from "~/integrations/prisma.server";
+import { Sentry } from "~/integrations/sentry";
 import { TransactionCategory, TransactionItemType } from "~/lib/constants";
+import { getPrismaErrorText } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { getToday } from "~/lib/utils";
 import { CurrencySchema } from "~/models/schemas";
@@ -63,63 +66,73 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
   }
 
-  const fromAccountBalance = await db.transaction.aggregate({
-    where: { accountId: result.data.fromAccountId, orgId },
-    _sum: { amountInCents: true },
-  });
+  try {
+    const fromAccountBalance = await db.transaction.aggregate({
+      where: { accountId: result.data.fromAccountId, orgId },
+      _sum: { amountInCents: true },
+    });
 
-  const fromAccountBalanceInCents = fromAccountBalance._sum.amountInCents ?? 0;
+    const fromAccountBalanceInCents = fromAccountBalance._sum.amountInCents ?? 0;
 
-  if (amountInCents > fromAccountBalanceInCents) {
-    return Toasts.jsonWithWarning(
-      { message: "Insufficient funds in from account." },
-      { title: "Warning", description: "Insufficient funds in from account." },
-    );
+    if (amountInCents > fromAccountBalanceInCents) {
+      return Toasts.jsonWithWarning(
+        { message: "Insufficient funds in from account." },
+        { title: "Warning", description: "Insufficient funds in from account." },
+      );
+    }
+
+    await db.$transaction([
+      // Transfer out
+      db.transaction.create({
+        data: {
+          ...rest,
+          orgId,
+          categoryId: TransactionCategory.Internal_Transfer_Loss,
+          description: description ? description : `Transfer to ${toAccountId}`,
+          accountId: fromAccountId,
+          amountInCents: -1 * amountInCents,
+          transactionItems: {
+            create: {
+              orgId,
+              amountInCents: -1 * amountInCents,
+              typeId: TransactionItemType.Transfer_Out,
+            },
+          },
+        },
+      }),
+      // Transfer in
+      db.transaction.create({
+        data: {
+          ...rest,
+          orgId,
+          categoryId: TransactionCategory.Internal_Transfer_Gain,
+          description: description ? description : `Transfer from ${toAccountId}`,
+          accountId: toAccountId,
+          amountInCents: amountInCents,
+          transactionItems: {
+            create: {
+              orgId,
+              amountInCents: amountInCents,
+              typeId: TransactionItemType.Transfer_In,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return Toasts.redirectWithSuccess(`/accounts/${toAccountId}`, {
+      title: "Success",
+      description: `Transfer completed successfully.`,
+    });
+  } catch (error) {
+    console.error(error);
+    Sentry.captureException(error);
+    let description = "An error occurred while creating the income";
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      description = getPrismaErrorText(error);
+    }
+    return Toasts.jsonWithError({ success: false }, { title: "Error creating transfer", description });
   }
-
-  await db.$transaction([
-    // Transfer out
-    db.transaction.create({
-      data: {
-        ...rest,
-        orgId,
-        categoryId: TransactionCategory.Internal_Transfer_Loss,
-        description: description ? description : `Transfer to ${toAccountId}`,
-        accountId: fromAccountId,
-        amountInCents: -1 * amountInCents,
-        transactionItems: {
-          create: {
-            orgId,
-            amountInCents: -1 * amountInCents,
-            typeId: TransactionItemType.Transfer_Out,
-          },
-        },
-      },
-    }),
-    // Transfer in
-    db.transaction.create({
-      data: {
-        ...rest,
-        orgId,
-        categoryId: TransactionCategory.Internal_Transfer_Gain,
-        description: description ? description : `Transfer from ${toAccountId}`,
-        accountId: toAccountId,
-        amountInCents: amountInCents,
-        transactionItems: {
-          create: {
-            orgId,
-            amountInCents: amountInCents,
-            typeId: TransactionItemType.Transfer_In,
-          },
-        },
-      },
-    }),
-  ]);
-
-  return Toasts.redirectWithSuccess(`/accounts/${toAccountId}`, {
-    title: "Success",
-    description: `Transfer completed successfully.`,
-  });
 };
 
 export default function AddTransferPage() {

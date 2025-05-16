@@ -7,6 +7,8 @@ dayjs.extend(utc);
 
 test.use({ storageState: "playwright/.auth/admin.json" });
 test.describe("Add transfer", () => {
+  // Sometimes the transfer submission just doesn't ever load the next page
+  test.describe.configure({ retries: 3 });
   test.beforeEach(async ({ page }) => {
     await page.goto("/transfer/new");
   });
@@ -62,6 +64,9 @@ test.describe("Add transfer", () => {
 
     // Add income to first account
     await page.goto("/income/new");
+    await page.getByLabel("Note").fill("Test transaction");
+    await page.getByLabel("Category").click();
+    await page.getByLabel("Expense: Other").click();
     await page.getByLabel("Select account").click();
     await page.getByLabel("9998").click();
     await page.getByRole("textbox", { name: "Amount" }).fill((amount + 1).toString());

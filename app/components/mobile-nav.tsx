@@ -21,7 +21,7 @@ export function MobileNav(props: ComponentPropsWithoutRef<"nav">) {
           <span className="sr-only">Open Navigation Menu</span>
           <IconMenuDeep className="h-8 w-8" />
         </DialogTrigger>
-        <DialogContent className="top-0 max-w-full translate-y-0">
+        <DialogContent className="top-0 max-h-dvh max-w-full translate-y-0 overflow-y-scroll">
           <DialogTitle className="sr-only">Navigation links</DialogTitle>
           <ul className="mt-6 space-x-0 space-y-1">
             <MobileNavLink

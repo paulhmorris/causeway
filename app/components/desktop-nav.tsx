@@ -22,7 +22,7 @@ export function DesktopNav(props: ComponentPropsWithoutRef<"nav">) {
   return (
     <nav
       className={cn(
-        "fixed left-0 z-10 hidden min-h-full w-64 flex-col border-r border-border bg-card px-5 py-10 md:flex",
+        "fixed inset-y-0 left-0 z-10 hidden w-64 flex-col overflow-y-scroll border-r border-border bg-card px-5 py-10 md:flex",
         props.className,
       )}
     >

@@ -19,9 +19,10 @@ test.describe("Login Page", () => {
     await expect(email).toHaveAttribute("aria-invalid", "true");
   });
 
-  test.skip("should not login with empty credentials", async ({ page }) => {
+  test("should not login with empty credentials", async ({ page }) => {
     await page.goto("/login");
     const email = page.getByRole("textbox", { name: "Email" });
+    await email.clear();
     await page.getByRole("button", { name: /log in/i }).click();
 
     await expect(page).toHaveURL("/login");

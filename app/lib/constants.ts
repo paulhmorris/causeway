@@ -119,6 +119,8 @@ export const transactionCategories: Array<{ id: TransactionCategory; name: strin
   { id: 24, name: "Expense: Travel (Local)" },
   { id: 25, name: "Expense: Accounting/Compliance" },
   { id: 26, name: "Expense: Travel (Domestic and International)" },
+  { id: 27, name: "Internal: Transfer Gain" },
+  { id: 28, name: "Internal: Transfer Loss " },
 ] as const;
 
 export const transactionItemMethods: Array<{ id: TransactionItemMethod; name: string }> = [

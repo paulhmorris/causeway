@@ -95,6 +95,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     const { transactionItems: trxItems, totalInCents } = await generateTransactionItems(transactionItems, orgId);
 
+    console.log("Date adding to transaction creation:", rest.date);
+
     const transaction = await db.transaction.create({
       data: {
         orgId,
@@ -140,7 +142,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           { message: "Error notifying subscribers" },
           {
             title: "Error notifying subscribers",
-            description: "We couldn't find the account for this transaction. Please contact support.",
+            description: "We couldn't find the account for this transaction. Your transaction was created.",
           },
         );
       }
