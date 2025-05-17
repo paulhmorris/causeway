@@ -95,8 +95,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     const { transactionItems: trxItems, totalInCents } = await generateTransactionItems(transactionItems, orgId);
 
-    console.log("Date adding to transaction creation:", rest.date);
-
     const transaction = await db.transaction.create({
       data: {
         orgId,

@@ -1,5 +1,4 @@
 import { vitePlugin as remix } from "@remix-run/dev";
-import { installGlobals } from "@remix-run/node";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { vercelPreset } from "@vercel/remix/vite";
 import morgan from "morgan";
@@ -8,8 +7,6 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 const isVercel = process.env.VERCEL === "1";
 const isCI = process.env.CI;
-
-installGlobals();
 
 export default defineConfig({
   resolve: {

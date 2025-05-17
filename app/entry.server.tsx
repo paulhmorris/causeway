@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 import { PassThrough } from "node:stream";
 
 import { createReadableStreamFromReadable } from "@remix-run/node";

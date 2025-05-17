@@ -87,13 +87,6 @@ module.exports = {
       },
     },
 
-    // Markdown
-    {
-      extends: ["plugin:markdown/recommended", "prettier"],
-      files: ["**/*.md"],
-      plugins: ["markdown"],
-    },
-
     // Playwright
     {
       files: ["test/e2e/*.ts"],
