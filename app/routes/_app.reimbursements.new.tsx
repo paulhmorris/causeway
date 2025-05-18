@@ -1,9 +1,8 @@
 import { Prisma, ReimbursementRequestStatus } from "@prisma/client";
 import { render } from "@react-email/render";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { type MetaFunction } from "@remix-run/react";
+import { useLoaderData, type MetaFunction } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import { z } from "zod";
 import { zfd } from "zod-form-data";
@@ -64,7 +63,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       orderBy: { code: "asc" },
     }),
   ]);
-  return typedjson({ receipts, methods, accounts });
+  return { receipts, methods, accounts };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -166,7 +165,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function NewReimbursementPage() {
-  const { receipts, methods, accounts } = useTypedLoaderData<typeof loader>();
+  const { receipts, methods, accounts } = useLoaderData<typeof loader>();
 
   return (
     <>

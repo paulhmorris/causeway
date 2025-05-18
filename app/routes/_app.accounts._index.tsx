@@ -1,8 +1,7 @@
 import { Prisma } from "@prisma/client";
 import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { Link } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
 import { IconPlus } from "@tabler/icons-react";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 
 import { AccountsTable } from "~/components/accounts/accounts-table";
 import { PageHeader } from "~/components/common/page-header";
@@ -46,7 +45,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return { ...account, balance };
     });
 
-    return typedjson({ accounts: accountsWithBalance });
+    return { accounts: accountsWithBalance };
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
@@ -55,7 +54,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export default function AccountsIndexPage() {
-  const { accounts } = useTypedLoaderData<typeof loader>();
+  const { accounts } = useLoaderData<typeof loader>();
   return (
     <>
       <PageHeader title="Accounts">

@@ -1,9 +1,8 @@
 import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { Link } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import invariant from "tiny-invariant";
 import { z } from "zod";
 dayjs.extend(utc);
@@ -38,7 +37,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     throw notFound("Engagement not found");
   }
 
-  return typedjson({ engagement });
+  return { engagement };
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
@@ -86,7 +85,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 };
 
 export default function EngagementPage() {
-  const { engagement } = useTypedLoaderData<typeof loader>();
+  const { engagement } = useLoaderData<typeof loader>();
 
   return (
     <>

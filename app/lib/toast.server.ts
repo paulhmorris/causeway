@@ -1,6 +1,7 @@
 // https://github.com/forge42dev/remix-toast
 
 /* eslint-disable @typescript-eslint/require-await */
+import { data, redirect } from "@remix-run/node";
 import {
   createCookieFactory,
   createCookieSessionStorageFactory,
@@ -8,7 +9,6 @@ import {
   SessionStorage,
 } from "@remix-run/server-runtime";
 import { nanoid } from "nanoid";
-import { redirect, typedjson } from "remix-typedjson";
 import { z } from "zod";
 import { fromError, fromZodError, isValidationErrorLike, isZodErrorLike } from "zod-validation-error";
 
@@ -86,12 +86,12 @@ async function redirectWithFlash(
 }
 
 async function jsonWithFlash<T>(
-  data: T,
+  _data: T,
   flash: FlashSessionValues,
   init?: ResponseInit,
   customSession?: SessionStorage,
 ) {
-  return typedjson(data, {
+  return data(_data, {
     ...init,
     headers: await flashMessage(flash, init?.headers, customSession),
   });

@@ -1,10 +1,9 @@
 import { Prisma } from "@prisma/client";
 import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { Link } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
 import { z } from "zod";
@@ -57,7 +56,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
   if (!transaction) throw notFound({ message: "Transaction not found" });
 
-  return typedjson({ transaction, categories });
+  return { transaction, categories };
 };
 
 export const meta: MetaFunction = () => [{ title: "Transaction Edit" }];
@@ -99,7 +98,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function TransactionDetailsPage() {
-  const { transaction, categories } = useTypedLoaderData<typeof loader>();
+  const { transaction, categories } = useLoaderData<typeof loader>();
 
   return (
     <>

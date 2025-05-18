@@ -1,9 +1,8 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { type MetaFunction } from "@remix-run/react";
+import { useLoaderData, type MetaFunction } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import { setFormDefaults, ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
 import { z } from "zod";
@@ -65,13 +64,13 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     throw notFound("Engagement not found");
   }
 
-  return typedjson({
+  return {
     engagement,
     engagementTypes,
     contacts,
     contactTypes,
     ...setFormDefaults("engagement-form", { ...engagement, typeId: engagement.typeId.toString() }),
-  });
+  };
 };
 
 export const meta: MetaFunction = () => [{ title: "Edit Account" }];
@@ -94,7 +93,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function EditEngagementPage() {
-  const { engagement, engagementTypes, contacts, contactTypes } = useTypedLoaderData<typeof loader>();
+  const { engagement, engagementTypes, contacts, contactTypes } = useLoaderData<typeof loader>();
 
   return (
     <>

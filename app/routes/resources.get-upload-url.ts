@@ -1,5 +1,4 @@
 import { ActionFunctionArgs } from "@remix-run/node";
-import { typedjson } from "remix-typedjson";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 
@@ -27,5 +26,5 @@ export async function action({ request }: ActionFunctionArgs) {
   const { fileName, contentType } = result.data;
   const { url, key } = await Bucket.getPUTPresignedUrl({ fileName, contentType, userId });
 
-  return typedjson({ signedUrl: url, s3Key: key });
+  return { signedUrl: url, s3Key: key };
 }

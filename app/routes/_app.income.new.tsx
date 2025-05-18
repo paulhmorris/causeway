@@ -1,11 +1,10 @@
 import { Prisma, TransactionItemTypeDirection } from "@prisma/client";
 import { render } from "@react-email/render";
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import type { MetaFunction } from "@remix-run/react";
+import { useLoaderData, type MetaFunction } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { IconPlus } from "@tabler/icons-react";
 import { nanoid } from "nanoid";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import { setFormDefaults, useFieldArray, ValidatedForm, validationError } from "remix-validated-form";
 
 import { IncomeNotificationEmail } from "emails/income-notification";
@@ -69,7 +68,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }),
     ]);
 
-  return typedjson({
+  return {
     contacts,
     contactTypes,
     accounts,
@@ -80,7 +79,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     ...setFormDefaults("income-form", {
       transactionItems: [{ id: nanoid() }],
     }),
-  });
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -178,7 +177,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function AddIncomePage() {
   const { contacts, contactTypes, accounts, transactionItemMethods, transactionItemTypes, receipts, categories } =
-    useTypedLoaderData<typeof loader>();
+    useLoaderData<typeof loader>();
   const [items, { push, remove }] = useFieldArray("transactionItems", { formId: "income-form" });
 
   return (

@@ -1,3 +1,4 @@
+import { useRouteLoaderData } from "@remix-run/react";
 import {
   IconAlertCircleFilled,
   IconAlertTriangleFilled,
@@ -6,14 +7,13 @@ import {
 } from "@tabler/icons-react";
 import { useEffect } from "react";
 import { useTheme } from "remix-themes";
-import { useTypedRouteLoaderData } from "remix-typedjson";
 import { Toaster, toast } from "sonner";
 
 import { loader } from "~/root";
 
 export function Notifications() {
   const [theme] = useTheme();
-  const data = useTypedRouteLoaderData<typeof loader>("root");
+  const data = useRouteLoaderData<typeof loader>("root");
   useEffect(() => {
     if (!data?.toast) return;
     const { title, type, ...rest } = data.toast;

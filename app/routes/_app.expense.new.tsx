@@ -1,10 +1,9 @@
 import { Prisma, TransactionItemTypeDirection } from "@prisma/client";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import type { MetaFunction } from "@remix-run/react";
+import { useLoaderData, type MetaFunction } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { IconPlus } from "@tabler/icons-react";
 import { nanoid } from "nanoid";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import { setFormDefaults, useFieldArray, ValidatedForm, validationError } from "remix-validated-form";
 
 import { PageHeader } from "~/components/common/page-header";
@@ -61,7 +60,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }),
     ]);
 
-  return typedjson({
+  return {
     contacts,
     contactTypes,
     accounts,
@@ -72,7 +71,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     ...setFormDefaults("expense-form", {
       transactionItems: [{ id: nanoid() }],
     }),
-  });
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -123,7 +122,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function AddExpensePage() {
   const { contacts, contactTypes, accounts, transactionItemMethods, transactionItemTypes, categories, receipts } =
-    useTypedLoaderData<typeof loader>();
+    useLoaderData<typeof loader>();
   const [items, { push, remove }] = useFieldArray("transactionItems", { formId: "expense-form" });
 
   return (

@@ -1,8 +1,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { useSearchParams } from "@remix-run/react";
+import { redirect, useLoaderData, useSearchParams } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { IconChevronRight } from "@tabler/icons-react";
-import { redirect, typedjson, useTypedLoaderData } from "remix-typedjson";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import { z } from "zod";
 
@@ -59,9 +58,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       },
     );
   }
-  return typedjson({
+  return {
     orgs: user.memberships.map((m) => ({ id: m.org.id, name: m.org.name, role: m.role, isDefault: m.isDefault })),
-  });
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -111,7 +110,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export const meta: MetaFunction = () => [{ title: "Choose Organization" }];
 
 export default function LoginPage() {
-  const { orgs } = useTypedLoaderData<typeof loader>();
+  const { orgs } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") || "/";
 

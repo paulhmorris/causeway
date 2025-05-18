@@ -1,9 +1,8 @@
 import { MembershipRole, Prisma } from "@prisma/client";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import type { MetaFunction } from "@remix-run/react";
+import { useLoaderData, type MetaFunction } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { useState } from "react";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import { ValidatedForm, validationError } from "remix-validated-form";
 
 import { PageHeader } from "~/components/common/page-header";
@@ -64,10 +63,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       },
     });
 
-    return typedjson({
+    return {
       contactTypes,
       usersWhoCanBeAssigned,
-    });
+    };
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
@@ -141,7 +140,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function NewContactPage() {
   const sessionUser = useUser();
-  const { contactTypes, usersWhoCanBeAssigned } = useTypedLoaderData<typeof loader>();
+  const { contactTypes, usersWhoCanBeAssigned } = useLoaderData<typeof loader>();
   const [addressEnabled, setAddressEnabled] = useState(false);
 
   return (

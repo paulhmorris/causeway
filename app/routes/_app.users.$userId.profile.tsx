@@ -1,8 +1,7 @@
 import { MembershipRole, UserRole } from "@prisma/client";
 import type { ActionFunctionArgs } from "@remix-run/node";
-import { Link } from "@remix-run/react";
+import { Link, useRouteLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import { useTypedRouteLoaderData } from "remix-typedjson";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import { z } from "zod";
 import { zfd } from "zod-form-data";
@@ -122,7 +121,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function UserDetailsPage() {
   const authorizedUser = useUser();
-  const layoutData = useTypedRouteLoaderData<typeof loader>("routes/_app.users.$userId");
+  const layoutData = useRouteLoaderData<typeof loader>("routes/_app.users.$userId");
 
   if (!layoutData) {
     throw new Error("Missing layout data");

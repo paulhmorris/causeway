@@ -1,7 +1,6 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useSearchParams } from "@remix-run/react";
+import { data, useSearchParams } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import { typedjson } from "remix-typedjson";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import { z } from "zod";
 
@@ -47,7 +46,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     throw unauthorized("Invalid token");
   }
 
-  return typedjson(null, {
+  return data(null, {
     headers: {
       "Set-Cookie": await sessionStorage.destroySession(session),
     },

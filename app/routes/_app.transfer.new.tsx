@@ -1,9 +1,8 @@
 import { Prisma } from "@prisma/client";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import type { MetaFunction } from "@remix-run/react";
+import { useLoaderData, type MetaFunction } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import dayjs from "dayjs";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import { z } from "zod";
 
@@ -43,10 +42,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     getTransactionItemMethods(orgId),
   ]);
 
-  return typedjson({
+  return {
     accounts,
     transactionItemMethods,
-  });
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -136,7 +135,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function AddTransferPage() {
-  const { accounts } = useTypedLoaderData<typeof loader>();
+  const { accounts } = useLoaderData<typeof loader>();
 
   return (
     <>

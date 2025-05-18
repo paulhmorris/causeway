@@ -1,11 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { Link } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { IconExternalLink } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import { validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
 import { z } from "zod";
@@ -34,7 +33,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const orgId = await SessionService.requireOrgId(request);
 
   try {
-    const trx = await db.transaction.findUniqueOrThrow({
+    const transaction = await db.transaction.findUniqueOrThrow({
       where: { id: params.transactionId, orgId },
       select: {
         id: true,
@@ -96,12 +95,12 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       },
     });
 
-    if (user.isMember && trx.account.user?.id !== user.id) {
+    if (user.isMember && transaction.account.user?.id !== user.id) {
       throw forbidden({ message: "You do not have permission to view this transaction" });
     }
 
-    trx.receipts = await generateS3Urls(trx.receipts);
-    return typedjson({ transaction: trx });
+    transaction.receipts = await generateS3Urls(transaction.receipts);
+    return { transaction };
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
@@ -133,7 +132,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
 export default function TransactionDetailsPage() {
   const authorizedUser = useUser();
-  const { transaction } = useTypedLoaderData<typeof loader>();
+  const { transaction } = useLoaderData<typeof loader>();
 
   return (
     <>

@@ -1,7 +1,6 @@
-import type { ActionFunctionArgs } from "@remix-run/node";
+import { type ActionFunctionArgs } from "@remix-run/node";
 import { withZod } from "@remix-validated-form/with-zod";
 import dayjs from "dayjs";
-import { typedjson } from "remix-typedjson";
 import { validationError } from "remix-validated-form";
 import { z } from "zod";
 
@@ -20,7 +19,7 @@ export const passwordResetValidator = withZod(
 
 export async function action({ request }: ActionFunctionArgs) {
   if (request.method !== "POST") {
-    return typedjson({ status: 405 });
+    throw new Response("Method not allowed", { status: 405 });
   }
 
   const result = await passwordResetValidator.validate(await request.formData());

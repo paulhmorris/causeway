@@ -8,6 +8,12 @@ import tsconfigPaths from "vite-tsconfig-paths";
 const isVercel = process.env.VERCEL === "1";
 const isCI = process.env.CI;
 
+declare module "@remix-run/server-runtime" {
+  interface Future {
+    v3_singleFetch: true;
+  }
+}
+
 export default defineConfig({
   resolve: {
     alias: {
@@ -23,6 +29,12 @@ export default defineConfig({
     remix({
       ...(isVercel && { presets: [vercelPreset()] }),
       ignoredRouteFiles: ["**/.*", "**/*.test.{ts,tsx}"],
+      future: {
+        v3_singleFetch: true,
+        v3_fetcherPersist: true,
+        v3_throwAbortReason: true,
+        v3_relativeSplatPath: true,
+      },
     }),
     isCI &&
       sentryVitePlugin({

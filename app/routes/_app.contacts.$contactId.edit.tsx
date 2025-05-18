@@ -1,10 +1,9 @@
 import { Prisma, UserRole } from "@prisma/client";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { Link, type MetaFunction } from "@remix-run/react";
+import { Link, useLoaderData, type MetaFunction } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { IconAddressBook, IconUser } from "@tabler/icons-react";
 import { useState } from "react";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import { setFormDefaults, ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
 
@@ -92,22 +91,16 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     throw notFound({ message: "Contact not found" });
   }
 
-  return typedjson({
+  return {
     contact,
     contactTypes,
     usersWhoCanBeAssigned,
     ...setFormDefaults("contact-form", { ...contact, typeId: contact.typeId.toString() }),
-  });
+  };
 };
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    title: `Edit ${data?.contact.firstName}${
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      data?.contact.lastName ? " " + data?.contact.lastName : ""
-    }`,
-  },
+  { title: `Edit ${data?.contact.firstName}${data?.contact.lastName ? " " + data.contact.lastName : ""}` },
 ];
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -222,7 +215,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function EditContactPage() {
   const user = useUser();
-  const { contact, contactTypes, usersWhoCanBeAssigned } = useTypedLoaderData<typeof loader>();
+  const { contact, contactTypes, usersWhoCanBeAssigned } = useLoaderData<typeof loader>();
   const [addressEnabled, setAddressEnabled] = useState(
     Object.values(contact.address ?? {}).some((v) => v !== "") ? true : false,
   );

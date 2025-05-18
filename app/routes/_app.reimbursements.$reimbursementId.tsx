@@ -1,10 +1,9 @@
 import { Prisma, ReimbursementRequestStatus } from "@prisma/client";
 import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { MetaFunction } from "@remix-run/react";
+import { MetaFunction, useLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { IconExternalLink } from "@tabler/icons-react";
 import dayjs from "dayjs";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
 import { z } from "zod";
@@ -140,7 +139,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     db.transactionCategory.findMany({ select: { id: true, name: true } }),
   ]);
 
-  return typedjson({ reimbursementRequest: rr, accounts, transactionCategories, relatedTrx });
+  return { reimbursementRequest: rr, accounts, transactionCategories, relatedTrx };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -322,7 +321,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function ReimbursementRequestPage() {
-  const { reimbursementRequest: rr, accounts, transactionCategories, relatedTrx } = useTypedLoaderData<typeof loader>();
+  const { reimbursementRequest: rr, accounts, transactionCategories, relatedTrx } = useLoaderData<typeof loader>();
 
   return (
     <>

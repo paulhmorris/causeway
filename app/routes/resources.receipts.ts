@@ -1,5 +1,4 @@
 import { ActionFunctionArgs } from "@remix-run/node";
-import { typedjson } from "remix-typedjson";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 
@@ -26,7 +25,7 @@ export async function action({ request }: ActionFunctionArgs) {
         },
       });
 
-      return typedjson({ receipt });
+      return { receipt };
     }
     default: {
       return new Response("Method not allowed", { status: 405 });

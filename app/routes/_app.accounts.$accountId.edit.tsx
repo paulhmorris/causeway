@@ -1,8 +1,7 @@
 import { MembershipRole } from "@prisma/client";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { type MetaFunction } from "@remix-run/react";
+import { useLoaderData, type MetaFunction } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import { setFormDefaults, ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
 import { z } from "zod";
@@ -57,20 +56,15 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
   if (!account || !accountTypes.length) throw notFound({ message: "Account or Account Types not found" });
 
-  return typedjson({
+  return {
     account,
     accountTypes,
     users,
     ...setFormDefaults("account-form", { ...account, userId: account.user?.id, typeId: String(account.typeId) }),
-  });
+  };
 };
 
-export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    title: `Edit Account ${data?.account.code}`,
-  },
-];
+export const meta: MetaFunction<typeof loader> = ({ data }) => [{ title: `Edit Account ${data?.account.code}` }];
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   await SessionService.requireAdmin(request);
@@ -103,7 +97,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function EditAccountPage() {
-  const { account, accountTypes, users } = useTypedLoaderData<typeof loader>();
+  const { account, accountTypes, users } = useLoaderData<typeof loader>();
   return (
     <>
       <PageHeader title="Edit Account" />

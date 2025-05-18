@@ -1,8 +1,7 @@
 import { MembershipRole, Prisma } from "@prisma/client";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { type MetaFunction } from "@remix-run/react";
+import { useLoaderData, type MetaFunction } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import { z } from "zod";
 
@@ -56,10 +55,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       },
     });
 
-    return typedjson({
+    return {
       users,
       accountTypes,
-    });
+    };
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
@@ -106,7 +105,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export const meta: MetaFunction = () => [{ title: "New Account" }];
 
 export default function NewAccountPage() {
-  const { users, accountTypes } = useTypedLoaderData<typeof loader>();
+  const { users, accountTypes } = useLoaderData<typeof loader>();
   return (
     <>
       <PageHeader title="New Account" />

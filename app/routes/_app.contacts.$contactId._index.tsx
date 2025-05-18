@@ -1,10 +1,9 @@
 import { Engagement, Prisma } from "@prisma/client";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { Link, type MetaFunction } from "@remix-run/react";
+import { Link, useLoaderData, type MetaFunction } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { IconAddressBook, IconPlus, IconUser } from "@tabler/icons-react";
 import dayjs from "dayjs";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import invariant from "tiny-invariant";
 import { z } from "zod";
 
@@ -70,10 +69,10 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     const shouldHideTransactions = user.isMember && !contact.assignedUsers.some((a) => a.userId === user.id);
 
     if (shouldHideTransactions) {
-      return typedjson({ contact: { ...contact, transactions: [] } });
+      return { contact: { ...contact, transactions: [] } };
     }
 
-    return typedjson({ contact });
+    return { contact };
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
@@ -145,18 +144,12 @@ export async function action({ request, params }: ActionFunctionArgs) {
 }
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    title: `${data?.contact.firstName}${
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      data?.contact.lastName ? " " + data?.contact.lastName : ""
-    }`,
-  },
+  { title: `${data?.contact.firstName}${data?.contact.lastName ? " " + data.contact.lastName : ""}` },
 ];
 
 export default function ContactDetailsPage() {
   const user = useUser();
-  const { contact } = useTypedLoaderData<typeof loader>();
+  const { contact } = useLoaderData<typeof loader>();
   const isExternal = contact.typeId !== ContactType.Staff;
   const canDelete =
     !contact.user && contact.transactions.length === 0 && !user.isMember && contact.typeId !== ContactType.Staff;

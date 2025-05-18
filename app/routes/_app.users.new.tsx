@@ -1,8 +1,7 @@
 import { MembershipRole, UserRole } from "@prisma/client";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import type { MetaFunction } from "@remix-run/react";
+import { useLoaderData, type MetaFunction } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import { z } from "zod";
 
@@ -44,7 +43,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  return typedjson({
+  return {
     accounts: await db.account.findMany({
       where: {
         orgId,
@@ -53,7 +52,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       orderBy: { code: "asc" },
     }),
     contactTypes: await getContactTypes(orgId),
-  });
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -134,7 +133,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function NewUserPage() {
   const user = useUser();
-  const { contactTypes, accounts } = useTypedLoaderData<typeof loader>();
+  const { contactTypes, accounts } = useLoaderData<typeof loader>();
   return (
     <>
       <PageHeader

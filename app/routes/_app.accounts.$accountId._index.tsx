@@ -1,7 +1,6 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { Link, type MetaFunction } from "@remix-run/react";
+import { Link, useLoaderData, type MetaFunction } from "@remix-run/react";
 import { IconCoins, IconExclamationCircle, IconUser } from "@tabler/icons-react";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import { setFormDefaults } from "remix-validated-form";
 import invariant from "tiny-invariant";
 
@@ -18,12 +17,7 @@ import { AccountType } from "~/lib/constants";
 import { unauthorized } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
 
-export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    title: `Account ${data?.account.code}`,
-  },
-];
+export const meta: MetaFunction<typeof loader> = ({ data }) => [{ title: `Account ${data?.account.code}` }];
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const user = await SessionService.requireUser(request);
@@ -92,11 +86,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       _sum: { amountInCents: true },
     });
 
-    return typedjson({
+    return {
       total: total._sum.amountInCents,
       account,
       ...setFormDefaults("account-form", { ...account }),
-    });
+    };
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
@@ -105,7 +99,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 };
 
 export default function AccountDetailsPage() {
-  const { total, account } = useTypedLoaderData<typeof loader>();
+  const { total, account } = useLoaderData<typeof loader>();
 
   return (
     <>

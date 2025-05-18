@@ -1,9 +1,9 @@
-import { useTypedRouteLoaderData } from "remix-typedjson";
+import { useRouteLoaderData } from "@remix-run/react";
 
 import { loader as rootLoader } from "~/root";
 
 export function useOptionalUser() {
-  const data = useTypedRouteLoaderData<typeof rootLoader>("root");
+  const data = useRouteLoaderData<typeof rootLoader>("root");
   if (!data) {
     return undefined;
   }

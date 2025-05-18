@@ -1,19 +1,21 @@
 import "@fontsource-variable/dm-sans/wght.css";
 import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
 import {
+  data,
   Links,
   Meta,
   Outlet,
+  redirect,
   Scripts,
   ScrollRestoration,
   ShouldRevalidateFunctionArgs,
+  useLoaderData,
   useRouteError,
 } from "@remix-run/react";
 import { captureRemixErrorBoundaryError, withSentry } from "@sentry/remix";
 import { Analytics } from "@vercel/analytics/react";
 import { useEffect } from "react";
 import { PreventFlashOnWrongTheme, ThemeProvider, useTheme } from "remix-themes";
-import { redirect, typedjson, useTypedLoaderData } from "remix-typedjson";
 
 import { ErrorComponent } from "~/components/error-component";
 import { Notifications } from "~/components/notifications";
@@ -25,10 +27,7 @@ import { cn } from "~/lib/utils";
 import { SessionService, themeSessionResolver } from "~/services.server/session";
 import stylesheet from "~/tailwind.css?url";
 
-// prettier-ignore
-export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: stylesheet, as: "style" },
-];
+export const links: LinksFunction = () => [{ rel: "stylesheet", href: stylesheet, as: "style" }];
 
 export const shouldRevalidate = ({ currentUrl, nextUrl, defaultShouldRevalidate }: ShouldRevalidateFunctionArgs) => {
   // Don't revalidate on searches and pagination
@@ -121,7 +120,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     };
   }
 
-  return typedjson(
+  return data(
     {
       user,
       toast,
@@ -136,7 +135,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 function AppWithProviders() {
-  const { theme } = useTypedLoaderData<typeof loader>();
+  const { theme } = useLoaderData<typeof loader>();
   return (
     <ThemeProvider specifiedTheme={theme} themeAction="/resources/set-theme">
       <App />
@@ -147,7 +146,7 @@ function AppWithProviders() {
 export default withSentry(AppWithProviders);
 
 function App() {
-  const data = useTypedLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
   const [theme] = useTheme();
   const user = data.user;
 
@@ -161,7 +160,7 @@ function App() {
   }, [user]);
 
   return (
-    <html lang="en" className={cn("h-full", theme || "light")}>
+    <html lang="en" className={cn("h-full", theme)}>
       <head>
         <meta charSet="utf-8" />
         <meta name="robots" content="noindex" />

@@ -1,8 +1,7 @@
 import { Prisma } from "@prisma/client";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useSearchParams, type MetaFunction } from "@remix-run/react";
+import { useLoaderData, useSearchParams, type MetaFunction } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import { z } from "zod";
 
@@ -55,11 +54,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     getEngagementTypes(orgId),
   ]);
 
-  return typedjson({
+  return {
     contacts,
     contactTypes,
     engagementTypes,
-  });
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -101,7 +100,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function NewEngagementPage() {
-  const { contacts, contactTypes, engagementTypes } = useTypedLoaderData<typeof loader>();
+  const { contacts, contactTypes, engagementTypes } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
 
   return (

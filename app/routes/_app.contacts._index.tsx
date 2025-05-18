@@ -1,7 +1,6 @@
 import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { Form, Link, useSearchParams, useSubmit } from "@remix-run/react";
+import { Form, Link, useLoaderData, useSearchParams, useSubmit } from "@remix-run/react";
 import { IconPlus } from "@tabler/icons-react";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 
 import { PageHeader } from "~/components/common/page-header";
 import { ContactsTable } from "~/components/contacts/contacts-table";
@@ -43,7 +42,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         },
         include: { type: true },
       });
-      return typedjson({ contacts });
+      return { contacts };
     }
 
     const contacts = await db.contact.findMany({
@@ -51,7 +50,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       include: { type: true },
       orderBy: { createdAt: "desc" },
     });
-    return typedjson({ contacts });
+    return { contacts };
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
@@ -62,7 +61,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export const meta: MetaFunction = () => [{ title: "Contacts" }];
 
 export default function ContactIndexPage() {
-  const { contacts } = useTypedLoaderData<typeof loader>();
+  const { contacts } = useLoaderData<typeof loader>();
   const submit = useSubmit();
   const [searchParams] = useSearchParams();
 

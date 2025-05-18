@@ -1,7 +1,6 @@
 import { LoaderFunctionArgs } from "@remix-run/node";
-import { Link, MetaFunction, NavLink, Outlet, useFetcher } from "@remix-run/react";
+import { Link, MetaFunction, NavLink, Outlet, useFetcher, useLoaderData } from "@remix-run/react";
 import { IconAddressBook, IconBuildingBank, IconKey, IconLockPlus, IconUserCircle } from "@tabler/icons-react";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
 import { ValidatedForm, setFormDefaults } from "remix-validated-form";
 import invariant from "tiny-invariant";
 
@@ -105,7 +104,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
     const { password: _password, ...userWithoutPassword } = userWithPassword;
 
-    return typedjson({
+    return {
       accounts,
       user: userWithoutPassword,
       accountsThatCanBeSubscribedTo,
@@ -115,7 +114,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
         ...userWithPassword.contact,
         accountId: userWithPassword.account?.id,
       }),
-    });
+    };
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
@@ -125,11 +124,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
   {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    title: `User ${data?.user.contact.firstName}${
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      data?.user.contact.lastName ? " " + data?.user.contact.lastName : ""
-    }`,
+    title: `User ${data?.user.contact.firstName}${data?.user.contact.lastName ? " " + data.user.contact.lastName : ""}`,
   },
 ];
 
@@ -137,7 +132,7 @@ const links = [{ label: "Profile", to: "profile" }];
 
 export default function UserDetailsLayout() {
   const authorizedUser = useUser();
-  const { user, hasPassword } = useTypedLoaderData<typeof loader>();
+  const { user, hasPassword } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
 
   const isYou = authorizedUser.id === user.id;

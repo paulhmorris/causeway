@@ -1,7 +1,6 @@
 import { render } from "@react-email/render";
-import { ActionFunctionArgs } from "@remix-run/node";
+import { ActionFunctionArgs, data } from "@remix-run/node";
 import { withZod } from "@remix-validated-form/with-zod";
-import { typedjson } from "remix-typedjson";
 import { validationError } from "remix-validated-form";
 import { z } from "zod";
 import { zfd } from "zod-form-data";
@@ -34,11 +33,11 @@ export async function action({ request }: ActionFunctionArgs) {
   const org = await SessionService.getOrg(request);
 
   if (!org) {
-    throw typedjson({ success: false, message: "Organization not found" }, { status: 400 });
+    throw data({ success: false, message: "Organization not found" }, { status: 400 });
   }
 
   if (request.method !== "POST") {
-    throw typedjson({ success: false, message: "Method Not Allowed" }, { status: 405 });
+    throw data({ success: false, message: "Method Not Allowed" }, { status: 405 });
   }
 
   const result = await validator.validate(await request.formData());
