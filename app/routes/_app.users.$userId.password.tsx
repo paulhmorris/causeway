@@ -1,10 +1,9 @@
 import { Prisma } from "@prisma/client";
-import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { withZod } from "@remix-validated-form/with-zod";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import { ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
+import { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod";
-
 import { FormField } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useUser } from "~/hooks/useUser";
@@ -82,7 +81,7 @@ export async function action({ params, request }: ActionFunctionArgs) {
       },
     });
 
-    return Toasts.redirectWithSuccess(`/users/${params.userId}/password`, { title: "Password updated!" });
+    return Toasts.redirectWithSuccess(`/users/${params.userId}/password`, { message: "Password updated!" });
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
@@ -90,7 +89,7 @@ export async function action({ params, request }: ActionFunctionArgs) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       message = getPrismaErrorText(error);
     }
-    return Toasts.jsonWithError({ success: false }, { title: "An error occurred", description: message });
+    return Toasts.dataWithError({ success: false }, { message: "An error occurred", description: message });
   }
 }
 

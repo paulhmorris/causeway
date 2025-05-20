@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { Link } from "@remix-run/react";
+import { Link } from "react-router";
 import { IconChevronRight } from "@tabler/icons-react";
 
 import { normalizeEnum } from "~/lib/utils";

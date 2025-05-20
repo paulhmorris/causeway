@@ -1,10 +1,9 @@
 import { MembershipRole, Prisma } from "@prisma/client";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, type MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
 import { useState } from "react";
-import { ValidatedForm, validationError } from "remix-validated-form";
-
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import { useLoaderData } from "react-router";
 import { PageHeader } from "~/components/common/page-header";
 import { AddressForm } from "~/components/contacts/address-fields";
 import { ContactFields } from "~/components/contacts/contact-fields";
@@ -121,7 +120,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     return Toasts.redirectWithSuccess(`/contacts/${contact.id}`, {
-      title: "Contact created",
+      message: "Contact created",
       description: `${contact.firstName} ${contact.lastName} was created successfully.`,
     });
   } catch (error) {
@@ -129,9 +128,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     Sentry.captureException(error);
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       const message = getPrismaErrorText(error);
-      return Toasts.jsonWithError(
+      return Toasts.dataWithError(
         { message: `An error occurred: ${message}` },
-        { description: message, title: "Error creating contact" },
+        { description: message, message: "Error creating contact" },
       );
     }
     throw serverError("An error occurred while creating the contact. Please try again.");

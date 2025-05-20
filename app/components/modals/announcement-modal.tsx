@@ -1,9 +1,9 @@
 import { Announcement } from "@prisma/client";
-import { useFetcher } from "@remix-run/react";
+import { ValidatedForm } from "@rvf/react-router";
 import { IconLoader, IconPlus } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
-import { ValidatedForm } from "remix-validated-form";
+import { useFetcher } from "react-router";
 
 import { Button } from "~/components/ui/button";
 import { DrawerDialog, DrawerDialogFooter } from "~/components/ui/drawer-dialog";

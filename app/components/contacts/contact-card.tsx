@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { Link } from "@remix-run/react";
+import { Link } from "react-router";
 import { IconAddressBook, IconMail, IconPhone } from "@tabler/icons-react";
 
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";

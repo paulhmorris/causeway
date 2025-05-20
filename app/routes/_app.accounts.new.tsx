@@ -1,10 +1,9 @@
 import { MembershipRole, Prisma } from "@prisma/client";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, type MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import { ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import { useLoaderData } from "react-router";
 import { z } from "zod";
-
 import { PageHeader } from "~/components/common/page-header";
 import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
@@ -88,7 +87,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     return Toasts.redirectWithSuccess(`/accounts/${account.id}`, {
-      title: "Account created",
+      message: "Account created",
       description: "Well done.",
     });
   } catch (error) {
@@ -98,7 +97,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       message = getPrismaErrorText(error);
     }
-    return Toasts.jsonWithError({ success: false }, { title: "Error creating account", description: message });
+    return Toasts.dataWithError({ success: false }, { message: "Error creating account", description: message });
   }
 };
 

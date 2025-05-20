@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { Link } from "@remix-run/react";
+import { Link } from "react-router";
 import dayjs from "dayjs";
 
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";

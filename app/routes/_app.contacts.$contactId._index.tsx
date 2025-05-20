@@ -1,12 +1,11 @@
 import { Engagement, Prisma } from "@prisma/client";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { Link, useLoaderData, type MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { withZod } from "@rvf/zod";
 import { IconAddressBook, IconPlus, IconUser } from "@tabler/icons-react";
 import dayjs from "dayjs";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod";
-
 import { PageHeader } from "~/components/common/page-header";
 import { ContactCard } from "~/components/contacts/contact-card";
 import { ContactEngagementsTable } from "~/components/contacts/contact-engagements-table";
@@ -89,9 +88,9 @@ export async function action({ request, params }: ActionFunctionArgs) {
   const validator = withZod(z.object({ _action: z.enum(["delete"]) }));
   const result = await validator.validate(await request.formData());
   if (result.error) {
-    return Toasts.jsonWithError(
+    return Toasts.dataWithError(
       { success: false },
-      { title: "Error deleting contact", description: "Invalid request" },
+      { message: "Error deleting contact", description: "Invalid request" },
     );
   }
 
@@ -111,10 +110,10 @@ export async function action({ request, params }: ActionFunctionArgs) {
     }
 
     if (contact.transactions.length > 0) {
-      return Toasts.jsonWithError(
+      return Toasts.dataWithError(
         { success: false },
         {
-          title: "Error deleting contact",
+          message: "Error deleting contact",
           description: "This contact has transactions and cannot be deleted. Check the transactions page.",
         },
       );
@@ -128,7 +127,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
         db.contact.delete({ where: { id: contact.id, orgId } }),
       ]);
       return Toasts.redirectWithSuccess("/contacts", {
-        title: "Contact deleted",
+        message: "Contact deleted",
         description: `${contact.firstName} ${contact.lastName} was deleted successfully.`,
       });
     } catch (error) {
@@ -138,7 +137,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         message = getPrismaErrorText(error);
       }
-      return Toasts.jsonWithError({ success: false }, { title: "Error deleting contact", description: message });
+      return Toasts.dataWithError({ success: false }, { message: "Error deleting contact", description: message });
     }
   }
 }

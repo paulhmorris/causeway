@@ -1,10 +1,8 @@
-import { Prisma } from "@prisma/client";
-import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import { ActionFunctionArgs, Link, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod";
 dayjs.extend(utc);
@@ -18,7 +16,7 @@ import { SubmitButton } from "~/components/ui/submit-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
-import { getPrismaErrorText, notFound } from "~/lib/responses.server";
+import { notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cn, formatCentsAsDollars } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
@@ -83,17 +81,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     return Toasts.redirectWithSuccess(`/transactions/${id}`, {
-      title: "Transaction updated",
+      message: "Transaction updated",
       description: `Transaction has been updated.`,
     });
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    let message = error instanceof Error ? error.message : "";
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      message = getPrismaErrorText(error);
-    }
-    return Toasts.jsonWithError({ success: false }, { title: "Error saving transaction", description: message });
+    return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
   }
 };
 

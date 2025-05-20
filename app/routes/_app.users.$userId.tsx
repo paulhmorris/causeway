@@ -1,7 +1,6 @@
-import { LoaderFunctionArgs } from "@remix-run/node";
-import { Link, MetaFunction, NavLink, Outlet, useFetcher, useLoaderData } from "@remix-run/react";
+import { ValidatedForm } from "@rvf/react-router";
 import { IconAddressBook, IconBuildingBank, IconKey, IconLockPlus, IconUserCircle } from "@tabler/icons-react";
-import { ValidatedForm, setFormDefaults } from "remix-validated-form";
+import { Link, LoaderFunctionArgs, MetaFunction, NavLink, Outlet, useFetcher, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 
 import { PageHeader } from "~/components/common/page-header";
@@ -109,11 +108,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       user: userWithoutPassword,
       accountsThatCanBeSubscribedTo,
       hasPassword: !!_password,
-      ...setFormDefaults("user-form", {
-        ...userWithPassword,
-        ...userWithPassword.contact,
-        accountId: userWithPassword.account?.id,
-      }),
+      // ...setFormDefaults("user-form", {
+      //   ...userWithPassword,
+      //   ...userWithPassword.contact,
+      //   accountId: userWithPassword.account?.id,
+      // }),
     };
   } catch (error) {
     console.error(error);

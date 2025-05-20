@@ -1,5 +1,7 @@
 import "@fontsource-variable/dm-sans/wght.css";
-import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
+import { Analytics } from "@vercel/analytics/react";
+import { useEffect } from "react";
+import type { LinksFunction, LoaderFunctionArgs } from "react-router";
 import {
   data,
   Links,
@@ -10,11 +12,7 @@ import {
   ScrollRestoration,
   ShouldRevalidateFunctionArgs,
   useLoaderData,
-  useRouteError,
-} from "@remix-run/react";
-import { captureRemixErrorBoundaryError, withSentry } from "@sentry/remix";
-import { Analytics } from "@vercel/analytics/react";
-import { useEffect } from "react";
+} from "react-router";
 import { PreventFlashOnWrongTheme, ThemeProvider, useTheme } from "remix-themes";
 
 import { ErrorComponent } from "~/components/error-component";
@@ -22,10 +20,13 @@ import { Notifications } from "~/components/notifications";
 import { GlobalLoader } from "~/components/ui/global-loader";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
-import { getToast } from "~/lib/toast.server";
+import { Toasts } from "~/lib/toast.server";
 import { cn } from "~/lib/utils";
 import { SessionService, themeSessionResolver } from "~/services.server/session";
 import stylesheet from "~/tailwind.css?url";
+
+// eslint-disable-next-line import/no-unresolved
+import { Route } from "./+types/root";
 
 export const links: LinksFunction = () => [{ rel: "stylesheet", href: stylesheet, as: "style" }];
 
@@ -48,12 +49,15 @@ export const shouldRevalidate = ({ currentUrl, nextUrl, defaultShouldRevalidate 
 };
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  if (1 === 1) {
+    throw data("Error!", { status: 500 });
+  }
   if (process.env.MAINTENANCE_MODE && new URL(request.url).pathname !== "/maintenance") {
     return redirect("/maintenance", { status: 307 });
   }
 
   const org = await SessionService.getOrg(request);
-  const { toast, headers } = await getToast(request);
+  const { toast, headers } = await Toasts.getToast(request);
   const userId = await SessionService.getUserId(request);
   const { getTheme } = await themeSessionResolver(request);
 
@@ -143,7 +147,7 @@ function AppWithProviders() {
   );
 }
 
-export default withSentry(AppWithProviders);
+export default AppWithProviders;
 
 function App() {
   const data = useLoaderData<typeof loader>();
@@ -192,28 +196,12 @@ function App() {
   );
 }
 
-export function ErrorBoundary() {
-  const error = useRouteError();
-  captureRemixErrorBoundaryError(error);
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   return (
-    <html lang="en" className="h-full">
-      <head>
-        <title>Oh no!</title>
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="manifest" href="/site.webmanifest" />
-        <Meta />
-        <Links />
-      </head>
-      <body>
-        <div className="grid min-h-full place-items-center px-6 py-24 sm:py-32 lg:px-8">
-          <div className="-mb-10">
-            <ErrorComponent />
-          </div>
-        </div>
-        <Scripts />
-      </body>
-    </html>
+    <main className="grid min-h-full place-items-center px-6 py-24 sm:py-32 lg:px-8">
+      <div className="-mb-10">
+        <ErrorComponent error={error} />
+      </div>
+    </main>
   );
 }

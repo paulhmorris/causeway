@@ -1,4 +1,4 @@
-import { useLocation, useSearchParams } from "@remix-run/react";
+import { useLocation, useSearchParams } from "react-router";
 import { RankingInfo } from "@tanstack/match-sorter-utils";
 import {
   ColumnDef,

@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
-import type { LoaderFunctionArgs, MetaFunction, SerializeFrom } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react";
+import type { LoaderFunctionArgs, MetaFunction, SerializeFrom } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";

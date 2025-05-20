@@ -1,9 +1,8 @@
-import { type ActionFunctionArgs } from "@remix-run/node";
-import { withZod } from "@remix-validated-form/with-zod";
+import { validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
 import dayjs from "dayjs";
-import { validationError } from "remix-validated-form";
+import { type ActionFunctionArgs } from "react-router";
 import { z } from "zod";
-
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
@@ -39,18 +38,18 @@ export async function action({ request }: ActionFunctionArgs) {
     const org = await db.organization.findUniqueOrThrow({ where: { host } });
     const user = await db.user.findUnique({ where: { username: result.data.username } });
     if (!user) {
-      return Toasts.jsonWithError(
-        { message: "User not found" },
-        { title: "User not found", description: `There is no user with username ${result.data.username}.` },
-      );
+      return Toasts.dataWithError(null, {
+        message: "User not found",
+        description: `There is no user with username ${result.data.username}.`,
+      });
     }
 
     const existingReset = await getPasswordResetByUserId(user.id);
     if (existingReset) {
-      return Toasts.jsonWithWarning(
+      return Toasts.dataWithWarning(
         { message: "Existing request found" },
         {
-          title: "Existing request found",
+          message: "Existing request found",
           description: `A password reset request has already been sent. It expires in ${dayjs(
             existingReset.expiresAt,
           ).diff(dayjs(), "minutes")} minutes.`,
@@ -73,20 +72,20 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     // Success
-    return Toasts.jsonWithSuccess(
+    return Toasts.dataWithSuccess(
       { data },
       {
-        title: "Email sent",
+        message: "Email sent",
         description: "Check the email for a link to set the password.",
       },
     );
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    return Toasts.jsonWithError(
+    return Toasts.dataWithError(
       { error },
       {
-        title: "Something went wrong",
+        message: "Something went wrong",
         description: error instanceof Error ? error.message : "There was an error sending the password reset email.",
       },
     );

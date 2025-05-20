@@ -1,10 +1,8 @@
 import { Prisma } from "@prisma/client";
-import { ActionFunctionArgs } from "@remix-run/node";
-import { useRouteLoaderData } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import { ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
+import { ActionFunctionArgs, useRouteLoaderData } from "react-router";
 import { z } from "zod";
-
 import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
 import { ButtonGroup } from "~/components/ui/button-group";
@@ -39,7 +37,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   try {
     await db.organization.update({ where: { id: orgId }, data: result.data });
-    return Toasts.redirectWithSuccess("/organization/settings", { title: "Organization settings updated" });
+    return Toasts.redirectWithSuccess("/organization/settings", { message: "Organization settings updated" });
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);

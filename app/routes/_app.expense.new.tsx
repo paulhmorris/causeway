@@ -1,11 +1,10 @@
-import { Prisma, TransactionItemTypeDirection } from "@prisma/client";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, type MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { TransactionItemTypeDirection } from "@prisma/client";
+import { useFieldArray, ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
 import { IconPlus } from "@tabler/icons-react";
 import { nanoid } from "nanoid";
-import { setFormDefaults, useFieldArray, ValidatedForm, validationError } from "remix-validated-form";
-
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import { useLoaderData } from "react-router";
 import { PageHeader } from "~/components/common/page-header";
 import { ReceiptSelector } from "~/components/common/receipt-selector";
 import { ContactDropdown } from "~/components/contacts/contact-dropdown";
@@ -18,7 +17,6 @@ import { Separator } from "~/components/ui/separator";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
-import { getPrismaErrorText } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { formatCentsAsDollars, getToday } from "~/lib/utils";
 import { TransactionSchema } from "~/models/schemas";
@@ -68,9 +66,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     transactionItemTypes,
     categories,
     receipts,
-    ...setFormDefaults("expense-form", {
-      transactionItems: [{ id: nanoid() }],
-    }),
+    // ...setFormDefaults("expense-form", {
+    //   transactionItems: [{ id: nanoid() }],
+    // }),
   };
 };
 
@@ -106,17 +104,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     return Toasts.redirectWithSuccess(`/accounts/${transaction.account.id}`, {
-      title: "Success",
+      message: "Success",
       description: `Expense of ${formatCentsAsDollars(totalInCents)} charged to account ${transaction.account.code}`,
     });
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    let description = "An error occurred while creating the expense";
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      description = getPrismaErrorText(error);
-    }
-    return Toasts.jsonWithError({ success: false }, { title: "Error creating expense", description });
+    return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
   }
 };
 

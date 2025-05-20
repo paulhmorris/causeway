@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
-import { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { NavLink, Outlet, useLoaderData } from "@remix-run/react";
+import { LoaderFunctionArgs, MetaFunction } from "react-router";
+import { NavLink, Outlet, useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
 import { Separator } from "~/components/ui/separator";

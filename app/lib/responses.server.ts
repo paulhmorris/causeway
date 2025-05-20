@@ -1,6 +1,6 @@
 /* eslint-disable prefer-const */
 import { Prisma } from "@prisma/client";
-import { data, redirect } from "@remix-run/node";
+import { data, redirect } from "react-router";
 
 /**
  * Create a response receiving a JSON object with the status code 201.

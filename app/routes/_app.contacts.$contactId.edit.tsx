@@ -1,12 +1,11 @@
 import { Prisma, UserRole } from "@prisma/client";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { Link, useLoaderData, type MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
 import { IconAddressBook, IconUser } from "@tabler/icons-react";
 import { useState } from "react";
-import { setFormDefaults, ValidatedForm, validationError } from "remix-validated-form";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
-
 import { PageHeader } from "~/components/common/page-header";
 import { AddressForm } from "~/components/contacts/address-fields";
 import { ContactFields } from "~/components/contacts/contact-fields";
@@ -95,7 +94,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     contact,
     contactTypes,
     usersWhoCanBeAssigned,
-    ...setFormDefaults("contact-form", { ...contact, typeId: contact.typeId.toString() }),
+    // ...setFormDefaults("contact-form", { ...contact, typeId: contact.typeId.toString() }),
   };
 };
 
@@ -193,7 +192,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     return Toasts.redirectWithSuccess(`/contacts/${contact.id}`, {
-      title: "Contact updated",
+      message: "Contact updated",
       description: `${contact.firstName} ${contact.lastName} was updated successfully.`,
     });
   } catch (error) {
@@ -201,13 +200,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     Sentry.captureException(error);
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       const message = getPrismaErrorText(error);
-      return Toasts.jsonWithError(
+      return Toasts.dataWithError(
         { message: `An error occurred: ${message}` },
-        { description: message, title: "Error updating contact" },
+        { description: message, message: "Error updating contact" },
       );
     }
-    return Toasts.jsonWithError(null, {
-      title: "Error",
+    return Toasts.dataWithError(null, {
+      message: "Error",
       description: "An error occurred while updating the contact. Please try again.",
     });
   }

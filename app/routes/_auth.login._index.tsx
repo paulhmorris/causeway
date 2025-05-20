@@ -1,8 +1,7 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { redirect } from "@remix-run/node";
-import { useSearchParams } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import { ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import { redirect, useSearchParams } from "react-router";
 import { z } from "zod";
 
 import { AuthCard } from "~/components/auth/auth-card";
@@ -60,13 +59,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   if (user.memberships.length === 0) {
-    return Toasts.jsonWithError(
-      { message: "You are not a member of any organizations. Please contact your administrator." },
-      {
-        title: "Error",
-        description: "You are not a member of any organizations. Please contact your administrator.",
-      },
-    );
+    return Toasts.dataWithError(null, {
+      message: "Error",
+      description: "You are not a member of any organizations. Please contact your administrator.",
+    });
   }
 
   // Skip verification code step in dev/qa

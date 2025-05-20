@@ -1,9 +1,7 @@
-import { ActionFunctionArgs } from "@remix-run/node";
-import { MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import { ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
+import { ActionFunctionArgs, MetaFunction } from "react-router";
 import { z } from "zod";
-
 import { PageHeader } from "~/components/common/page-header";
 import { PageContainer } from "~/components/page-container";
 import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
@@ -44,8 +42,7 @@ export async function action({ request }: ActionFunctionArgs) {
   });
 
   return Toasts.redirectWithSuccess(user.isMember ? "/dashboards/staff" : "/dashboards/admin", {
-    title: "Request Sent",
-    description: "An issue has been created on our board.",
+    message: "Request Sent",
   });
 }
 

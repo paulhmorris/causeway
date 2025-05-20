@@ -1,16 +1,14 @@
-import { Prisma } from "@prisma/client";
-import { ActionFunctionArgs } from "@remix-run/node";
-import { withZod } from "@remix-validated-form/with-zod";
+import { validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { validationError } from "remix-validated-form";
+import { ActionFunctionArgs } from "react-router";
 import { z } from "zod";
 import { zfd } from "zod-form-data";
 dayjs.extend(utc);
 
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
-import { getPrismaErrorText } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { SessionService } from "~/services.server/session";
 
@@ -67,10 +65,10 @@ export async function action({ request }: ActionFunctionArgs) {
           expiresAt: expiry?.toDate(),
         },
       });
-      return Toasts.jsonWithSuccess(
+      return Toasts.dataWithSuccess(
         { success: true },
         {
-          title: "Announcement Created",
+          message: "Announcement Created",
           description: `The announcement is now visible to all users and admins${announcement.expiresAt ? " and will expire at " + dayjs(announcement.expiresAt).utc().format("M/D/YY h:mm a") : "."}`,
         },
       );
@@ -97,10 +95,10 @@ export async function action({ request }: ActionFunctionArgs) {
           expiresAt: expiry ? expiry.toDate() : null,
         },
       });
-      return Toasts.jsonWithSuccess(
+      return Toasts.dataWithSuccess(
         { success: true },
         {
-          title: "Announcement Updated",
+          message: "Announcement Updated",
           description: `The announcement is now visible to all users and admins${announcement.expiresAt ? " and will expire at " + dayjs(announcement.expiresAt).utc().format("M/D/YY h:mm a") : "."}`,
         },
       );
@@ -115,16 +113,14 @@ export async function action({ request }: ActionFunctionArgs) {
           expiresAt: dayjs().subtract(7, "day").toDate(),
         },
       });
-      return Toasts.jsonWithInfo(
+      return Toasts.dataWithInfo(
         { success: true },
-        { title: "Announcement Expired", description: "The announcement is no longer visible to users or admins." },
+        { message: "Announcement Expired", description: "The announcement is no longer visible to users or admins." },
       );
     }
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      return Toasts.jsonWithError({ success: false }, { title: "Error", description: getPrismaErrorText(error) });
-    }
+    return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred." });
   }
 }

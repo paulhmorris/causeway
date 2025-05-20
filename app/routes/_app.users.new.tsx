@@ -1,10 +1,8 @@
 import { MembershipRole, UserRole } from "@prisma/client";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, type MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import { ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
+import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs, type MetaFunction } from "react-router";
 import { z } from "zod";
-
 import { PageHeader } from "~/components/common/page-header";
 import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
@@ -68,10 +66,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   // Someone trying to create a SUPERADMIN
   if (systemRole === UserRole.SUPERADMIN && !authorizedUser.isSuperAdmin) {
-    return Toasts.jsonWithWarning(
+    return Toasts.dataWithWarning(
       { message: "You do not have permission to create a Super Admin" },
       {
-        title: "Permission denied",
+        message: "Permission denied",
         description: "You do not have permission to create a Super Admin",
       },
     );
@@ -124,7 +122,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   return Toasts.redirectWithSuccess(`/users/${user.id}`, {
-    title: "User created",
+    message: "User created",
     description: sendPasswordSetup
       ? "They will receive an email with instructions to set their password."
       : "You can use the password setup button to send them an email to set their password.",

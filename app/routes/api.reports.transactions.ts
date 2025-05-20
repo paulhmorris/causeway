@@ -1,5 +1,5 @@
 import { ExcelBuilder, ExcelSchemaBuilder } from "@chronicstone/typed-xlsx";
-import { data, LoaderFunctionArgs } from "@remix-run/node";
+import { data, LoaderFunctionArgs } from "react-router";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 
@@ -82,7 +82,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   if (!transactionItems.length) {
     return Toasts.redirectWithError("/reports", {
-      title: "No transactions found",
+      message: "No transactions found",
       description: `No transactions found from ${trxStartDate} to ${trxEndDate}. Update your date filters.`,
     });
   }

@@ -1,4 +1,4 @@
-import { Link, LinkProps } from "@remix-run/react";
+import { Link, LinkProps } from "react-router";
 import { IconArrowLeft } from "@tabler/icons-react";
 
 export function BackButton({ to }: { to: LinkProps["to"] }) {

@@ -1,0 +1,21 @@
+diff --git a/node_modules/@sentry/opentelemetry/build/esm/index.js b/node_modules/@sentry/opentelemetry/build/esm/index.js
+index a87bd98..5157a25 100644
+--- a/node_modules/@sentry/opentelemetry/build/esm/index.js
++++ b/node_modules/@sentry/opentelemetry/build/esm/index.js
+@@ -1,10 +1,12 @@
+-import { ATTR_URL_FULL, SEMATTRS_HTTP_URL, ATTR_HTTP_REQUEST_METHOD, SEMATTRS_HTTP_METHOD, SEMATTRS_DB_SYSTEM, SEMATTRS_RPC_SERVICE, SEMATTRS_MESSAGING_SYSTEM, SEMATTRS_FAAS_TRIGGER, SEMATTRS_DB_STATEMENT, SEMATTRS_HTTP_TARGET, ATTR_HTTP_ROUTE, ATTR_HTTP_RESPONSE_STATUS_CODE, SEMATTRS_HTTP_STATUS_CODE, SEMATTRS_RPC_GRPC_STATUS_CODE } from '@opentelemetry/semantic-conventions';
+-import { parseUrl, getSanitizedUrlString, SDK_VERSION, addNonEnumerableProperty, isSentryRequestUrl, getClient, baggageHeaderToDynamicSamplingContext, SEMANTIC_ATTRIBUTE_SENTRY_OP, SEMANTIC_ATTRIBUTE_SENTRY_SOURCE, SEMANTIC_ATTRIBUTE_SENTRY_ORIGIN, SEMANTIC_ATTRIBUTE_SENTRY_CUSTOM_SPAN_NAME, stripUrlQueryAndFragment, spanToJSON, hasSpansEnabled, dynamicSamplingContextToSentryBaggageHeader, LRUMap, logger, parseBaggageHeader, SENTRY_BAGGAGE_KEY_PREFIX, generateSentryTraceHeader, stringMatchesSomePattern, getDynamicSamplingContextFromSpan, getCurrentScope, getDynamicSamplingContextFromScope, getIsolationScope, propagationContextFromHeaders, handleCallbackErrors, spanToTraceContext, getTraceContextFromScope, getRootSpan, getCapturedScopesOnSpan, setAsyncContextStrategy, getDefaultIsolationScope, getDefaultCurrentScope, SPAN_STATUS_OK, SPAN_STATUS_ERROR, getSpanStatusFromHttpCode, timedEventsToMeasurements, captureEvent, SEMANTIC_ATTRIBUTE_SENTRY_SAMPLE_RATE, convertSpanLinksForEnvelope, getStatusMessage, spanTimeInputToSeconds, addChildSpanToSpan, setCapturedScopesOnSpan, logSpanStart, logSpanEnd, parseSampleRate, sampleSpan } from '@sentry/core';
+-export { getClient, getDynamicSamplingContextFromSpan } from '@sentry/core';
+ import * as api from '@opentelemetry/api';
+-import { trace, SpanKind, createContextKey, TraceFlags, propagation, INVALID_TRACEID, context, SpanStatusCode, ROOT_CONTEXT, isSpanContextValid } from '@opentelemetry/api';
++import { INVALID_TRACEID, ROOT_CONTEXT, SpanKind, SpanStatusCode, TraceFlags, context, createContextKey, isSpanContextValid, propagation, trace } from '@opentelemetry/api';
+ import { TraceState, W3CBaggagePropagator, isTracingSuppressed, suppressTracing as suppressTracing$1 } from '@opentelemetry/core';
+ import { SamplingDecision } from '@opentelemetry/sdk-trace-base';
++import pkg from '@opentelemetry/semantic-conventions';
++import { LRUMap, SDK_VERSION, SEMANTIC_ATTRIBUTE_SENTRY_CUSTOM_SPAN_NAME, SEMANTIC_ATTRIBUTE_SENTRY_OP, SEMANTIC_ATTRIBUTE_SENTRY_ORIGIN, SEMANTIC_ATTRIBUTE_SENTRY_SAMPLE_RATE, SEMANTIC_ATTRIBUTE_SENTRY_SOURCE, SENTRY_BAGGAGE_KEY_PREFIX, SPAN_STATUS_ERROR, SPAN_STATUS_OK, addChildSpanToSpan, addNonEnumerableProperty, baggageHeaderToDynamicSamplingContext, captureEvent, convertSpanLinksForEnvelope, dynamicSamplingContextToSentryBaggageHeader, generateSentryTraceHeader, getCapturedScopesOnSpan, getClient, getCurrentScope, getDefaultCurrentScope, getDefaultIsolationScope, getDynamicSamplingContextFromScope, getDynamicSamplingContextFromSpan, getIsolationScope, getRootSpan, getSanitizedUrlString, getSpanStatusFromHttpCode, getStatusMessage, getTraceContextFromScope, handleCallbackErrors, hasSpansEnabled, isSentryRequestUrl, logSpanEnd, logSpanStart, logger, parseBaggageHeader, parseSampleRate, parseUrl, propagationContextFromHeaders, sampleSpan, setAsyncContextStrategy, setCapturedScopesOnSpan, spanTimeInputToSeconds, spanToJSON, spanToTraceContext, stringMatchesSomePattern, stripUrlQueryAndFragment, timedEventsToMeasurements } from '@sentry/core';
++export { getClient, getDynamicSamplingContextFromSpan } from '@sentry/core';
++
++const { ATTR_URL_FULL, SEMATTRS_HTTP_URL, ATTR_HTTP_REQUEST_METHOD, SEMATTRS_HTTP_METHOD, SEMATTRS_DB_SYSTEM, SEMATTRS_RPC_SERVICE, SEMATTRS_MESSAGING_SYSTEM, SEMATTRS_FAAS_TRIGGER, SEMATTRS_DB_STATEMENT, SEMATTRS_HTTP_TARGET, ATTR_HTTP_ROUTE, ATTR_HTTP_RESPONSE_STATUS_CODE, SEMATTRS_HTTP_STATUS_CODE, SEMATTRS_RPC_GRPC_STATUS_CODE } = pkg;
+ 
+ /** If this attribute is true, it means that the parent is a remote span. */
+ const SEMANTIC_ATTRIBUTE_SENTRY_PARENT_IS_REMOTE = 'sentry.parentIsRemote';

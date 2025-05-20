@@ -1,11 +1,9 @@
-import { Prisma } from "@prisma/client";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, type MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
 import dayjs from "dayjs";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import { useLoaderData } from "react-router";
 import { z } from "zod";
-
 import { PageHeader } from "~/components/common/page-header";
 import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
@@ -14,7 +12,6 @@ import { SubmitButton } from "~/components/ui/submit-button";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionCategory, TransactionItemType } from "~/lib/constants";
-import { getPrismaErrorText } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { getToday } from "~/lib/utils";
 import { CurrencySchema } from "~/models/schemas";
@@ -59,10 +56,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const { fromAccountId, toAccountId, amountInCents, description, ...rest } = result.data;
 
   if (fromAccountId === toAccountId) {
-    return Toasts.jsonWithWarning(
-      { message: "From and To accounts must be different." },
-      { title: "Warning", description: "From and To accounts must be different." },
-    );
+    return Toasts.dataWithWarning(null, { message: "Warning", description: "From and To accounts must be different." });
   }
 
   try {
@@ -74,10 +68,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const fromAccountBalanceInCents = fromAccountBalance._sum.amountInCents ?? 0;
 
     if (amountInCents > fromAccountBalanceInCents) {
-      return Toasts.jsonWithWarning(
-        { message: "Insufficient funds in from account." },
-        { title: "Warning", description: "Insufficient funds in from account." },
-      );
+      return Toasts.dataWithWarning(null, { message: "Warning", description: "Insufficient funds in from account." });
     }
 
     await db.$transaction([
@@ -120,17 +111,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     ]);
 
     return Toasts.redirectWithSuccess(`/accounts/${toAccountId}`, {
-      title: "Success",
+      message: "Success",
       description: `Transfer completed successfully.`,
     });
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    let description = "An error occurred while creating the income";
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      description = getPrismaErrorText(error);
-    }
-    return Toasts.jsonWithError({ success: false }, { title: "Error creating transfer", description });
+    return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
   }
 };
 

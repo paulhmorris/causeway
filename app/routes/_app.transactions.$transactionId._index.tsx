@@ -1,10 +1,9 @@
-import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
 import { IconExternalLink } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { validationError } from "remix-validated-form";
+import { ActionFunctionArgs, Link, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod";
 dayjs.extend(utc);
@@ -122,7 +121,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
   const trx = await db.transaction.delete({ where: { id: transactionId, orgId }, include: { account: true } });
   return Toasts.redirectWithSuccess("/transactions", {
-    title: "Transaction deleted",
+    message: "Transaction deleted",
     description: `The transaction of ${formatCentsAsDollars(trx.amountInCents, 2)} on account ${
       trx.account.code
     } has been deleted.`,

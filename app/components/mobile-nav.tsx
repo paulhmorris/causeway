@@ -1,4 +1,4 @@
-import { NavLink } from "@remix-run/react";
+import { NavLink } from "react-router";
 import { IconMenuDeep } from "@tabler/icons-react";
 import { useState, type ComponentPropsWithoutRef } from "react";
 

@@ -1,11 +1,9 @@
-import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useFetcher, useLoaderData } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { useFieldArray, ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
 import { IconMinus, IconPlus } from "@tabler/icons-react";
 import { nanoid } from "nanoid";
-import { setFormDefaults, useFieldArray, ValidatedForm, validationError } from "remix-validated-form";
+import { ActionFunctionArgs, LoaderFunctionArgs, useFetcher, useLoaderData } from "react-router";
 import { z } from "zod";
-
 import { Button } from "~/components/ui/button";
 import { FormField } from "~/components/ui/form";
 import { Separator } from "~/components/ui/separator";
@@ -32,9 +30,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   return {
     categories,
-    ...setFormDefaults("categories-form", {
-      categories: categories.filter((c) => Boolean(c.orgId)),
-    }),
+    // ...setFormDefaults("categories-form", {
+    //   categories: categories.filter((c) => Boolean(c.orgId)),
+    // }),
   };
 }
 
@@ -91,11 +89,11 @@ export async function action({ request }: ActionFunctionArgs) {
       ),
     ]);
 
-    return Toasts.jsonWithSuccess(null, { title: "Transaction categories updated" });
+    return Toasts.dataWithSuccess(null, { message: "Transaction categories updated" });
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    return Toasts.jsonWithError(null, { title: "Error updating transaction categories" });
+    return Toasts.dataWithError(null, { message: "Error updating transaction categories" });
   }
 }
 

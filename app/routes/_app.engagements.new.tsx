@@ -1,10 +1,13 @@
-import { Prisma } from "@prisma/client";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useSearchParams, type MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import { ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
+import {
+  useLoaderData,
+  useSearchParams,
+  type ActionFunctionArgs,
+  type LoaderFunctionArgs,
+  type MetaFunction,
+} from "react-router";
 import { z } from "zod";
-
 import { PageHeader } from "~/components/common/page-header";
 import { ContactDropdown } from "~/components/contacts/contact-dropdown";
 import { ErrorComponent } from "~/components/error-component";
@@ -14,7 +17,6 @@ import { SubmitButton } from "~/components/ui/submit-button";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType, EngagementType } from "~/lib/constants";
-import { getPrismaErrorText } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { getToday } from "~/lib/utils";
 import { getContactTypes } from "~/services.server/contact";
@@ -80,22 +82,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     return Toasts.redirectWithSuccess(`/engagements/${engagement.id}`, {
-      title: "Success",
+      message: "Success",
       description: `Engagement recorded.`,
     });
   } catch (error) {
     Sentry.captureException(error);
     console.error(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      return Toasts.jsonWithError(
-        { message: getPrismaErrorText(error) },
-        { title: "Database Error", description: getPrismaErrorText(error) },
-      );
-    }
-    return Toasts.jsonWithError(
-      { message: "An unknown error occurred" },
-      { title: "An unknown error occurred", description: error instanceof Error ? error.message : "" },
-    );
+    return Toasts.dataWithError(null, { message: "An unknown error occurred" });
   }
 };
 

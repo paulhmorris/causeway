@@ -1,13 +1,11 @@
-import { Prisma, TransactionItemTypeDirection } from "@prisma/client";
+import { TransactionItemTypeDirection } from "@prisma/client";
 import { render } from "@react-email/render";
-import { type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, type MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { useFieldArray, ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
 import { IconPlus } from "@tabler/icons-react";
-import { nanoid } from "nanoid";
-import { setFormDefaults, useFieldArray, ValidatedForm, validationError } from "remix-validated-form";
-
 import { IncomeNotificationEmail } from "emails/income-notification";
+import { nanoid } from "nanoid";
+import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs, type MetaFunction } from "react-router";
 import { PageHeader } from "~/components/common/page-header";
 import { ReceiptSelector } from "~/components/common/receipt-selector";
 import { ContactDropdown } from "~/components/contacts/contact-dropdown";
@@ -24,7 +22,6 @@ import { sendEmail } from "~/integrations/email.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionItemType } from "~/lib/constants";
-import { getPrismaErrorText } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { constructOrgMailFrom, constructOrgURL, formatCentsAsDollars, getToday } from "~/lib/utils";
 import { CheckboxSchema, TransactionSchema } from "~/models/schemas";
@@ -76,9 +73,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     transactionItemTypes,
     categories,
     receipts,
-    ...setFormDefaults("income-form", {
-      transactionItems: [{ id: nanoid() }],
-    }),
+    // ...setFormDefaults("income-form", {
+    //   transactionItems: [{ id: nanoid() }],
+    // }),
   };
 };
 
@@ -135,13 +132,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (shouldNotifyUser) {
       const email = transaction.account.user?.contact.email;
       if (!email) {
-        return Toasts.jsonWithError(
-          { message: "Error notifying subscribers" },
-          {
-            title: "Error notifying subscribers",
-            description: "We couldn't find the account for this transaction. Your transaction was created.",
-          },
-        );
+        return Toasts.dataWithError(null, {
+          message: "Error notifying subscribers",
+          description: "We couldn't find the account for this transaction. Your transaction was created.",
+        });
       }
 
       const org = transaction.org;
@@ -161,17 +155,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
 
     return Toasts.redirectWithSuccess(`/accounts/${transaction.account.id}`, {
-      title: "Success",
+      message: "Success",
       description: `Income of ${formatCentsAsDollars(totalInCents)} added to account ${transaction.account.code}`,
     });
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    let description = "An error occurred while creating the income";
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      description = getPrismaErrorText(error);
-    }
-    return Toasts.jsonWithError({ success: false }, { title: "Error creating income", description });
+    return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
   }
 };
 

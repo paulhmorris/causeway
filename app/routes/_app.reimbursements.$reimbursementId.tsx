@@ -1,14 +1,12 @@
-import { Prisma, ReimbursementRequestStatus } from "@prisma/client";
-import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { MetaFunction, useLoaderData } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { ReimbursementRequestStatus } from "@prisma/client";
+import { ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
 import { IconExternalLink } from "@tabler/icons-react";
 import dayjs from "dayjs";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod";
 import { zfd } from "zod-form-data";
-
 import { PageHeader } from "~/components/common/page-header";
 import { PageContainer } from "~/components/page-container";
 import { Badge } from "~/components/ui/badge";
@@ -20,7 +18,6 @@ import { Separator } from "~/components/ui/separator";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod, TransactionItemType } from "~/lib/constants";
-import { getPrismaErrorText } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { capitalize, formatCentsAsDollars } from "~/lib/utils";
 import { CurrencySchema } from "~/models/schemas";
@@ -169,10 +166,10 @@ export async function action({ request }: ActionFunctionArgs) {
       status: _action,
       orgId,
     });
-    return Toasts.jsonWithInfo(
+    return Toasts.dataWithInfo(
       { reimbursementRequest: rr },
       {
-        title: "The reimbursement request has been reopened and the requester will be notified.",
+        message: "The reimbursement request has been reopened and the requester will be notified.",
         description: "",
       },
     );
@@ -226,15 +223,12 @@ export async function action({ request }: ActionFunctionArgs) {
 
       const balance = account.transactions.reduce((acc, t) => acc + t.amountInCents, 0);
       if (balance < amount) {
-        return Toasts.jsonWithWarning(
-          { message: "Insufficient Funds" },
-          {
-            title: "Insufficient Funds",
-            description: `The reimbursement request couldn't be completed because account ${
-              account.code
-            } has a balance of ${formatCentsAsDollars(balance)}.`,
-          },
-        );
+        return Toasts.dataWithWarning(null, {
+          message: "Insufficient Funds",
+          description: `The reimbursement request couldn't be completed because account ${
+            account.code
+          } has a balance of ${formatCentsAsDollars(balance)}.`,
+        });
       }
 
       await db.$transaction([
@@ -270,26 +264,20 @@ export async function action({ request }: ActionFunctionArgs) {
         orgId,
       });
 
-      return Toasts.jsonWithSuccess(
+      return Toasts.dataWithSuccess(
         { reimbursementRequest: rr },
         {
-          title: "Reimbursement Request Approved",
+          message: "Reimbursement Request Approved",
           description: `The reimbursement request has been approved and account ${account.code} has been adjusted.`,
         },
       );
     } catch (error) {
       console.error(error);
       Sentry.captureException(error);
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        return Toasts.jsonWithError(
-          { message: getPrismaErrorText(error) },
-          { title: "Database Error", description: getPrismaErrorText(error) },
-        );
-      }
-      return Toasts.jsonWithError(
+      return Toasts.dataWithError(
         { message: "An unknown error occurred" },
         {
-          title: "An unknown error occurred",
+          message: "An unknown error occurred",
           description: error instanceof Error ? error.message : "",
         },
       );
@@ -308,10 +296,10 @@ export async function action({ request }: ActionFunctionArgs) {
     orgId,
   });
   const normalizedAction = _action === ReimbursementRequestStatus.REJECTED ? "rejected" : "voided";
-  return Toasts.jsonWithSuccess(
+  return Toasts.dataWithSuccess(
     { reimbursementRequest: rr },
     {
-      title: `Reimbursement request ${normalizedAction}`,
+      message: `Reimbursement request ${normalizedAction}`,
       description: `The reimbursement request has been ${normalizedAction} and the requester will be notified.`,
     },
   );

@@ -1,8 +1,7 @@
-import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { withZod } from "@rvf/zod";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { ActionFunctionArgs, Link, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod";
 dayjs.extend(utc);
@@ -50,9 +49,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   const validator = withZod(z.object({ _action: z.literal("delete") }));
   const result = await validator.validate(await request.formData());
   if (result.error) {
-    return Toasts.jsonWithError(
+    return Toasts.dataWithError(
       { success: false },
-      { title: "Error deleting engagement", description: "Invalid request" },
+      { message: "Error deleting engagement", description: "Invalid request" },
     );
   }
 
@@ -65,23 +64,26 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     // Users can only delete their own engagements
     if (user.isMember) {
       if (engagement.userId !== user.id) {
-        return Toasts.jsonWithError(
+        return Toasts.dataWithError(
           { success: false },
-          { title: "Error deleting engagement", description: "You do not have permission to delete this engagement." },
+          {
+            message: "Error deleting engagement",
+            description: "You do not have permission to delete this engagement.",
+          },
         );
       }
     }
 
     await db.engagement.delete({ where: { id: Number(params.engagementId), orgId } });
     return Toasts.redirectWithSuccess("/engagements", {
-      title: "Engagement deleted",
+      message: "Engagement deleted",
       description: "The engagement has been deleted",
     });
   } catch (error) {
     Sentry.captureException(error);
-    return Toasts.jsonWithError(
+    return Toasts.dataWithError(
       { success: false },
-      { title: "Error deleting engagement", description: "An error occurred" },
+      { message: "Error deleting engagement", description: "An error occurred" },
     );
   }
 };

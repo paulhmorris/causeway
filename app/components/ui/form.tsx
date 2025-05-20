@@ -1,6 +1,6 @@
+import { useField } from "@rvf/react-router";
 import { IconCurrencyDollar } from "@tabler/icons-react";
 import { useId, useState } from "react";
-import { useField } from "remix-validated-form";
 
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";

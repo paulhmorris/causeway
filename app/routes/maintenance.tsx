@@ -1,4 +1,4 @@
-import { redirect } from "@remix-run/node";
+import { redirect } from "react-router";
 
 export function loader() {
   if (!process.env.MAINTENANCE_MODE) {

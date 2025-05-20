@@ -1,9 +1,9 @@
 import { Announcement } from "@prisma/client";
-import { useFetcher } from "@remix-run/react";
+import { ValidatedForm } from "@rvf/react-router";
 import { IconBellFilled, IconClock, IconSelector } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { ValidatedForm } from "remix-validated-form";
+import { useFetcher } from "react-router";
 dayjs.extend(utc);
 
 import { AnnouncementModal } from "~/components/modals/announcement-modal";

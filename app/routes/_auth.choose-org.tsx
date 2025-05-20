@@ -1,10 +1,9 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { redirect, useLoaderData, useSearchParams } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
 import { IconChevronRight } from "@tabler/icons-react";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import { redirect, useLoaderData, useSearchParams } from "react-router";
 import { z } from "zod";
-
 import { AuthCard } from "~/components/auth/auth-card";
 import { BigButton } from "~/components/ui/big-button";
 import { Checkbox } from "~/components/ui/checkbox";
@@ -50,7 +49,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   if (!user.memberships.length) {
     return Toasts.redirectWithError(
       "/login",
-      { title: "Error", description: "You are not a member of any organizations." },
+      { message: "Error", description: "You are not a member of any organizations." },
       {
         headers: {
           "Set-Cookie": await sessionStorage.destroySession(session),

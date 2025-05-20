@@ -1,6 +1,6 @@
-import { useNavigation } from "@remix-run/react";
+import { useIsSubmitting } from "@rvf/react-router";
 import { IconLoader } from "@tabler/icons-react";
-import { useIsSubmitting } from "remix-validated-form";
+import { useNavigation } from "react-router";
 
 import type { ButtonProps } from "~/components/ui/button";
 import { Button } from "~/components/ui/button";

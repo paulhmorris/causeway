@@ -1,4 +1,3 @@
-import { useRouteLoaderData } from "@remix-run/react";
 import {
   IconAlertCircleFilled,
   IconAlertTriangleFilled,
@@ -6,6 +5,7 @@ import {
   IconInfoCircleFilled,
 } from "@tabler/icons-react";
 import { useEffect } from "react";
+import { useRouteLoaderData } from "react-router";
 import { useTheme } from "remix-themes";
 import { Toaster, toast } from "sonner";
 

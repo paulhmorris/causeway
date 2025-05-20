@@ -1,9 +1,8 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { data, useSearchParams } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import { ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { data, useSearchParams } from "react-router";
 import { z } from "zod";
-
 import { AuthCard } from "~/components/auth/auth-card";
 import { ErrorComponent } from "~/components/error-component";
 import { FormField } from "~/components/ui/form";
@@ -67,17 +66,26 @@ export async function action({ request }: ActionFunctionArgs) {
   const { newPassword, token } = result.data;
   const reset = await getPasswordResetByToken(token);
   if (!reset) {
-    return Toasts.jsonWithError({ success: false }, { title: "Token not found", description: "Please try again." });
+    return Toasts.dataWithError(
+      { success: false },
+      { message: "Invalid or expired token", description: "Please try again." },
+    );
   }
 
   // Check expiration
   if (reset.expiresAt < new Date()) {
-    return Toasts.jsonWithError({ success: false }, { title: "Token expired", description: "Please try again." });
+    return Toasts.dataWithError(
+      { success: false },
+      { message: "Invalid or expired token", description: "Please try again." },
+    );
   }
 
   // Check token against param
   if (token !== tokenParam) {
-    return Toasts.jsonWithError({ success: false }, { title: "Invalid token", description: "Please try again." });
+    return Toasts.dataWithError(
+      { success: false },
+      { message: "Invalid or expired tokenn", description: "Please try again." },
+    );
   }
 
   // Check user
@@ -86,7 +94,10 @@ export async function action({ request }: ActionFunctionArgs) {
     include: { contact: true },
   });
   if (!userFromToken) {
-    return Toasts.jsonWithError({ success: false }, { title: "User not found", description: "Please try again." });
+    return Toasts.dataWithError(
+      { success: false },
+      { message: "Invalid or expired token", description: "Please try again." },
+    );
   }
 
   const hashedPassword = await hashPassword(newPassword);
@@ -106,7 +117,7 @@ export async function action({ request }: ActionFunctionArgs) {
   await expirePasswordReset(token);
 
   return Toasts.redirectWithSuccess("/login", {
-    title: `Password ${isReset ? "reset" : "set up"}`,
+    message: `Password ${isReset ? "reset" : "set up"}`,
     description: `Your password has been ${isReset ? "reset" : "set up"}. Login with your new password.`,
   });
 }

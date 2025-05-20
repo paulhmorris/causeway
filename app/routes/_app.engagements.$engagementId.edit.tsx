@@ -1,9 +1,8 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, type MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { setFormDefaults, ValidatedForm, validationError } from "remix-validated-form";
+import { ActionFunctionArgs, LoaderFunctionArgs, useLoaderData, type MetaFunction } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod";
 dayjs.extend(utc);
@@ -69,7 +68,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     engagementTypes,
     contacts,
     contactTypes,
-    ...setFormDefaults("engagement-form", { ...engagement, typeId: engagement.typeId.toString() }),
+    // ...setFormDefaults("engagement-form", { ...engagement, typeId: engagement.typeId.toString() }),
   };
 };
 
@@ -89,7 +88,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     data: result.data,
   });
 
-  return Toasts.redirectWithSuccess(`/engagements/${engagement.id}`, { title: "Engagement updated" });
+  return Toasts.redirectWithSuccess(`/engagements/${engagement.id}`, { message: "Engagement updated" });
 };
 
 export default function EditEngagementPage() {

@@ -1,7 +1,7 @@
-import type { LoaderFunctionArgs } from "@remix-run/node";
-import { Link, useLoaderData, type MetaFunction } from "@remix-run/react";
+import {} from "@rvf/react-router";
 import { IconCoins, IconExclamationCircle, IconUser } from "@tabler/icons-react";
-import { setFormDefaults } from "remix-validated-form";
+import type { LoaderFunctionArgs } from "react-router";
+import { Link, useLoaderData, type MetaFunction } from "react-router";
 import invariant from "tiny-invariant";
 
 import { AccountTransactionsTable } from "~/components/accounts/account-transactions-table";
@@ -89,7 +89,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     return {
       total: total._sum.amountInCents,
       account,
-      ...setFormDefaults("account-form", { ...account }),
+      // ...setFormDefaults("account-form", { ...account }),
     };
   } catch (error) {
     console.error(error);

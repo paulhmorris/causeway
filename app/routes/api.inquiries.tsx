@@ -1,10 +1,9 @@
 import { render } from "@react-email/render";
-import { ActionFunctionArgs, data } from "@remix-run/node";
-import { withZod } from "@remix-validated-form/with-zod";
-import { validationError } from "remix-validated-form";
+import { validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
+import { ActionFunctionArgs, data } from "react-router";
 import { z } from "zod";
 import { zfd } from "zod-form-data";
-
 import { NewInquiryEmail } from "emails/new-inquiry";
 import { sendEmail } from "~/integrations/email.server";
 import { Sentry } from "~/integrations/sentry";
@@ -67,17 +66,17 @@ export async function action({ request }: ActionFunctionArgs) {
       html,
     });
 
-    return Toasts.jsonWithSuccess(
+    return Toasts.dataWithSuccess(
       { success: true, messageId },
-      { title: "Inquiry sent", description: "We'll be in touch soon!" },
+      { message: "Inquiry sent", description: "We'll be in touch soon!" },
     );
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    return Toasts.jsonWithSuccess(
+    return Toasts.dataWithSuccess(
       { success: false, message: JSON.stringify(error) },
       {
-        title: "Error sending email",
+        message: "Error sending email",
         description: error instanceof Error ? error.message : "An unknown error occurred",
       },
     );

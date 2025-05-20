@@ -1,5 +1,5 @@
 import { MembershipRole, Organization, User, UserRole } from "@prisma/client";
-import { Session as RemixSession, SessionData, createCookieSessionStorage, redirect } from "@remix-run/node";
+import { Session as RemixSession, SessionData, createCookieSessionStorage, redirect } from "react-router";
 import { createThemeSessionResolver } from "remix-themes";
 
 import { db } from "~/integrations/prisma.server";

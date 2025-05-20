@@ -11,6 +11,7 @@ node_modules
 .sentryclirc
 .vercel
 .trigger
+.react-router
 /test-results/
 /playwright-report/
 /playwright

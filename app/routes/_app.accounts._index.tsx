@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
-import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react";
+import type { LoaderFunctionArgs, MetaFunction } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import { IconPlus } from "@tabler/icons-react";
 
 import { AccountsTable } from "~/components/accounts/accounts-table";

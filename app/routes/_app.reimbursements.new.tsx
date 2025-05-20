@@ -1,12 +1,11 @@
-import { Prisma, ReimbursementRequestStatus } from "@prisma/client";
+import { ReimbursementRequestStatus } from "@prisma/client";
 import { render } from "@react-email/render";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, type MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import { ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import { useLoaderData } from "react-router";
 import { z } from "zod";
 import { zfd } from "zod-form-data";
-
 import { ReimbursementRequestEmail } from "emails/reimbursement-request";
 import { PageHeader } from "~/components/common/page-header";
 import { ReceiptSelector } from "~/components/common/receipt-selector";
@@ -19,7 +18,6 @@ import { sendEmail } from "~/integrations/email.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod } from "~/lib/constants";
-import { getPrismaErrorText } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { constructOrgMailFrom, constructOrgURL, getToday } from "~/lib/utils";
 import { CurrencySchema } from "~/models/schemas";
@@ -145,22 +143,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     return Toasts.redirectWithSuccess(`/dashboards/${user.isMember ? "staff" : "admin"}`, {
-      title: "Reimbursement request submitted",
+      message: "Reimbursement request submitted",
       description: "Your request will be processed as soon as possible.",
     });
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      return Toasts.jsonWithError(
-        { message: getPrismaErrorText(error) },
-        { title: "Database Error", description: getPrismaErrorText(error) },
-      );
-    }
-    return Toasts.jsonWithError(
-      { message: "An unknown error occurred" },
-      { title: "An unknown error occurred", description: error instanceof Error ? error.message : "" },
-    );
+    return Toasts.dataWithError({ message: "An unknown error occurred" }, { message: "An unknown error occurred" });
   }
 };
 

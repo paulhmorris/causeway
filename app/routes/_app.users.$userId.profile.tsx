@@ -1,11 +1,10 @@
 import { MembershipRole, UserRole } from "@prisma/client";
-import type { ActionFunctionArgs } from "@remix-run/node";
-import { Link, useRouteLoaderData } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import { ValidatedForm, validationError } from "@rvf/react-router";
+import { withZod } from "@rvf/zod";
+import type { ActionFunctionArgs } from "react-router";
+import { Link, useRouteLoaderData } from "react-router";
 import { z } from "zod";
 import { zfd } from "zod-form-data";
-
 import { ErrorComponent } from "~/components/error-component";
 import { Button } from "~/components/ui/button";
 import { ButtonGroup } from "~/components/ui/button-group";
@@ -57,9 +56,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (authorizedUser.isMember) {
     // Users can only edit themselves
     if (authorizedUser.id !== id) {
-      return Toasts.jsonWithWarning(
-        { message: "You do not have permission to edit this user." },
-        { title: "Permission denied", description: "You do not have permission to edit this user." },
+      return Toasts.dataWithWarning(
+        null,
+        { message: "Permission denied", description: "You do not have permission to edit this user." },
         { status: 403 },
       );
     }
@@ -70,18 +69,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       username !== userToBeUpdated.username ||
       accountId !== userToBeUpdated.accountId
     ) {
-      return Toasts.jsonWithWarning(
-        { message: "You do not have permission to edit this field." },
-        { title: "Permission denied", description: "You do not have permission to edit this field." },
+      return Toasts.dataWithWarning(
+        null,
+        { message: "Permission denied", description: "You do not have permission to edit this field." },
         { status: 403 },
       );
     }
   }
 
   if (authorizedUser.systemRole !== UserRole.SUPERADMIN && role === UserRole.SUPERADMIN) {
-    return Toasts.jsonWithWarning(
-      { message: "You do not have permission to create a Super Admin." },
-      { title: "Permission denied", description: "You do not have permission to create a Super Admin." },
+    return Toasts.dataWithWarning(
+      null,
+      { message: "Permission denied", description: "You do not have permission to create a Super Admin." },
       { status: 403 },
     );
   }
@@ -116,7 +115,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     },
   });
 
-  return Toasts.jsonWithSuccess({ user: updatedUser }, { title: "User updated", description: "Great job." });
+  return Toasts.dataWithSuccess({ user: updatedUser }, { message: "User updated", description: "Great job." });
 };
 
 export default function UserDetailsPage() {

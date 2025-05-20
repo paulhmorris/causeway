@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { Link } from "@remix-run/react";
+import { Link } from "react-router";
 import { ColumnDef } from "@tanstack/react-table";
 
 import { DataTable } from "~/components/ui/data-table/data-table";
