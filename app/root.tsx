@@ -49,9 +49,6 @@ export const shouldRevalidate = ({ currentUrl, nextUrl, defaultShouldRevalidate 
 };
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  if (1 === 1) {
-    throw data("Error!", { status: 500 });
-  }
   if (process.env.MAINTENANCE_MODE && new URL(request.url).pathname !== "/maintenance") {
     return redirect("/maintenance", { status: 307 });
   }
