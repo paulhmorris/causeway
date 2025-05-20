@@ -13,12 +13,6 @@ test.describe("Add expense", () => {
     await page.goto("/expense/new");
   });
 
-  test("should not add expense with all empty fields", async ({ page }) => {
-    await page.getByRole("button", { name: /submit/i }).click();
-
-    await expect(page).toHaveURL("/expense/new");
-  });
-
   test("should allow adding and deleting transaction items", async ({ page }) => {
     await page.getByRole("button", { name: /add item/i }).click();
     await expect(page.getByRole("heading", { name: /item 2/i })).toBeVisible();

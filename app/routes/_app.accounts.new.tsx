@@ -111,8 +111,8 @@ export default function NewAccountPage() {
       <PageHeader title="New Account" />
       <PageContainer>
         <ValidatedForm validator={validator} method="post" className="space-y-4 sm:max-w-md">
-          <FormField label="Code" id="name" name="code" required />
-          <FormField label="Description" id="name" name="description" required />
+          <FormField label="Code" id="code" name="code" required />
+          <FormField label="Description" id="description" name="description" required />
           <FormSelect
             required
             label="Type"
