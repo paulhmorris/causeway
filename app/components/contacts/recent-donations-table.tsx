@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
-import { Link } from "react-router";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { Link } from "react-router";
 dayjs.extend(utc);
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";

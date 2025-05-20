@@ -1,5 +1,4 @@
-import { LoaderFunctionArgs } from "react-router";
-import { Outlet, ShouldRevalidateFunctionArgs } from "react-router";
+import { LoaderFunctionArgs , Outlet, ShouldRevalidateFunctionArgs } from "react-router";
 
 import { DesktopNav } from "~/components/desktop-nav";
 import { MobileNav } from "~/components/mobile-nav";

@@ -1,4 +1,3 @@
-import { useLocation, useSearchParams } from "react-router";
 import { RankingInfo } from "@tanstack/match-sorter-utils";
 import {
   ColumnDef,
@@ -18,6 +17,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useState } from "react";
+import { useLocation, useSearchParams } from "react-router";
 import { ClientOnly } from "remix-utils/client-only";
 import { useLocalStorage } from "usehooks-ts";
 

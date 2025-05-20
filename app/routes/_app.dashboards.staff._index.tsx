@@ -1,7 +1,7 @@
-import { type LoaderFunctionArgs, type MetaFunction } from "react-router";
-import { useLoaderData } from "react-router";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { useLoaderData } from "react-router";
 dayjs.extend(utc);
 
 import { AnnouncementCard } from "~/components/admin/announcement-card";

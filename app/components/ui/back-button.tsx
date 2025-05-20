@@ -1,5 +1,5 @@
-import { Link, LinkProps } from "react-router";
 import { IconArrowLeft } from "@tabler/icons-react";
+import { Link, LinkProps } from "react-router";
 
 export function BackButton({ to }: { to: LinkProps["to"] }) {
   return (

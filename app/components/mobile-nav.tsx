@@ -1,6 +1,6 @@
-import { NavLink } from "react-router";
 import { IconMenuDeep } from "@tabler/icons-react";
 import { useState, type ComponentPropsWithoutRef } from "react";
+import { NavLink } from "react-router";
 
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "~/components/ui/dialog";
 import { Separator } from "~/components/ui/separator";

@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
+import { IconPlus } from "@tabler/icons-react";
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { Link, useLoaderData } from "react-router";
-import { IconPlus } from "@tabler/icons-react";
 
 import { AccountsTable } from "~/components/accounts/accounts-table";
 import { PageHeader } from "~/components/common/page-header";

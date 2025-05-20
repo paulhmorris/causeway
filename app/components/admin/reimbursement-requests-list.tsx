@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
-import { Link } from "react-router";
 import dayjs from "dayjs";
+import { Link } from "react-router";
 
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";

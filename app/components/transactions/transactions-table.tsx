@@ -1,8 +1,8 @@
 import { Prisma } from "@prisma/client";
-import { Link } from "react-router";
 import { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { Link } from "react-router";
 dayjs.extend(utc);
 
 import { DataTable } from "~/components/ui/data-table/data-table";

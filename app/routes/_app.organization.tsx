@@ -1,6 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { LoaderFunctionArgs, MetaFunction } from "react-router";
-import { NavLink, Outlet, useLoaderData } from "react-router";
+import { LoaderFunctionArgs, MetaFunction , NavLink, Outlet, useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
 import { Separator } from "~/components/ui/separator";

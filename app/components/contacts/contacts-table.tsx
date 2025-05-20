@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
-import { Link } from "react-router";
 import { ColumnDef } from "@tanstack/react-table";
+import { Link } from "react-router";
 
 import { DataTable } from "~/components/ui/data-table/data-table";
 import { DataTableColumnHeader } from "~/components/ui/data-table/data-table-column-header";

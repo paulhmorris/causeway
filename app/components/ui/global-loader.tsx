@@ -1,6 +1,6 @@
-import { useFetchers, useNavigation } from "react-router";
 import NProgress from "nprogress";
 import { useEffect } from "react";
+import { useFetchers, useNavigation } from "react-router";
 
 export function GlobalLoader() {
   const navigation = useNavigation();

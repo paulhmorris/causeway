@@ -1,9 +1,9 @@
 import { Prisma } from "@prisma/client";
-import type { LoaderFunctionArgs, MetaFunction, SerializeFrom } from "react-router";
-import { Link, useLoaderData } from "react-router";
 import { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { Link, useLoaderData } from "react-router";
+import type { LoaderFunctionArgs, MetaFunction, SerializeFrom } from "react-router";
 dayjs.extend(utc);
 
 import { PageHeader } from "~/components/common/page-header";

@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
-import { Link } from "react-router";
 import { IconAddressBook, IconMail, IconPhone } from "@tabler/icons-react";
+import { Link } from "react-router";
 
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";

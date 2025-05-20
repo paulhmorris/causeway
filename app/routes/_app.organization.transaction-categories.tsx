@@ -4,6 +4,7 @@ import { IconMinus, IconPlus } from "@tabler/icons-react";
 import { nanoid } from "nanoid";
 import { ActionFunctionArgs, LoaderFunctionArgs, useFetcher, useLoaderData } from "react-router";
 import { z } from "zod";
+
 import { Button } from "~/components/ui/button";
 import { FormField } from "~/components/ui/form";
 import { Separator } from "~/components/ui/separator";
@@ -128,12 +129,12 @@ export default function OrganizationTransactionCategories() {
                       hideLabel
                       name={`${prefix}.name`}
                       placeholder="Category name..."
-                      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                       
                       readOnly={i.defaultValue._count ? i.defaultValue._count.transactions > 0 : false}
                     />
                   </div>
                   <div className="col-span-1">
-                    {/* eslint-disable-next-line @typescript-eslint/no-unnecessary-condition */}
+                    { }
                     {!i.defaultValue._count || i.defaultValue._count?.transactions === 0 ? (
                       <Button variant="outline" size="icon" onClick={() => remove(index)} type="button">
                         <IconMinus className="size-5" />

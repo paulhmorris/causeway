@@ -1,5 +1,4 @@
-import { LoaderFunctionArgs } from "react-router";
-import { MetaFunction, useLoaderData } from "react-router";
+import { LoaderFunctionArgs , MetaFunction, useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
 import { PageContainer } from "~/components/page-container";

@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
-import { Link } from "react-router";
 import { IconChevronRight } from "@tabler/icons-react";
+import { Link } from "react-router";
 
 import { normalizeEnum } from "~/lib/utils";
 

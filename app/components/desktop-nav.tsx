@@ -1,6 +1,6 @@
-import { Form, Link, NavLink } from "react-router";
 import { IconHome, IconSelector, IconWorld } from "@tabler/icons-react";
 import { type ComponentPropsWithoutRef } from "react";
+import { Form, Link, NavLink } from "react-router";
 
 import {
   DropdownMenu,
