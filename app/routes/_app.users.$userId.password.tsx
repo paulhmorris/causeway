@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { ActionFunctionArgs, json, LoaderFunctionArgs } from "@remix-run/node";
+import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { withZod } from "@remix-validated-form/with-zod";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
@@ -41,7 +41,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     throw unauthorized("You do not have permission to view this page");
   }
 
-  return json({});
+  return null;
 };
 
 export async function action({ params, request }: ActionFunctionArgs) {

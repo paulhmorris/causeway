@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import type { LoaderFunctionArgs, MetaFunction, SerializeFrom } from "@remix-run/node";
-import { json, Link, useLoaderData } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
 import { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -85,7 +85,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       orderBy: [{ date: "desc" }, { account: { code: "asc" } }],
     }),
   ]);
-  return json({ rowCount, transactions });
+  return { rowCount, transactions };
 }
 
 export default function TransactionsIndexPage() {

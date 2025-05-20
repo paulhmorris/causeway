@@ -20,7 +20,7 @@ export const PhoneNumberSchema = z
 export const EmailSchema = z.string().email({ message: "Invalid email address" });
 
 export const CurrencySchema = z.preprocess(
-  (v) => (typeof v === "string" && v[0] === "$" ? v.slice(1) : v),
+  (v) => (typeof v === "string" && v.startsWith("$") ? v.slice(1) : v),
   z.coerce
     .number({ invalid_type_error: "Must be a number", required_error: "Amount required" })
     .multipleOf(0.01, { message: "Must be multiple of $0.01" })

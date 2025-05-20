@@ -90,7 +90,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       data: {
         orgId,
         amountInCents: totalInCents,
-        contactId: contactId || undefined,
+        contactId: contactId ?? undefined,
         transactionItems: { createMany: { data: trxItems } },
         receipts: receiptIds.length > 0 ? { connect: receiptIds.map((id) => ({ id })) } : undefined,
         ...rest,

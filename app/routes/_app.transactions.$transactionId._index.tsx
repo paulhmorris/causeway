@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
@@ -254,15 +253,7 @@ export default function TransactionDetailsPage() {
   );
 }
 
-function DetailItem({
-  label,
-  value,
-  children,
-}: {
-  label: string;
-  value?: Prisma.JsonValue;
-  children?: React.ReactNode;
-}) {
+function DetailItem({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) {
   return (
     <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
       <dt className="text-sm font-semibold capitalize">{label}</dt>

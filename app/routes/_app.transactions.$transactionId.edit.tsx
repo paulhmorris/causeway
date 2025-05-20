@@ -77,7 +77,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       where: { id, orgId },
       data: {
         date: new Date(date),
-        description: description || undefined,
+        description: description ?? undefined,
         categoryId: +categoryId,
       },
     });
@@ -202,20 +202,12 @@ export default function TransactionDetailsPage() {
   );
 }
 
-function DetailItem({
-  label,
-  value,
-  children,
-}: {
-  label: string;
-  value?: Prisma.JsonValue;
-  children?: React.ReactNode;
-}) {
+function DetailItem({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) {
   return (
     <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
       <dt className="text-sm font-semibold capitalize">{label}</dt>
       <dd className={cn("mt-1 text-sm text-muted-foreground sm:col-span-2 sm:mt-0")}>
-        {value ? String(value) : undefined}
+        {value ?? null}
         {children}
       </dd>
     </div>

@@ -1,4 +1,4 @@
-import { ActionFunctionArgs, json, LoaderFunctionArgs } from "@remix-run/node";
+import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { IconMinus, IconPlus } from "@tabler/icons-react";
@@ -30,12 +30,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
     orderBy: { transactions: { _count: "asc" } },
   });
 
-  return json({
+  return {
     categories,
     ...setFormDefaults("categories-form", {
       categories: categories.filter((c) => Boolean(c.orgId)),
     }),
-  });
+  };
 }
 
 const validator = withZod(

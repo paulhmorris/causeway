@@ -64,7 +64,7 @@ async function flashMessage(
   headers?: ResponseInit["headers"],
   customSession?: SessionStorage,
 ) {
-  const sessionToUse = customSession ? customSession : sessionStorage;
+  const sessionToUse = customSession ?? sessionStorage;
   const session = await sessionToUse.getSession();
   session.flash(FLASH_SESSION, flash);
   const cookie = await sessionToUse.commitSession(session);
@@ -135,7 +135,7 @@ export async function getToast(
   request: Request,
   customSession?: SessionStorage,
 ): Promise<{ toast: ToastMessage | undefined; headers: Headers }> {
-  const sessionToUse = customSession ? customSession : sessionStorage;
+  const sessionToUse = customSession ?? sessionStorage;
   const cookie = request.headers.get("Cookie");
   const session = await sessionToUse.getSession(cookie);
   const result = flashSessionValuesSchema.safeParse(session.get(FLASH_SESSION));

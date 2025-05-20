@@ -1,5 +1,5 @@
 import { ExcelBuilder, ExcelSchemaBuilder } from "@chronicstone/typed-xlsx";
-import { json, LoaderFunctionArgs } from "@remix-run/node";
+import { data, LoaderFunctionArgs } from "@remix-run/node";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 
@@ -21,7 +21,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const parsedParams = TransactionsReportSchema.safeParse({ trxStartDate, trxEndDate });
   if (!parsedParams.success) {
-    return json({ message: fromZodError(parsedParams.error).toString() }, { status: 400 });
+    return data({ message: fromZodError(parsedParams.error).toString() }, { status: 400 });
   }
 
   const transactionItems = await db.transactionItem.findMany({
@@ -105,11 +105,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
     .column("Account Description", { key: "transaction.account.description" })
     .column("Organization", {
       key: "transaction.contact",
-      transform: (c) => (c && c.organizationName ? c.organizationName : ""),
+      transform: (c) => c?.organizationName ?? "",
     })
     .column("Contact", {
       key: "transaction.contact",
-      transform: (c) => ((c && c.firstName) || c?.lastName ? `${c.firstName} ${c.lastName}` : "N/A"),
+      transform: (c) => (c?.firstName || c?.lastName ? `${c.firstName} ${c.lastName}` : "N/A"),
     })
     .build();
 

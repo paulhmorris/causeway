@@ -1,5 +1,4 @@
 // TODO: This needs to be updated for multi-tenancy, in the case that a user has multiple orgs they should probably receive multiple emails per org.
-/* eslint-disable @typescript-eslint/require-await */
 import { render } from "@react-email/render";
 import { logger, schedules } from "@trigger.dev/sdk/v3";
 

@@ -51,7 +51,7 @@ export async function action({ request }: ActionFunctionArgs) {
       const expiry = expiresAt ? dayjs(expiresAt).utc().endOf("day") : undefined;
       const endOfToday = dayjs().utc().endOf("day");
 
-      if (expiry && expiry.isBefore(endOfToday)) {
+      if (expiry?.isBefore(endOfToday)) {
         return validationError({
           fieldErrors: {
             expiresAt: "The expiration date must be in the future.",
@@ -81,7 +81,7 @@ export async function action({ request }: ActionFunctionArgs) {
       const expiry = expiresAt ? dayjs(expiresAt).utc().endOf("day") : undefined;
       const endOfToday = dayjs().utc().endOf("day");
 
-      if (expiry && expiry.isBefore(endOfToday)) {
+      if (expiry?.isBefore(endOfToday)) {
         return validationError({
           fieldErrors: {
             expiresAt: "The expiration date must be in the future.",

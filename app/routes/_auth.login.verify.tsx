@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { json, redirect } from "@remix-run/node";
+import { redirect } from "@remix-run/node";
 import { MetaFunction, useSearchParams } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { ValidatedForm, validationError } from "remix-validated-form";
@@ -33,7 +33,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return redirect("/");
   }
 
-  return json({});
+  return null;
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -85,7 +85,7 @@ export const meta: MetaFunction = () => [{ title: "Verification Code" }];
 
 export default function VerifyPage() {
   const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/";
+  const redirectTo = searchParams.get("redirectTo") ?? "/";
 
   return (
     <AuthCard>
@@ -98,7 +98,7 @@ export default function VerifyPage() {
           type="email"
           autoComplete="email"
           defaultValue={
-            process.env.NODE_ENV === "development" ? "paulh.morris@gmail.com" : searchParams.get("email") || ""
+            process.env.NODE_ENV === "development" ? "paulh.morris@gmail.com" : (searchParams.get("email") ?? "")
           }
           required
         />

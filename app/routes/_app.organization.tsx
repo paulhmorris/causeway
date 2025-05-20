@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { json, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
+import { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { NavLink, Outlet, useLoaderData } from "@remix-run/react";
 
 import { PageHeader } from "~/components/common/page-header";
@@ -16,7 +16,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   try {
     const org = await db.organization.findUniqueOrThrow({ where: { id: orgId } });
-    return json({ org });
+    return { org };
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);

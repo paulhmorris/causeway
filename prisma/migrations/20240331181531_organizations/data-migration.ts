@@ -7,14 +7,12 @@ async function main() {
     async (tx) => {
       // Get the default organization
       let defaultOrg = await tx.organization.findFirst();
-      if (!defaultOrg) {
-        defaultOrg = await tx.organization.create({
-          data: {
-            name: "Alliance 436",
-            host: "alliance436.org",
-          },
-        });
-      }
+      defaultOrg ??= await tx.organization.create({
+        data: {
+          name: "Alliance 436",
+          host: "alliance436.org",
+        },
+      });
 
       const users = await tx.user.findMany({
         select: {

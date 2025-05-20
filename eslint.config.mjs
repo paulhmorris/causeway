@@ -31,7 +31,9 @@ export default tseslint.config(
   {
     languageOptions: {
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: ["*.config.js"],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -53,9 +55,10 @@ export default tseslint.config(
       },
     },
     rules: {
+      "no-throw-literal": "off",
+      "@typescript-eslint/only-throw-error": "off",
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unsafe-enum-comparison": "off",
-      "no-throw-literal": "off",
       "@typescript-eslint/consistent-type-definitions": ["off"],
       "@typescript-eslint/array-type": ["error", { default: "generic" }],
       "@typescript-eslint/no-unused-vars": ["error", { varsIgnorePattern: "^_", argsIgnorePattern: "^_" }],

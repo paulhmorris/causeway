@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { json, redirect } from "@remix-run/node";
+import { redirect } from "@remix-run/node";
 import { useSearchParams } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { ValidatedForm, validationError } from "remix-validated-form";
@@ -30,7 +30,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return redirect("/");
   }
 
-  return json({});
+  return null;
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -83,7 +83,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   await generateVerificationCode(user.id);
   const url = new URL("/login/verify", request.url);
   url.searchParams.set("email", email);
-  url.searchParams.set("redirectTo", redirectTo || "/");
+  url.searchParams.set("redirectTo", redirectTo ?? "/");
   return redirect(url.toString());
 };
 
@@ -91,7 +91,7 @@ export const meta: MetaFunction = () => [{ title: "Login" }];
 
 export default function LoginPage() {
   const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/";
+  const redirectTo = searchParams.get("redirectTo") ?? "/";
 
   return (
     <AuthCard>

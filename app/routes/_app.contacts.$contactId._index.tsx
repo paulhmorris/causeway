@@ -159,9 +159,7 @@ export default function ContactDetailsPage() {
       <PageHeader title="View Contact">
         {canDelete ? (
           <ConfirmDestructiveModal
-            description={`This action cannot be undone. This will delete ${contact.firstName} ${
-              contact.lastName ? contact.lastName : ""
-            } and all associated engagements. Assigned users will be unassigned.`}
+            description={`This action cannot be undone. This will delete ${contact.firstName} ${contact.lastName ?? ""} and all associated engagements. Assigned users will be unassigned.`}
           />
         ) : null}
       </PageHeader>

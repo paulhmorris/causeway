@@ -89,7 +89,7 @@ class Session implements ISessionService {
 
     return {
       ...user,
-      role: currentMembership?.role || MembershipRole.MEMBER,
+      role: currentMembership?.role ?? MembershipRole.MEMBER,
       systemRole: user.role,
       org: org ?? null,
     };

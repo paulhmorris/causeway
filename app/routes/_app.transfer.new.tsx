@@ -87,7 +87,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           ...rest,
           orgId,
           categoryId: TransactionCategory.Internal_Transfer_Loss,
-          description: description ? description : `Transfer to ${toAccountId}`,
+          description: description ?? `Transfer to ${toAccountId}`,
           accountId: fromAccountId,
           amountInCents: -1 * amountInCents,
           transactionItems: {
@@ -105,7 +105,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           ...rest,
           orgId,
           categoryId: TransactionCategory.Internal_Transfer_Gain,
-          description: description ? description : `Transfer from ${toAccountId}`,
+          description: description ?? `Transfer from ${toAccountId}`,
           accountId: toAccountId,
           amountInCents: amountInCents,
           transactionItems: {

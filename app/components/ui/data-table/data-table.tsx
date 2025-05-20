@@ -58,8 +58,8 @@ export function DataTable<TData>({ data, columns, facets, serverPagination, rowC
   const [search, setSearch] = useSearchParams();
 
   const defaultPaginationState: PaginationState = {
-    pageIndex: Number(search.get("page") || 0),
-    pageSize: Number(search.get("pageSize") || DEFAULT_PAGE_SIZE),
+    pageIndex: Number(search.get("page") ?? 0),
+    pageSize: Number(search.get("pageSize") ?? DEFAULT_PAGE_SIZE),
   };
   const [pagination, setPagination] = useState<PaginationState>(defaultPaginationState);
 

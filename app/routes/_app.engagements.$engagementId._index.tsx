@@ -13,6 +13,7 @@ import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "~/components/ui/card";
 import { db } from "~/integrations/prisma.server";
+import { Sentry } from "~/integrations/sentry";
 import { notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { SessionService } from "~/services.server/session";
@@ -77,6 +78,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       description: "The engagement has been deleted",
     });
   } catch (error) {
+    Sentry.captureException(error);
     return Toasts.jsonWithError(
       { success: false },
       { title: "Error deleting engagement", description: "An error occurred" },

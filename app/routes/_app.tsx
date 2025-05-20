@@ -1,4 +1,4 @@
-import { LoaderFunctionArgs, json } from "@remix-run/node";
+import { LoaderFunctionArgs } from "@remix-run/node";
 import { Outlet, ShouldRevalidateFunctionArgs } from "@remix-run/react";
 
 import { DesktopNav } from "~/components/desktop-nav";
@@ -25,12 +25,11 @@ export const shouldRevalidate = ({ currentUrl, nextUrl, defaultShouldRevalidate 
 
 export async function loader({ request }: LoaderFunctionArgs) {
   await SessionService.requireOrgId(request);
-  return json({});
+  return null;
 }
 
 export default function AppLayout() {
   return (
-    // eslint-disable-next-line react/no-unknown-property
     <div vaul-drawer-wrapper="" className="mx-auto flex min-h-dvh w-full flex-col bg-background md:flex-row">
       <MobileNav />
       <DesktopNav />

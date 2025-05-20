@@ -9,6 +9,7 @@ export function SubmitButton(props: ButtonProps & { formId?: string }) {
   const { formId, ...rest } = props;
   const navigation = useNavigation();
   const isSubmitting = useIsSubmitting(formId);
+  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   const isDisabled = props.disabled || isSubmitting || navigation.state === "submitting";
 
   return (

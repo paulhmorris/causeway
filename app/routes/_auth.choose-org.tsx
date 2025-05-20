@@ -112,7 +112,7 @@ export const meta: MetaFunction = () => [{ title: "Choose Organization" }];
 export default function LoginPage() {
   const { orgs } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/";
+  const redirectTo = searchParams.get("redirectTo") ?? "/";
 
   return (
     <AuthCard>
