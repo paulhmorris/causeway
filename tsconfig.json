@@ -1,7 +1,7 @@
 {
-  "include": ["env.d.ts", "**/*.ts", "**/*.tsx", "**/*.mts"],
+  "include": ["env.d.ts", "**/*.ts", "**/*.tsx", "**/*.mjs"],
   "compilerOptions": {
-    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "types": ["vitest/globals", "@remix-run/node", "vite/client"],
     "isolatedModules": true,
     "esModuleInterop": true,

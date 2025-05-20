@@ -1,4 +1,5 @@
-/** @type {import("prettier").Options} */
+import { type Config } from "prettier";
+
 export default {
   arrowParens: "always",
   bracketSameLine: false,
@@ -15,5 +16,6 @@ export default {
   singleQuote: false,
   tabWidth: 2,
   useTabs: false,
+  trailingComma: "all",
   plugins: ["prettier-plugin-tailwindcss"],
-};
+} satisfies Config;

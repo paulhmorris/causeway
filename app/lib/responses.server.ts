@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/only-throw-error */
 /* eslint-disable prefer-const */
 import { Prisma } from "@prisma/client";
 import { data, redirect } from "@remix-run/node";
