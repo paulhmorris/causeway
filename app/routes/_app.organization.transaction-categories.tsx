@@ -23,7 +23,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         select: { transactions: true },
       },
     },
-    orderBy: { transactions: { _count: "asc" } },
+    orderBy: { transactions: { _count: "desc" } },
   });
 
   return { categories };
@@ -55,6 +55,8 @@ export async function action({ request }: ActionFunctionArgs) {
   const create = categories.filter((t) => t.id === undefined) as Array<{ name: string }>;
   const keep = categories.filter((t) => t.id !== undefined) as Array<{ id: number; name: string }>;
   const _delete = current.filter((t) => !keep.some((k) => k.id === t.id)).map((t) => t.id);
+
+  console.debug({ create, keep, _delete });
 
   try {
     await db.$transaction([
@@ -168,7 +170,7 @@ export default function OrganizationTransactionCategories() {
               <IconPlus className="size-5" />
             </Button>
           </div>
-          <Button className="mt-4" type="submit">
+          <Button className="mt-4" type="submit" disabled={!form.formState.isDirty}>
             Save
           </Button>
         </form>

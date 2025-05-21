@@ -116,14 +116,14 @@ export const FormField = forwardRef<HTMLInputElement, FieldProps<string>>(
 );
 
 interface FormTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  name: string;
+  scope: FormScope<string | undefined>;
   label: string;
   description?: string;
   hideLabel?: boolean;
 }
-export function FormTextarea({ hideLabel = false, name, label, className, description, ...props }: FormTextareaProps) {
+export function FormTextarea({ hideLabel = false, scope, label, className, description, ...props }: FormTextareaProps) {
   const fallbackId = useId();
-  const field = useField(name);
+  const field = useField(scope);
   const error = field.error();
   const id = props.id ?? fallbackId;
 
@@ -148,13 +148,14 @@ export function FormTextarea({ hideLabel = false, name, label, className, descri
         </span>
       </Label>
       <Textarea
-        id={id}
-        aria-invalid={error ? true : props["aria-invalid"]}
-        aria-errormessage={error ? `${id}-error` : props["aria-errormessage"]}
-        aria-describedby={description ? `${id}-description` : props["aria-describedby"]}
-        className={cn(error && "border-destructive focus-visible:ring-destructive/50", className)}
-        {...field.getInputProps()}
-        {...props}
+        {...field.getInputProps({
+          id: id,
+          "aria-invalid": error ? true : props["aria-invalid"],
+          "aria-errormessage": error ? `${id}-error` : props["aria-errormessage"],
+          "aria-describedby": description ? `${id}-description` : props["aria-describedby"],
+          className: cn(error && "border-destructive focus-visible:ring-destructive/50", className),
+          ...props,
+        })}
       />
       <FieldDescription id={id} description={description} />
       <FieldError id={id} error={error} />
@@ -163,7 +164,7 @@ export function FormTextarea({ hideLabel = false, name, label, className, descri
 }
 
 export interface FormSelectProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  name: string;
+  scope: FormScope<string | undefined>;
   label: string;
   placeholder: string;
   description?: string;
@@ -176,9 +177,9 @@ export interface FormSelectProps extends React.ButtonHTMLAttributes<HTMLButtonEl
 }
 
 export function FormSelect(props: FormSelectProps) {
-  const { name, label, placeholder, options, hideLabel, divProps, ...rest } = props;
-  const field = useField(name);
-  const { onChange, ...input } = field.getInputProps({});
+  const { scope, label, placeholder, options, hideLabel, divProps, ...rest } = props;
+  const field = useField(scope);
+  const { onChange, ...input } = field.getControlProps();
   const fallbackId = useId();
   const error = field.error();
   const id = props.id ?? fallbackId;

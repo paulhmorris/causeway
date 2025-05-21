@@ -1,4 +1,5 @@
 import { type Contact, type ContactType as PContactType } from "@prisma/client";
+import { FormScope } from "@rvf/react-router";
 
 import { FormSelect, FormSelectProps } from "~/components/ui/form";
 import { SelectGroup, SelectItem, SelectLabel } from "~/components/ui/select";
@@ -6,13 +7,14 @@ import { ContactType } from "~/lib/constants";
 
 export function ContactDropdown(
   props: {
+    scope: FormScope<string | undefined>;
     types: Array<PContactType>;
     contacts: Array<Contact>;
-  } & Omit<FormSelectProps, "placeholder">,
+  } & Omit<FormSelectProps, "name" | "placeholder">,
 ) {
-  const { types, contacts, name, label, ...rest } = props;
+  const { types, contacts, label, scope, ...rest } = props;
   return (
-    <FormSelect name={name} label={label} placeholder="Select contact" {...rest}>
+    <FormSelect scope={scope} label={label} placeholder="Select contact" {...rest}>
       {contacts.length === 0 ? (
         // @ts-expect-error see https://github.com/radix-ui/primitives/issues/1569#issuecomment-1567414323
         <SelectItem value={null} disabled>
