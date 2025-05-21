@@ -1,13 +1,11 @@
-import { parseFormData, useFieldArray, useForm, validationError } from "@rvf/react-router";
+import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import { IconMinus, IconPlus } from "@tabler/icons-react";
-import { nanoid } from "nanoid";
 import { ActionFunctionArgs, LoaderFunctionArgs, useFetcher, useLoaderData } from "react-router";
 import { z } from "zod";
 
 import { Button } from "~/components/ui/button";
 import { FormField } from "~/components/ui/form";
 import { Separator } from "~/components/ui/separator";
-import { SubmitButton } from "~/components/ui/submit-button";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
@@ -36,6 +34,7 @@ const schema = z.object({
     z.object({
       id: z.coerce.number().optional(),
       name: z.string().max(255).nonempty({ message: "Name is required" }),
+      _count: z.object({ transactions: z.number() }).optional(),
     }),
   ),
 });
@@ -100,13 +99,11 @@ export default function OrganizationTransactionCategories() {
       categories: categories.filter((c) => Boolean(c.orgId)),
     },
   });
-  // const [items, { push, remove }] = useFieldArray(form.scope("categories"));
-  const field = useFieldArray(form.scope("categories"));
 
   return (
     <>
       <h2 className="sr-only font-semibold">Edit Transaction Categories</h2>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-muted-foreground text-sm">
         Create any number of custom transaction categories for your organization. Defaults can&apos;t be changed. If a
         category already has transactions associated with it, you can&apos;t delete it.
       </p>
@@ -114,31 +111,39 @@ export default function OrganizationTransactionCategories() {
         <form {...form.getFormProps()} method="PUT" className="max-w-sm">
           <span className="text-sm font-medium">Name</span>
           <ul className="flex flex-col gap-y-4">
-            {field.map((key, item, index) => {
+            {form.array("categories").map((key, item, index) => {
               const prefix = `categories[${index}]`;
-              const id = categories.find((c) => c.id === item.defaultValue)?.id;
+              const defaultValue = item.defaultValue();
+              const id = categories.find((c) => c.id === defaultValue.id)?.id;
+              const count = defaultValue._count;
+              const trxCount = count?.transactions ?? 0;
 
               return (
                 <li key={key} className="grid grid-cols-7 gap-x-2">
                   <div className="col-span-6">
-                    {id ? <input type="hidden" name={`${prefix}.id`} value={item.defaultValue.id} /> : null}
+                    {id ? <input type="hidden" name={`${prefix}.id`} value={id} /> : null}
                     <FormField
                       label="Name"
                       hideLabel
-                      name={`${prefix}.name`}
+                      scope={item.scope("name")}
                       placeholder="Category name..."
-                      readOnly={item.defaultValue._count ? item.defaultValue._count.transactions > 0 : false}
+                      readOnly={count ? trxCount > 0 : false}
                     />
                   </div>
                   <div className="col-span-1">
                     {}
-                    {!item.defaultValue._count || item.defaultValue._count?.transactions === 0 ? (
-                      <Button variant="outline" size="icon" onClick={() => remove(index)} type="button">
+                    {!count || trxCount === 0 ? (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => form.array("categories").remove(index)}
+                        type="button"
+                      >
                         <IconMinus className="size-5" />
                       </Button>
                     ) : (
                       <div className="grid size-10 place-items-center">
-                        <span className="font-medium text-primary">{item.defaultValue._count.transactions}</span>
+                        <span className="text-primary font-medium">{trxCount}</span>
                       </div>
                     )}
                   </div>
@@ -147,23 +152,29 @@ export default function OrganizationTransactionCategories() {
             })}
           </ul>
           <div className="mt-2 flex items-center gap-x-2">
-            <Button variant="outline" size="icon" onClick={() => push({ id: nanoid() })} type="button">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={async () => {
+                const nextCategoryIndex = form.array("categories").length();
+                await form.array("categories").push({ id: nextCategoryIndex, name: "" });
+              }}
+              type="button"
+            >
               <IconPlus className="size-5" />
             </Button>
           </div>
-          <SubmitButton formId="categories-form" className="mt-4">
-            Save
-          </SubmitButton>
+          <Button className="mt-4">Save</Button>
         </form>
         <Separator className="my-4" />
-        <h2 className="text-sm font-bold text-primary">DEFAULTS</h2>
+        <h2 className="text-primary text-sm font-bold">DEFAULTS</h2>
         <ul className="mt-1 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {categories
             .filter((c) => c.orgId === null)
             .map((c) => (
-              <li key={c.id} className="flex items-center justify-between rounded-sm border px-2 py-1">
+              <li key={c.id} className="flex min-h-12 items-center justify-between rounded-sm border px-2 py-1">
                 <span>{c.name}</span>
-                <span className="ml-2 flex size-5 items-center justify-center rounded-full bg-muted text-xs font-medium text-primary">
+                <span className="bg-muted text-primary ml-2 flex size-5 items-center justify-center rounded-full text-xs font-medium">
                   {c._count.transactions}
                 </span>
               </li>
