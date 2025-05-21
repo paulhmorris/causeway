@@ -11,6 +11,8 @@ const sentryConfig: SentryReactRouterBuildOptions = {
   authToken: process.env.SENTRY_AUTH_TOKEN,
 };
 
+const isCI = process.env.CI;
+
 export default defineConfig((config) => ({
   resolve: {
     alias: {
@@ -20,7 +22,7 @@ export default defineConfig((config) => ({
   server: {
     port: 3000,
   },
-  plugins: [morganPlugin(), tsconfigPaths(), reactRouter(), sentryReactRouter(sentryConfig, config)],
+  plugins: [morganPlugin(), tsconfigPaths(), reactRouter(), ...(isCI ? [sentryReactRouter(sentryConfig, config)] : [])],
 
   build: {
     sourcemap: !!process.env.CI,
@@ -32,7 +34,7 @@ function morganPlugin() {
     name: "morgan-plugin",
     configureServer(server: ViteDevServer) {
       return () => {
-        server.middlewares.use(morgan("tiny"));
+        server.middlewares.use(morgan("dev"));
       };
     },
   };

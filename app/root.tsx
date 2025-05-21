@@ -23,12 +23,12 @@ import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
 import { cn } from "~/lib/utils";
 import { SessionService, themeSessionResolver } from "~/services.server/session";
-import stylesheet from "~/tailwind.css?url";
+import tailwindUrl from "~/tailwind.css?url";
 
 // eslint-disable-next-line import/no-unresolved
 import { Route } from "./+types/root";
 
-export const links: LinksFunction = () => [{ rel: "stylesheet", href: stylesheet, as: "style" }];
+export const links: LinksFunction = () => [{ rel: "stylesheet", href: tailwindUrl, as: "style" }];
 
 export const shouldRevalidate = ({ currentUrl, nextUrl, defaultShouldRevalidate }: ShouldRevalidateFunctionArgs) => {
   // Don't revalidate on searches and pagination

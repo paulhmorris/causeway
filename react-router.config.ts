@@ -8,6 +8,8 @@ export default {
   ssr: true,
   ...(isVercel && { presets: [vercelPreset()] }),
   buildEnd: async ({ viteConfig, reactRouterConfig, buildManifest }) => {
-    await sentryOnBuildEnd({ viteConfig, reactRouterConfig, buildManifest });
+    if (process.env.CI) {
+      await sentryOnBuildEnd({ viteConfig, reactRouterConfig, buildManifest });
+    }
   },
 } satisfies Config;

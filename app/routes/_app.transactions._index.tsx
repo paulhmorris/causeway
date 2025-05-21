@@ -2,8 +2,8 @@ import { Prisma } from "@prisma/client";
 import { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { Link, useLoaderData } from "react-router";
-import type { LoaderFunctionArgs, MetaFunction, SerializeFrom } from "react-router";
 dayjs.extend(utc);
 
 import { PageHeader } from "~/components/common/page-header";
@@ -104,7 +104,7 @@ export default function TransactionsIndexPage() {
   );
 }
 
-type Transaction = SerializeFrom<Awaited<typeof loader>>["transactions"][number];
+type Transaction = Awaited<ReturnType<typeof loader>>["transactions"][number];
 const columns = [
   {
     id: "view",

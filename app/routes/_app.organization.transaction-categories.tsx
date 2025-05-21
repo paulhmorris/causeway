@@ -1,5 +1,4 @@
-import { useFieldArray, ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, useFieldArray, useForm, validationError } from "@rvf/react-router";
 import { IconMinus, IconPlus } from "@tabler/icons-react";
 import { nanoid } from "nanoid";
 import { ActionFunctionArgs, LoaderFunctionArgs, useFetcher, useLoaderData } from "react-router";
@@ -29,29 +28,22 @@ export async function loader({ request }: LoaderFunctionArgs) {
     orderBy: { transactions: { _count: "asc" } },
   });
 
-  return {
-    categories,
-    // ...setFormDefaults("categories-form", {
-    //   categories: categories.filter((c) => Boolean(c.orgId)),
-    // }),
-  };
+  return { categories };
 }
 
-const validator = withZod(
-  z.object({
-    categories: z.array(
-      z.object({
-        id: z.coerce.number().optional(),
-        name: z.string().max(255).nonempty({ message: "Name is required" }),
-      }),
-    ),
-  }),
-);
+const schema = z.object({
+  categories: z.array(
+    z.object({
+      id: z.coerce.number().optional(),
+      name: z.string().max(255).nonempty({ message: "Name is required" }),
+    }),
+  ),
+});
 
 export async function action({ request }: ActionFunctionArgs) {
   const orgId = await SessionService.requireOrgId(request);
   await SessionService.requireAdmin(request);
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -101,9 +93,15 @@ export async function action({ request }: ActionFunctionArgs) {
 export default function OrganizationTransactionCategories() {
   const fetcher = useFetcher();
   const { categories } = useLoaderData<typeof loader>();
-  const [items, { push, remove }] = useFieldArray<(typeof categories)[number]>("categories", {
-    formId: "categories-form",
+  const form = useForm({
+    schema,
+    fetcher,
+    defaultValues: {
+      categories: categories.filter((c) => Boolean(c.orgId)),
+    },
   });
+  // const [items, { push, remove }] = useFieldArray(form.scope("categories"));
+  const field = useFieldArray(form.scope("categories"));
 
   return (
     <>
@@ -113,35 +111,34 @@ export default function OrganizationTransactionCategories() {
         category already has transactions associated with it, you can&apos;t delete it.
       </p>
       <div className="mt-6">
-        <ValidatedForm fetcher={fetcher} id="categories-form" method="PUT" validator={validator} className="max-w-sm">
+        <form {...form.getFormProps()} method="PUT" className="max-w-sm">
           <span className="text-sm font-medium">Name</span>
           <ul className="flex flex-col gap-y-4">
-            {items.map((i, index) => {
+            {field.map((key, item, index) => {
               const prefix = `categories[${index}]`;
-              const id = categories.find((c) => c.id === i.defaultValue.id)?.id;
+              const id = categories.find((c) => c.id === item.defaultValue)?.id;
 
               return (
-                <li key={i.key} className="grid grid-cols-7 gap-x-2">
+                <li key={key} className="grid grid-cols-7 gap-x-2">
                   <div className="col-span-6">
-                    {id ? <input type="hidden" name={`${prefix}.id`} value={i.defaultValue.id} /> : null}
+                    {id ? <input type="hidden" name={`${prefix}.id`} value={item.defaultValue.id} /> : null}
                     <FormField
                       label="Name"
                       hideLabel
                       name={`${prefix}.name`}
                       placeholder="Category name..."
-                       
-                      readOnly={i.defaultValue._count ? i.defaultValue._count.transactions > 0 : false}
+                      readOnly={item.defaultValue._count ? item.defaultValue._count.transactions > 0 : false}
                     />
                   </div>
                   <div className="col-span-1">
-                    { }
-                    {!i.defaultValue._count || i.defaultValue._count?.transactions === 0 ? (
+                    {}
+                    {!item.defaultValue._count || item.defaultValue._count?.transactions === 0 ? (
                       <Button variant="outline" size="icon" onClick={() => remove(index)} type="button">
                         <IconMinus className="size-5" />
                       </Button>
                     ) : (
                       <div className="grid size-10 place-items-center">
-                        <span className="font-medium text-primary">{i.defaultValue._count.transactions}</span>
+                        <span className="font-medium text-primary">{item.defaultValue._count.transactions}</span>
                       </div>
                     )}
                   </div>
@@ -157,7 +154,7 @@ export default function OrganizationTransactionCategories() {
           <SubmitButton formId="categories-form" className="mt-4">
             Save
           </SubmitButton>
-        </ValidatedForm>
+        </form>
         <Separator className="my-4" />
         <h2 className="text-sm font-bold text-primary">DEFAULTS</h2>
         <ul className="mt-1 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

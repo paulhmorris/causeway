@@ -1,6 +1,6 @@
 import { useField } from "@rvf/react-router";
 import { IconCurrencyDollar } from "@tabler/icons-react";
-import { useId, useState } from "react";
+import { JSX, useId, useState } from "react";
 
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~
 import { Textarea } from "~/components/ui/textarea";
 import { cn } from "~/lib/utils";
 
-function FieldError({ id, error }: { id: string; error?: string }) {
+function FieldError({ id, error }: { id: string; error?: string | null }) {
   if (!error) return null;
   return (
     <span aria-live="polite" id={`${id}-error`} className="ml-1 mt-1 text-xs font-medium text-destructive">
@@ -31,7 +31,6 @@ interface FieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   description?: string;
   isCurrency?: boolean;
-  formId?: string;
   hideLabel?: boolean;
 }
 export function FormField({
@@ -39,16 +38,16 @@ export function FormField({
   hideLabel = false,
   name,
   label,
-  formId,
   className,
   description,
   ...props
 }: FieldProps) {
   const fallbackId = useId();
-  const { error, getInputProps } = useField(name, { formId });
+  const field = useField(name);
   const [type, setType] = useState(props.type);
 
   const id = props.id ?? fallbackId;
+  const error = field.error();
 
   return (
     <div className={cn("relative w-full")}>
@@ -78,7 +77,7 @@ export function FormField({
         aria-errormessage={error ? `${id}-error` : props["aria-errormessage"]}
         aria-describedby={description ? `${id}-description` : props["aria-describedby"]}
         className={cn(error && "border-destructive focus-visible:ring-destructive/50", isCurrency && "pl-7", className)}
-        {...getInputProps()}
+        {...field.getInputProps()}
         onBlur={(e) => {
           if (isCurrency) {
             const value = parseFloat(e.currentTarget.value);
@@ -116,21 +115,12 @@ interface FormTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaEle
   name: string;
   label: string;
   description?: string;
-  formId?: string;
   hideLabel?: boolean;
 }
-export function FormTextarea({
-  hideLabel = false,
-  name,
-  label,
-  formId,
-  className,
-  description,
-  ...props
-}: FormTextareaProps) {
+export function FormTextarea({ hideLabel = false, name, label, className, description, ...props }: FormTextareaProps) {
   const fallbackId = useId();
-  const { error, getInputProps } = useField(name, { formId });
-
+  const field = useField(name);
+  const error = field.error();
   const id = props.id ?? fallbackId;
 
   return (
@@ -159,7 +149,7 @@ export function FormTextarea({
         aria-errormessage={error ? `${id}-error` : props["aria-errormessage"]}
         aria-describedby={description ? `${id}-description` : props["aria-describedby"]}
         className={cn(error && "border-destructive focus-visible:ring-destructive/50", className)}
-        {...getInputProps()}
+        {...field.getInputProps()}
         {...props}
       />
       <FieldDescription id={id} description={description} />
@@ -183,9 +173,10 @@ export interface FormSelectProps extends React.ButtonHTMLAttributes<HTMLButtonEl
 
 export function FormSelect(props: FormSelectProps) {
   const { name, label, placeholder, options, hideLabel, divProps, ...rest } = props;
-  const { error, getInputProps } = useField(name);
-  const { onChange, ...field } = getInputProps({});
+  const field = useField(name);
+  const { onChange, ...input } = field.getInputProps({});
   const fallbackId = useId();
+  const error = field.error();
   const id = props.id ?? fallbackId;
 
   return (
@@ -208,7 +199,7 @@ export function FormSelect(props: FormSelectProps) {
           {props.required ? "*" : "(optional)"}
         </span>
       </Label>
-      <Select {...field} onValueChange={onChange}>
+      <Select {...input} value={String(input.value)} onValueChange={onChange}>
         <SelectTrigger
           id={id}
           {...rest}

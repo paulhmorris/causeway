@@ -13,6 +13,9 @@ import { Sentry } from "~/integrations/sentry";
 export const streamTimeout = 5_000;
 
 export const handleError: HandleErrorFunction = (error, { request }) => {
+  if (request.url.includes(".well-known")) {
+    return;
+  }
   if (!request.signal.aborted) {
     Sentry.captureException(error);
     console.error(error);
