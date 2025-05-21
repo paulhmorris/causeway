@@ -100,7 +100,7 @@ export function FormField({
       {props.type === "password" ? (
         <button
           type="button"
-          className="absolute right-0 top-0 rounded p-2 text-xs text-muted-foreground transition hover:underline focus:outline-none focus-visible:ring focus-visible:ring-primary/50"
+          className="absolute right-0 top-0 rounded p-2 text-xs text-muted-foreground transition hover:underline focus:outline-hidden focus-visible:ring-3 focus-visible:ring-primary/50"
           onClick={() => setType((t) => (t === "password" ? "text" : "password"))}
         >
           {type === "password" ? "Show" : "Hide"}

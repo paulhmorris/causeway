@@ -181,7 +181,7 @@ export default function ContactDetailsPage() {
           </Badge>
         ) : null}
       </div>
-      <PageContainer className="max-w-screen-md">
+      <PageContainer className="max-w-(--breakpoint-md)">
         <div className="space-y-5">
           {isExternal ? (
             <div className="space-y-2">

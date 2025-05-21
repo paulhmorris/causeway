@@ -1,5 +1,6 @@
 import { reactRouter } from "@react-router/dev/vite";
 import { sentryReactRouter, SentryReactRouterBuildOptions } from "@sentry/react-router";
+import tailwindcss from "@tailwindcss/vite";
 import morgan from "morgan";
 import { defineConfig, ViteDevServer } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
@@ -22,7 +23,13 @@ export default defineConfig((config) => ({
   server: {
     port: 3000,
   },
-  plugins: [morganPlugin(), tsconfigPaths(), reactRouter(), ...(isCI ? [sentryReactRouter(sentryConfig, config)] : [])],
+  plugins: [
+    morganPlugin(),
+    tsconfigPaths(),
+    reactRouter(),
+    tailwindcss(),
+    ...(isCI ? [sentryReactRouter(sentryConfig, config)] : []),
+  ],
 
   build: {
     sourcemap: !!process.env.CI,

@@ -173,7 +173,7 @@ export default function NewReimbursementPage() {
             <div className="w-auto">
               <FormField name="date" label="Date" type="date" defaultValue={getToday()} required />
             </div>
-            <div className="w-auto min-w-[3rem]">
+            <div className="w-auto min-w-12">
               <FormField name="amountInCents" label="Amount" required isCurrency />
             </div>
             <FormSelect

@@ -29,7 +29,7 @@ export function DesktopNav(props: ComponentPropsWithoutRef<"nav">) {
       {hasMultipleOrgs ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="relative flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm font-medium text-primary ring-offset-background hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:w-full">
+            <button className="relative flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm font-medium text-primary ring-offset-background hover:bg-muted focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:w-full">
               <span className="sr-only">Change Organization</span>
               <IconWorld className="size-10 shrink-0" stroke={1.2} />
               <div className="flex flex-col text-left">

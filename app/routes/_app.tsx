@@ -32,7 +32,7 @@ export default function AppLayout() {
     <div vaul-drawer-wrapper="" className="mx-auto flex min-h-dvh w-full flex-col bg-background md:flex-row">
       <MobileNav />
       <DesktopNav />
-      <main className="w-full max-w-screen-2xl grow p-6 md:ml-64 md:p-10">
+      <main className="w-full max-w-(--breakpoint-2xl) grow p-6 md:ml-64 md:p-10">
         <Outlet />
       </main>
     </div>

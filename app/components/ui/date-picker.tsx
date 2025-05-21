@@ -14,7 +14,7 @@ export function DatePicker({ name }: { name: string }) {
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          variant={"outline"}
+          variant={"outline-solid"}
           className={cn("w-[280px] justify-start text-left font-normal sm:w-[280px]", !date && "text-muted-foreground")}
         >
           <IconCalendar className="mr-2 h-4 w-4" />

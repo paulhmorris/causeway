@@ -31,7 +31,7 @@ export function Callout({ children, className, variant = "info", ...props }: Pro
 
   return (
     <div className={cn(calloutVariants({ variant, className }))} {...props}>
-      <div className="pt-[1px]">{iconMap[variant ?? "info"]}</div>
+      <div className="pt-px">{iconMap[variant ?? "info"]}</div>
       <div>{children}</div>
     </div>
   );
