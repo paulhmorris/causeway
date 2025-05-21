@@ -182,9 +182,9 @@ export default function UserDetailsPage() {
         </div>
         <fieldset className="mt-4 sm:max-w-2xl">
           <legend className="text-sm font-medium">
-            Account Subscriptions <span className="text-xs text-muted-foreground">(optional)</span>
+            Account Subscriptions <span className="text-muted-foreground text-xs">(optional)</span>
           </legend>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Users can be subscribed to another account. When they log in, they will see it on their dashboard.
           </p>
           <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -224,7 +224,7 @@ export default function UserDetailsPage() {
               <ul>
                 {user.contactAssignments.map((a) => (
                   <li key={a.id}>
-                    <Link to={`/contacts/${a.contactId}`} className="text-sm font-medium text-primary">
+                    <Link to={`/contacts/${a.contactId}`} className="text-primary text-sm font-medium">
                       {a.contact.firstName} {a.contact.lastName}
                     </Link>
                   </li>

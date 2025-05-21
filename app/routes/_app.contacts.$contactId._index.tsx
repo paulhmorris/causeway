@@ -211,7 +211,7 @@ export default function ContactDetailsPage() {
                   <ul>
                     {contact.assignedUsers.map((a) => (
                       <li key={a.id}>
-                        <Link to={`/users/${a.userId}`} className="text-sm font-medium text-primary">
+                        <Link to={`/users/${a.userId}`} className="text-primary text-sm font-medium">
                           {a.user.contact.firstName} {a.user.contact.lastName}
                         </Link>
                       </li>

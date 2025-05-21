@@ -273,10 +273,10 @@ export default function EditContactPage() {
           {contact.typeId !== ContactType.Staff ? (
             <>
               <fieldset>
-                <legend className="mb-4 text-sm text-muted-foreground">
+                <legend className="text-muted-foreground mb-4 text-sm">
                   Assign users to this Contact. They will receive regular reminders to log an engagement.
                   {contact.assignedUsers.some((a) => a.user.id === user.id) && user.isMember ? (
-                    <p className="mt-2 rounded border border-warning/25 bg-warning/10 px-2 py-1.5 text-sm font-medium text-warning-foreground">
+                    <p className="border-warning/25 bg-warning/10 text-warning-foreground mt-2 rounded border px-2 py-1.5 text-sm font-medium">
                       If you unassign yourself, you will no longer be able to view this contact&apos;s transactions or
                       make edits.
                     </p>

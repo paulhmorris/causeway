@@ -103,10 +103,10 @@ export default function TransactionDetailsPage() {
         <div className="space-y-8">
           <div>
             <h2 className="sr-only">Details</h2>
-            <dl className="divide-y divide-muted">
+            <dl className="divide-muted divide-y">
               <DetailItem label="Id" value={transaction.id} />
               <DetailItem label="Account">
-                <Link to={`/accounts/${transaction.accountId}`} className="font-medium text-primary">
+                <Link to={`/accounts/${transaction.accountId}`} className="text-primary font-medium">
                   {`${transaction.account.code}`} - {transaction.account.description}
                 </Link>
               </DetailItem>
@@ -114,7 +114,7 @@ export default function TransactionDetailsPage() {
                 <DetailItem label="Contact">
                   <Link
                     to={`/contacts/${transaction.contactId}`}
-                    className="font-medium text-primary"
+                    className="text-primary font-medium"
                   >{`${transaction.contact.firstName} ${transaction.contact.lastName}`}</Link>
                 </DetailItem>
               ) : null}
@@ -185,7 +185,7 @@ export default function TransactionDetailsPage() {
                 ))}
               </TableBody>
             </Table>
-            <div className="flex items-center justify-end gap-2 border-t pr-4 pt-4 text-sm font-bold">
+            <div className="flex items-center justify-end gap-2 border-t pt-4 pr-4 text-sm font-bold">
               <p>Total</p>
               <p>{formatCentsAsDollars(transaction.amountInCents, 2)}</p>
             </div>
@@ -200,7 +200,7 @@ function DetailItem({ label, value, children }: { label: string; value?: string;
   return (
     <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
       <dt className="text-sm font-semibold capitalize">{label}</dt>
-      <dd className={cn("mt-1 text-sm text-muted-foreground sm:col-span-2 sm:mt-0")}>
+      <dd className={cn("text-muted-foreground mt-1 text-sm sm:col-span-2 sm:mt-0")}>
         {value ?? null}
         {children}
       </dd>

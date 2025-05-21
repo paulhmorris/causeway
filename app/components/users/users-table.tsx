@@ -23,7 +23,7 @@ export function UsersTable({ users }: { users: Array<Prisma.UserGetPayload<{ inc
           return (
             <TableRow key={user.id}>
               <TableCell>
-                <Link to={`/users/${user.id}/profile`} className="font-medium text-primary">
+                <Link to={`/users/${user.id}/profile`} className="text-primary font-medium">
                   View
                 </Link>
               </TableCell>

@@ -16,17 +16,17 @@ export function Notifications() {
   const data = useRouteLoaderData<typeof loader>("root");
   useEffect(() => {
     if (!data?.toast) return;
-    const { title, type, ...rest } = data.toast;
+    const { message, type, ...rest } = data.toast;
     switch (type) {
       case "success": {
-        toast.success(title, {
+        toast.success(message, {
           ...rest,
           icon: <IconCircleCheckFilled className="h-5 w-5" />,
         });
         break;
       }
       case "error": {
-        toast.error(title, {
+        toast.error(message, {
           ...rest,
           icon: <IconAlertCircleFilled className="h-5 w-5" />,
           duration: Infinity,
@@ -34,21 +34,21 @@ export function Notifications() {
         break;
       }
       case "warning": {
-        toast.warning(title, {
+        toast.warning(message, {
           ...rest,
           icon: <IconAlertTriangleFilled className="h-5 w-5" />,
         });
         break;
       }
       case "info": {
-        toast.info(title, {
+        toast.info(message, {
           ...rest,
           icon: <IconInfoCircleFilled className="h-5 w-5" />,
         });
         break;
       }
       default: {
-        toast(title, rest);
+        toast(message, rest);
         break;
       }
     }

@@ -16,7 +16,7 @@ export function PageHeader(props: Props) {
         <h1 className="text-3xl font-black sm:text-4xl">{props.title}</h1>
         {props.children}
       </header>
-      {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
+      {description ? <p className="text-muted-foreground mt-1 text-sm">{description}</p> : null}
     </>
   );
 }

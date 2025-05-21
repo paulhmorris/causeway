@@ -34,13 +34,13 @@ export default function AdminReports() {
   return (
     <>
       <PageHeader title="Reports" />
-      <p className="mt-2 text-sm text-muted-foreground">Generate reports for your organization.</p>
+      <p className="text-muted-foreground mt-2 text-sm">Generate reports for your organization.</p>
       <PageContainer>
         <h2 className="mb-2 font-bold">Transactions Report</h2>
         <div className="max-w-xs space-y-2">
           <div className="space-y-1">
             <Label htmlFor="trxStartDate">Start Date</Label>
-            <span className="ml-1 text-destructive">*</span>
+            <span className="text-destructive ml-1">*</span>
             <Input
               id="trxStartDate"
               value={trxStartDate}
@@ -51,7 +51,7 @@ export default function AdminReports() {
           </div>
           <div className="space-y-1">
             <Label htmlFor="trxEndDate">End Date</Label>
-            <span className="ml-1 text-destructive">*</span>
+            <span className="text-destructive ml-1">*</span>
             <Input
               id="trxEndDate"
               value={trxEndDate}
@@ -69,7 +69,7 @@ export default function AdminReports() {
             </Button>
           ) : null}
         </div>
-        <h2 className="mb-2 mt-8 font-bold">Contacts Report</h2>
+        <h2 className="mt-8 mb-2 font-bold">Contacts Report</h2>
         <div className="max-w-xs space-y-2">
           {isClient ? (
             <Button variant="outline" asChild>

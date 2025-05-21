@@ -3,11 +3,11 @@ import { Outlet } from "react-router";
 
 export default function AuthLayout() {
   return (
-    <div className="flex min-h-full flex-col items-center dark:bg-background sm:bg-secondary">
+    <div className="dark:bg-background sm:bg-secondary flex min-h-full flex-col items-center">
       <main className="grid w-full grow place-items-center">
         <Outlet />
       </main>
-      <footer className="mx-auto mb-8 mt-auto shrink">
+      <footer className="mx-auto mt-auto mb-8 shrink">
         <p className="text-xs">
           {new Date().getFullYear()} •{" "}
           <span>

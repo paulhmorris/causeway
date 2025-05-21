@@ -62,19 +62,19 @@ export default function OrganizationSettings() {
     <>
       <div className="mt-4 grid grid-cols-3 items-center gap-2 text-sm sm:max-w-2xl">
         <dt className="font-semibold capitalize">Full domain</dt>
-        <dd className="col-span-2 text-muted-foreground">
+        <dd className="text-muted-foreground col-span-2">
           {" "}
           {org.subdomain ? `${org.subdomain}.` : ""}
           {org.host}
         </dd>
         <dt className="font-semibold capitalize">Emails sent from</dt>
-        <dd className="col-span-2 text-muted-foreground">
+        <dd className="text-muted-foreground col-span-2">
           {org.name} &lt;{org.replyToEmail}@{org.host}&gt;
         </dd>
         {org.administratorEmail ? (
           <>
             <dt className="font-semibold capitalize">Reimbursement recipient</dt>
-            <dd className="col-span-2 text-muted-foreground">
+            <dd className="text-muted-foreground col-span-2">
               {org.administratorEmail}@{org.host}
             </dd>
           </>
@@ -82,7 +82,7 @@ export default function OrganizationSettings() {
         {org.inquiriesEmail ? (
           <>
             <dt className="font-semibold capitalize">Inquiries recipient</dt>
-            <dd className="col-span-2 text-muted-foreground">
+            <dd className="text-muted-foreground col-span-2">
               {org.inquiriesEmail}@{org.host}
             </dd>
           </>
@@ -92,7 +92,7 @@ export default function OrganizationSettings() {
         <ValidatedForm validator={schema} className="space-y-4 sm:max-w-md" method="post">
           <FormField required label="Organization Name" name="name" defaultValue={org.name} />
           <fieldset>
-            <legend className="text-sm font-bold uppercase tracking-widest text-primary">Domain</legend>
+            <legend className="text-primary text-sm font-bold tracking-widest uppercase">Domain</legend>
             <div className="space-y-2">
               <FormField
                 required
@@ -110,7 +110,7 @@ export default function OrganizationSettings() {
             </div>
           </fieldset>
           <fieldset>
-            <legend className="text-sm font-bold uppercase tracking-widest text-primary">Email</legend>
+            <legend className="text-primary text-sm font-bold tracking-widest uppercase">Email</legend>
             <div className="space-y-2">
               <FormField
                 required

@@ -163,7 +163,7 @@ export default function NewContactPage() {
           )}
           <Separator className="my-4" />
           <fieldset>
-            <legend className="mb-4 text-sm text-muted-foreground">
+            <legend className="text-muted-foreground mb-4 text-sm">
               Assigned users will receive regular reminders to engage with this Contact.
             </legend>
             <div className="flex flex-col gap-2">

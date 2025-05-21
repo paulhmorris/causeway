@@ -24,11 +24,11 @@ export function ErrorComponent({ error }: { error?: unknown }) {
   return (
     <div className="mt-20">
       <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">{message}</h1>
-      <p className="mt-2 text-base leading-7 text-muted-foreground">{details}</p>
+      <p className="text-muted-foreground mt-2 text-base leading-7">{details}</p>
       {stack ? (
         <>
           <p className="mt-24 text-left text-sm font-bold">Stack Trace</p>
-          <pre className="whitespace-pre-wrap rounded bg-destructive/10 p-4 text-left text-xs text-destructive">
+          <pre className="bg-destructive/10 text-destructive rounded p-4 text-left text-xs whitespace-pre-wrap">
             <code>{stack}</code>
           </pre>
         </>

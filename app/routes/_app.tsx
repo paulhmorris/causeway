@@ -1,4 +1,4 @@
-import { LoaderFunctionArgs , Outlet, ShouldRevalidateFunctionArgs } from "react-router";
+import { LoaderFunctionArgs, Outlet, ShouldRevalidateFunctionArgs } from "react-router";
 
 import { DesktopNav } from "~/components/desktop-nav";
 import { MobileNav } from "~/components/mobile-nav";
@@ -29,7 +29,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export default function AppLayout() {
   return (
-    <div vaul-drawer-wrapper="" className="mx-auto flex min-h-dvh w-full flex-col bg-background md:flex-row">
+    <div vaul-drawer-wrapper="" className="bg-background mx-auto flex min-h-dvh w-full flex-col md:flex-row">
       <MobileNav />
       <DesktopNav />
       <main className="w-full max-w-(--breakpoint-2xl) grow p-6 md:ml-64 md:p-10">

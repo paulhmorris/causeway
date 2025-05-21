@@ -35,7 +35,7 @@ const columns: Array<ColumnDef<Transaction>> = [
     id: "view",
     header: () => <span className="sr-only">Action</span>,
     cell: ({ row }) => (
-      <Link to={`/transactions/${row.original.id}`} className="font-medium text-primary">
+      <Link to={`/transactions/${row.original.id}`} className="text-primary font-medium">
         View
       </Link>
     ),
@@ -91,7 +91,7 @@ const columns: Array<ColumnDef<Transaction>> = [
         <div>
           <Link
             to={`/contacts/${row.original.contact?.id}`}
-            className="max-w-[500px] truncate font-medium text-primary"
+            className="text-primary max-w-[500px] truncate font-medium"
           >
             {row.getValue("contact")}
           </Link>

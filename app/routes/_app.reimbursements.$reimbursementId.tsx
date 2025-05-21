@@ -340,40 +340,40 @@ export default function ReimbursementRequestPage() {
                 </Badge>
               </dd>
               <dt className="font-semibold capitalize">Submitted By</dt>
-              <dd className="col-span-2 text-muted-foreground">{rr.user.username}</dd>
+              <dd className="text-muted-foreground col-span-2">{rr.user.username}</dd>
 
               <dt className="font-semibold capitalize">Submitted On</dt>
-              <dd className="col-span-2 text-muted-foreground">{dayjs(rr.date).format("M/D/YYYY h:mm a")}</dd>
+              <dd className="text-muted-foreground col-span-2">{dayjs(rr.date).format("M/D/YYYY h:mm a")}</dd>
 
               <dt className="font-semibold capitalize">Amount</dt>
-              <dd className="col-span-2 text-muted-foreground">{formatCentsAsDollars(rr.amountInCents)}</dd>
+              <dd className="text-muted-foreground col-span-2">{formatCentsAsDollars(rr.amountInCents)}</dd>
 
               <dt className="font-semibold capitalize">Method</dt>
-              <dd className="col-span-2 text-muted-foreground">{rr.method.name}</dd>
+              <dd className="text-muted-foreground col-span-2">{rr.method.name}</dd>
 
               {rr.vendor ? (
                 <>
                   <dt className="font-semibold capitalize">Vendor</dt>
-                  <dd className="col-span-2 text-muted-foreground">{rr.vendor}</dd>
+                  <dd className="text-muted-foreground col-span-2">{rr.vendor}</dd>
                 </>
               ) : null}
 
               {rr.description ? (
                 <>
                   <dt className="font-semibold capitalize">Requester Notes</dt>
-                  <dd className="col-span-2 text-muted-foreground">{rr.description}</dd>
+                  <dd className="text-muted-foreground col-span-2">{rr.description}</dd>
                 </>
               ) : null}
 
               {rr.approverNote ? (
                 <>
                   <dt className="font-semibold capitalize">Approver Notes</dt>
-                  <dd className="col-span-2 text-muted-foreground">{rr.approverNote}</dd>
+                  <dd className="text-muted-foreground col-span-2">{rr.approverNote}</dd>
                 </>
               ) : null}
 
               <dt className="self-start font-semibold capitalize">Receipts</dt>
-              <dd className="col-span-2 text-muted-foreground">
+              <dd className="text-muted-foreground col-span-2">
                 {rr.receipts.length > 0 ? (
                   rr.receipts.map((receipt) => {
                     if (!receipt.s3Url) {
@@ -388,7 +388,7 @@ export default function ReimbursementRequestPage() {
                       <a
                         key={receipt.id}
                         href={receipt.s3Url}
-                        className="flex items-center gap-1.5 font-medium text-primary"
+                        className="text-primary flex items-center gap-1.5 font-medium"
                         target="_blank"
                         rel="noreferrer"
                       >

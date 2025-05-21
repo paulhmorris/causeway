@@ -117,7 +117,7 @@ export default function LoginPage() {
   return (
     <AuthCard>
       <h1 className="text-4xl font-extrabold">Choose organization</h1>
-      <p className="mt-1 text-sm text-muted-foreground">You can change organizations at any time.</p>
+      <p className="text-muted-foreground mt-1 text-sm">You can change organizations at any time.</p>
       <ValidatedForm validator={validator} method="post" className="mt-6 space-y-4">
         <input type="hidden" name="redirectTo" value={redirectTo === "/choose-org" ? "/" : redirectTo} />
         <Label className="inline-flex cursor-pointer items-center gap-2">
@@ -133,8 +133,8 @@ export default function LoginPage() {
             return (
               <BigButton key={org.id} type="submit" name="orgId" value={org.id}>
                 <div>
-                  <p className="text-lg font-bold text-foreground">{org.name}</p>
-                  <p className="text-sm text-muted-foreground">{normalizeEnum(org.role)}</p>
+                  <p className="text-foreground text-lg font-bold">{org.name}</p>
+                  <p className="text-muted-foreground text-sm">{normalizeEnum(org.role)}</p>
                 </div>
                 <IconChevronRight />
               </BigButton>

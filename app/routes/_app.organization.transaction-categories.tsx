@@ -85,7 +85,10 @@ export async function action({ request }: ActionFunctionArgs) {
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    return Toasts.dataWithError(null, { message: "Error updating transaction categories" });
+    return Toasts.dataWithError(null, {
+      message: "Unknown error",
+      description: "Error updating transaction categories",
+    });
   }
 }
 
@@ -95,6 +98,7 @@ export default function OrganizationTransactionCategories() {
   const form = useForm({
     schema,
     fetcher,
+    method: "PUT",
     defaultValues: {
       categories: categories.filter((c) => Boolean(c.orgId)),
     },
@@ -108,7 +112,7 @@ export default function OrganizationTransactionCategories() {
         category already has transactions associated with it, you can&apos;t delete it.
       </p>
       <div className="mt-6">
-        <form {...form.getFormProps()} method="PUT" className="max-w-sm">
+        <form {...form.getFormProps()} className="max-w-sm">
           <span className="text-sm font-medium">Name</span>
           <ul className="flex flex-col gap-y-4">
             {form.array("categories").map((key, item, index) => {
@@ -164,7 +168,9 @@ export default function OrganizationTransactionCategories() {
               <IconPlus className="size-5" />
             </Button>
           </div>
-          <Button className="mt-4">Save</Button>
+          <Button className="mt-4" type="submit">
+            Save
+          </Button>
         </form>
         <Separator className="my-4" />
         <h2 className="text-primary text-sm font-bold">DEFAULTS</h2>

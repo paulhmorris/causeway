@@ -23,7 +23,7 @@ export function MobileNav(props: ComponentPropsWithoutRef<"nav">) {
         </DialogTrigger>
         <DialogContent className="top-0 max-h-dvh max-w-full translate-y-0 overflow-y-scroll">
           <DialogTitle className="sr-only">Navigation links</DialogTitle>
-          <ul className="mt-6 space-x-0 space-y-1">
+          <ul className="mt-6 space-y-1 space-x-0">
             <MobileNavLink
               setOpen={setOpen}
               to={user.isMember ? "/dashboards/staff" : "/dashboards/admin"}
@@ -41,8 +41,8 @@ export function MobileNav(props: ComponentPropsWithoutRef<"nav">) {
           {user.isAdmin || user.isSuperAdmin ? (
             <>
               <Separator />
-              <p className="text-sm font-semibold tracking-widest text-muted-foreground">ADMIN</p>
-              <ul className="space-x-0 space-y-1">
+              <p className="text-muted-foreground text-sm font-semibold tracking-widest">ADMIN</p>
+              <ul className="space-y-1 space-x-0">
                 {adminNavLinks.map((link) => (
                   <MobileNavLink setOpen={setOpen} key={link.to} to={link.to} name={link.name} />
                 ))}
@@ -52,8 +52,8 @@ export function MobileNav(props: ComponentPropsWithoutRef<"nav">) {
           {user.isSuperAdmin && superAdminNavLinks.length > 0 ? (
             <>
               <Separator />
-              <p className="text-sm font-semibold tracking-widest text-muted-foreground">SUPER ADMIN</p>
-              <ul className="space-x-0 space-y-1">
+              <p className="text-muted-foreground text-sm font-semibold tracking-widest">SUPER ADMIN</p>
+              <ul className="space-y-1 space-x-0">
                 {superAdminNavLinks.map((link) => (
                   <MobileNavLink setOpen={setOpen} key={link.to} to={link.to} name={link.name} />
                 ))}
@@ -74,7 +74,7 @@ function MobileNavLink({ to, name, setOpen }: { to: string; name: string; setOpe
         onClick={() => setOpen(false)}
         className={({ isActive }) =>
           cn(
-            "flex cursor-pointer items-center rounded-md px-3 py-2 font-medium text-secondary-foreground hover:bg-primary/10",
+            "text-secondary-foreground hover:bg-primary/10 flex cursor-pointer items-center rounded-md px-3 py-2 font-medium",
             isActive && "bg-primary/10",
           )
         }

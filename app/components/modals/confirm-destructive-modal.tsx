@@ -23,7 +23,7 @@ export function ConfirmDestructiveModal({ description }: { description: string }
         type="submit"
         name="_action"
         value="delete"
-        className="w-min hover:border-destructive hover:bg-destructive hover:text-destructive-foreground"
+        className="hover:border-destructive hover:bg-destructive hover:text-destructive-foreground w-min"
         onClick={() => setOpen(true)}
       >
         Delete
@@ -33,7 +33,7 @@ export function ConfirmDestructiveModal({ description }: { description: string }
         setOpen={setOpen}
         title="Are you absolutely sure?"
         description={description}
-        icon={<IconAlertTriangleFilled className="mb-2 h-8 w-8 self-center text-destructive" />}
+        icon={<IconAlertTriangleFilled className="text-destructive mb-2 h-8 w-8 self-center" />}
       >
         <DrawerDialogFooter className="gap-2 sm:space-x-0">
           <Button variant="outline" type="submit" onClick={() => setOpen(false)} disabled={isSubmitting}>

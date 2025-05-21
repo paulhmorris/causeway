@@ -110,7 +110,7 @@ const columns = [
     id: "view",
     header: () => <span className="sr-only">Action</span>,
     cell: ({ row }) => (
-      <Link to={`/transactions/${row.original.id}`} className="font-medium text-primary">
+      <Link to={`/transactions/${row.original.id}`} className="text-primary font-medium">
         View
       </Link>
     ),
@@ -123,7 +123,7 @@ const columns = [
     cell: ({ row }) => {
       return (
         <div className="max-w-[320px] truncate">
-          <Link to={`/accounts/${row.original.account.id}`} className="font-medium text-primary">
+          <Link to={`/accounts/${row.original.account.id}`} className="text-primary font-medium">
             {row.getValue("account")}
           </Link>
         </div>
@@ -183,7 +183,7 @@ const columns = [
         <div>
           <Link
             to={`/contacts/${row.original.contact?.id}`}
-            className="max-w-[500px] truncate font-medium text-primary"
+            className="text-primary max-w-[500px] truncate font-medium"
           >
             {row.getValue("contact")}
           </Link>

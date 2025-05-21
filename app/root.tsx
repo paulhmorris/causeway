@@ -176,7 +176,7 @@ function App() {
         <PreventFlashOnWrongTheme ssrTheme={Boolean(data.theme)} />
         <Links />
       </head>
-      <body className="h-full min-h-full bg-background font-sans">
+      <body className="bg-background h-full min-h-full font-sans">
         {import.meta.env.PROD ? <Analytics debug={false} /> : null}
         <Outlet />
         <Notifications />

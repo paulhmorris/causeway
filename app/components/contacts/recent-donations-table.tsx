@@ -32,7 +32,7 @@ export function RecentTransactionsTable({ transactions }: { transactions: Array<
             {transactions.map((trx) => (
               <TableRow key={trx.id}>
                 <TableCell>
-                  <Link className="font-medium text-primary" to={`/transactions/${trx.id}`}>
+                  <Link className="text-primary font-medium" to={`/transactions/${trx.id}`}>
                     View
                   </Link>
                 </TableCell>

@@ -134,15 +134,15 @@ export function FileUploadModal() {
         title="Upload Files"
         description="After uploading, your files will be available to attach to reimbursement requests and transactions."
       >
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           If you don&apos;t see your file right away, please refresh the page.
         </p>
-        <p className="text-sm text-muted-foreground">Images or PDF. 5MB max.</p>
+        <p className="text-muted-foreground text-sm">Images or PDF. 5MB max.</p>
         <fetcher.Form method="post" encType="multipart/form-data">
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="grid h-40 w-full cursor-pointer place-items-center rounded-xl border-2 border-dashed border-primary text-primary"
+            className="border-primary text-primary grid h-40 w-full cursor-pointer place-items-center rounded-xl border-2 border-dashed"
           >
             <label>
               <span className="sr-only">Click to upload</span>

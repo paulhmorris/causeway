@@ -22,12 +22,12 @@ export function AnnouncementCard({ announcement }: { announcement: Announcement 
     <>
       <Collapsible
         defaultOpen={true}
-        className="flex flex-col items-start rounded-md border border-primary/50 bg-primary/5 p-3 text-sm text-foreground"
+        className="border-primary/50 bg-primary/5 text-foreground flex flex-col items-start rounded-md border p-3 text-sm"
       >
         <div className="mb-3 flex w-full items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="sr-only">An announcement from your administration.</span>
-            <IconBellFilled className="size-6 text-primary" />
+            <IconBellFilled className="text-primary size-6" />
           </div>
           <CollapsibleTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -38,7 +38,7 @@ export function AnnouncementCard({ announcement }: { announcement: Announcement 
         </div>
         {!user.isMember ? (
           <>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               {announcement.expiresAt
                 ? `Expires ${dayjs(announcement.expiresAt).utc().format("MM/DD/YY h:mm a")}`
                 : "Never expires"}

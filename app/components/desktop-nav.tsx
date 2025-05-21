@@ -22,21 +22,21 @@ export function DesktopNav(props: ComponentPropsWithoutRef<"nav">) {
   return (
     <nav
       className={cn(
-        "fixed inset-y-0 left-0 z-10 hidden w-64 flex-col overflow-y-scroll border-r border-border bg-card px-5 py-10 md:flex",
+        "border-border bg-card fixed inset-y-0 left-0 z-10 hidden w-64 flex-col overflow-y-scroll border-r px-5 py-10 md:flex",
         props.className,
       )}
     >
       {hasMultipleOrgs ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="relative flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm font-medium text-primary ring-offset-background hover:bg-muted focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:w-full">
+            <button className="text-primary ring-offset-background hover:bg-muted focus-visible:ring-ring relative flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden md:w-full">
               <span className="sr-only">Change Organization</span>
               <IconWorld className="size-10 shrink-0" stroke={1.2} />
               <div className="flex flex-col text-left">
                 <span className="text-pretty">{user.org?.name}</span>
-                {role ? <span className="text-xs font-medium text-muted-foreground">{normalizeEnum(role)}</span> : null}
+                {role ? <span className="text-muted-foreground text-xs font-medium">{normalizeEnum(role)}</span> : null}
               </div>
-              <IconSelector className="ml-auto size-5 shrink-0 text-muted-foreground" />
+              <IconSelector className="text-muted-foreground ml-auto size-5 shrink-0" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="mb-2 w-[215px] space-y-1" align="center" forceMount>
@@ -53,16 +53,16 @@ export function DesktopNav(props: ComponentPropsWithoutRef<"nav">) {
         </DropdownMenu>
       ) : (
         <div className="flex items-center px-2.5">
-          <Link to="/" className="inline-flex items-center space-x-2 text-sm font-bold text-primary">
+          <Link to="/" className="text-primary inline-flex items-center space-x-2 text-sm font-bold">
             <IconWorld className="size-10" stroke={1.2} />
             <div className="flex flex-col">
               <span className="text-pretty">{user.org?.name}</span>
-              {role ? <span className="text-xs font-medium text-muted-foreground">{normalizeEnum(role)}</span> : null}
+              {role ? <span className="text-muted-foreground text-xs font-medium">{normalizeEnum(role)}</span> : null}
             </div>
           </Link>
         </div>
       )}
-      <ul className="relative mt-8 space-x-0 space-y-1">
+      <ul className="relative mt-8 space-y-1 space-x-0">
         <DesktopNavLink
           to={user.isMember ? "/dashboards/staff" : "/dashboards/admin"}
           name="Home"
@@ -77,8 +77,8 @@ export function DesktopNav(props: ComponentPropsWithoutRef<"nav">) {
       {user.isAdmin || user.isSuperAdmin ? (
         <>
           <Separator className="my-4" />
-          <p className="mb-4 text-xs font-semibold tracking-widest text-muted-foreground">ADMIN</p>
-          <ul className="space-x-0 space-y-1">
+          <p className="text-muted-foreground mb-4 text-xs font-semibold tracking-widest">ADMIN</p>
+          <ul className="space-y-1 space-x-0">
             {adminNavLinks.map((link) => (
               <DesktopNavLink key={link.to} {...link} />
             ))}
@@ -88,8 +88,8 @@ export function DesktopNav(props: ComponentPropsWithoutRef<"nav">) {
       {user.isSuperAdmin && superAdminNavLinks.length > 0 ? (
         <>
           <Separator className="my-4" />
-          <p className="mb-4 text-xs font-semibold tracking-widest text-muted-foreground">SUPER ADMIN</p>
-          <ul className="space-x-0 space-y-1">
+          <p className="text-muted-foreground mb-4 text-xs font-semibold tracking-widest">SUPER ADMIN</p>
+          <ul className="space-y-1 space-x-0">
             {superAdminNavLinks.map((link) => (
               <DesktopNavLink key={link.to} {...link} />
             ))}
