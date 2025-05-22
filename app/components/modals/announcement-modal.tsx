@@ -53,28 +53,37 @@ export function AnnouncementModal({
           defaultValues={{
             title: intent === "update" ? announcement?.title : "",
             content: intent === "update" ? announcement?.content : "",
-            expiresAt: intent === "update" ? dayjs(announcement?.expiresAt).format("YYYY-MM-DD") : undefined,
+            expiresAt:
+              intent === "update"
+                ? announcement?.expiresAt
+                  ? dayjs(announcement.expiresAt).format("YYYY-MM-DD")
+                  : undefined
+                : undefined,
           }}
         >
-          <input type="hidden" name="id" value={announcement?.id} />
-          <FormField label="Title" name="title" type="text" required />
-          <FormTextarea label="Content" name="content" required />
-          <FormField
-            label="Expires"
-            name="expiresAt"
-            type="date"
-            description="Will disappear after midnight on this day"
-            min={dayjs().format("YYYY-MM-DD")}
-          />
-          <DrawerDialogFooter className="mt-4">
-            <Button variant="outline" type="submit" onClick={() => setOpen(false)} disabled={isSubmitting}>
-              Cancel
-            </Button>
-            <Button type="submit" name="intent" value={intent} disabled={isSubmitting}>
-              {isSubmitting ? <IconLoader className="size-4 animate-spin" /> : null}
-              <span>Submit</span>
-            </Button>
-          </DrawerDialogFooter>
+          {(form) => (
+            <>
+              <input type="hidden" name="id" value={announcement?.id} />
+              <FormField label="Title" scope={form.scope("title")} required />
+              <FormTextarea label="Content" scope={form.scope("content")} required />
+              <FormField
+                label="Expires"
+                scope={form.scope("expiresAt")}
+                type="date"
+                description="Will disappear after midnight on this day"
+                min={dayjs().format("YYYY-MM-DD")}
+              />
+              <DrawerDialogFooter className="mt-4">
+                <Button variant="outline" type="submit" onClick={() => setOpen(false)} disabled={isSubmitting}>
+                  Cancel
+                </Button>
+                <Button type="submit" name="intent" value={intent} disabled={isSubmitting}>
+                  {isSubmitting ? <IconLoader className="size-4 animate-spin" /> : null}
+                  <span>Submit</span>
+                </Button>
+              </DrawerDialogFooter>
+            </>
+          )}
         </ValidatedForm>
       </DrawerDialog>
     </>

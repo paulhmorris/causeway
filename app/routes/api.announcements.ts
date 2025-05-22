@@ -69,7 +69,7 @@ export async function action({ request }: ActionFunctionArgs) {
         { success: true },
         {
           message: "Announcement Created",
-          description: `The announcement is now visible to all users and admins${announcement.expiresAt ? " and will expire at " + dayjs(announcement.expiresAt).utc().format("M/D/YY h:mm a") : "."}`,
+          description: `The announcement is now visible to all users and admins${announcement.expiresAt ? " and will expire on " + dayjs(announcement.expiresAt).utc().format("M/D/YY h:mm a") : "."}`,
         },
       );
     }
@@ -99,7 +99,7 @@ export async function action({ request }: ActionFunctionArgs) {
         { success: true },
         {
           message: "Announcement Updated",
-          description: `The announcement is now visible to all users and admins${announcement.expiresAt ? " and will expire at " + dayjs(announcement.expiresAt).utc().format("M/D/YY h:mm a") : "."}`,
+          description: `The announcement is now visible to all users and admins${announcement.expiresAt ? " and will expire on " + dayjs(announcement.expiresAt).utc().format("M/D/YY h:mm a") : "."}`,
         },
       );
     }
@@ -113,7 +113,7 @@ export async function action({ request }: ActionFunctionArgs) {
           expiresAt: dayjs().subtract(7, "day").toDate(),
         },
       });
-      return Toasts.dataWithInfo(
+      return Toasts.dataWithSuccess(
         { success: true },
         { message: "Announcement Expired", description: "The announcement is no longer visible to users or admins." },
       );

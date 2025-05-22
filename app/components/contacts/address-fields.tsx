@@ -1,22 +1,28 @@
-import { FormField } from "~/components/ui/form";
+import { FormScope, useFormScope } from "@rvf/react-router";
+import { z } from "zod";
 
-export function AddressForm() {
+import { FormField } from "~/components/ui/form";
+import { AddressSchema } from "~/models/schemas";
+
+export function AddressForm({ scope }: { scope: FormScope<z.infer<typeof AddressSchema>> }) {
+  const form = useFormScope(scope);
+
   return (
     <fieldset className="space-y-4">
-      <FormField label="Street 1" id="street" placeholder="1234 Main St." name="address.street" required />
+      <FormField label="Street 1" placeholder="1234 Main St." scope={form.scope("street")} required />
       <div className="flex items-start gap-2">
-        <FormField label="Street 2" id="street2" placeholder="Apt 4" name="address.street2" />
-        <FormField label="City" id="city" placeholder="Richardson" name="address.city" required />
+        <FormField label="Street 2" placeholder="Apt 4" scope={form.scope("street2")} />
+        <FormField label="City" placeholder="Richardson" scope={form.scope("city")} required />
       </div>
       <div className="grid grid-cols-2 items-start gap-2 md:grid-cols-12">
         <div className="col-span-6">
-          <FormField label="State / Province" id="state-province" placeholder="TX" name="address.state" required />
+          <FormField label="State / Province" placeholder="TX" scope={form.scope("state")} required />
         </div>
         <div className="col-span-1 w-full sm:col-span-3">
-          <FormField label="Postal Code" id="zip" placeholder="75080" name="address.zip" required />
+          <FormField label="Postal Code" placeholder="75080" scope={form.scope("zip")} required />
         </div>
         <div className="col-span-1 w-full sm:col-span-3">
-          <FormField label="Country" id="country" placeholder="US" name="address.country" required defaultValue="US" />
+          <FormField label="Country" placeholder="US" scope={form.scope("country")} required defaultValue="US" />
         </div>
       </div>
     </fieldset>

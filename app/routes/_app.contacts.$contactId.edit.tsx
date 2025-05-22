@@ -1,21 +1,19 @@
-import { Prisma, UserRole } from "@prisma/client";
-import { ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { UserRole } from "@prisma/client";
+import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import { IconAddressBook, IconUser } from "@tabler/icons-react";
 import { useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
-import { Link, useLoaderData } from "react-router";
+import { Link, useLoaderData, useLocation } from "react-router";
 import invariant from "tiny-invariant";
 
 import { PageHeader } from "~/components/common/page-header";
-import { AddressForm } from "~/components/contacts/address-fields";
-import { ContactFields } from "~/components/contacts/contact-fields";
 import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Callout } from "~/components/ui/callout";
 import { Checkbox } from "~/components/ui/checkbox";
+import { FormField, FormSelect } from "~/components/ui/form";
 import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { SubmitButton } from "~/components/ui/submit-button";
@@ -23,13 +21,11 @@ import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
-import { forbidden, getPrismaErrorText, notFound } from "~/lib/responses.server";
+import { forbidden, notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { UpdateContactSchema } from "~/models/schemas";
 import { getContactTypes } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
-
-const UpdateContactValidator = withZod(UpdateContactSchema);
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const user = await SessionService.requireUser(request);
@@ -95,7 +91,6 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     contact,
     contactTypes,
     usersWhoCanBeAssigned,
-    // ...setFormDefaults("contact-form", { ...contact, typeId: contact.typeId.toString() }),
   };
 };
 
@@ -107,7 +102,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await SessionService.requireUser(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await UpdateContactValidator.validate(await request.formData());
+  const result = await parseFormData(request, UpdateContactSchema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -199,15 +194,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      const message = getPrismaErrorText(error);
-      return Toasts.dataWithError(
-        { message: `An error occurred: ${message}` },
-        { description: message, message: "Error updating contact" },
-      );
-    }
     return Toasts.dataWithError(null, {
-      message: "Error",
+      message: "Unknown error",
       description: "An error occurred while updating the contact. Please try again.",
     });
   }
@@ -215,10 +203,39 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function EditContactPage() {
   const user = useUser();
+  const location = useLocation();
   const { contact, contactTypes, usersWhoCanBeAssigned } = useLoaderData<typeof loader>();
   const [addressEnabled, setAddressEnabled] = useState(
     Object.values(contact.address ?? {}).some((v) => v !== "") ? true : false,
   );
+  const form = useForm({
+    schema: UpdateContactSchema,
+    method: "put",
+    defaultValues: {
+      ...contact,
+      phone: contact.phone ?? undefined,
+      email: contact.email ?? undefined,
+      lastName: contact.lastName ?? undefined,
+      firstName: contact.firstName ?? undefined,
+      alternateEmail: contact.alternateEmail ?? undefined,
+      alternatePhone: contact.alternatePhone ?? undefined,
+      organizationName: contact.organizationName ?? undefined,
+      assignedUserIds: contact.assignedUsers.map((a) => a.userId),
+      typeId: "",
+      address: contact.address
+        ? {
+            street: contact.address.street,
+            street2: contact.address.street2 ?? undefined,
+            city: contact.address.city,
+            state: contact.address.state,
+            zip: contact.address.zip,
+            country: contact.address.country,
+          }
+        : undefined,
+    },
+  });
+
+  const shouldDisableTypeSelection = user.isMember && location.pathname.includes(user.contactId);
 
   return (
     <>
@@ -253,21 +270,83 @@ export default function EditContactPage() {
         )}
       </div>
       <PageContainer>
-        <ValidatedForm
-          id="contact-form"
-          validator={UpdateContactValidator}
-          method="post"
-          className="space-y-4 sm:max-w-md"
-        >
-          <input type="hidden" name="id" value={contact.id} />
-          <ContactFields contactTypes={contactTypes} />
+        <form {...form.getFormProps()} className="space-y-4 sm:max-w-md">
+          <input {...form.getInputProps("id", { type: "hidden" })} />
+          <>
+            <div className="flex items-start gap-2">
+              <FormField label="First name" id="firstName" scope={form.scope("firstName")} placeholder="Joe" required />
+              <FormField label="Last name" id="lastName" scope={form.scope("lastName")} placeholder="Donor" />
+            </div>
+            <FormField label="Email" id="email" scope={form.scope("email")} placeholder="joe@donor.com" />
+            <FormField
+              label="Alternate Email"
+              id="email"
+              scope={form.scope("alternateEmail")}
+              placeholder="joe2@donor.com"
+            />
+            <FormField
+              label="Phone"
+              id="phone"
+              scope={form.scope("phone")}
+              placeholder="8885909724"
+              inputMode="numeric"
+              maxLength={10}
+            />
+            <FormField
+              label="Alternate Phone"
+              id="phone"
+              scope={form.scope("alternatePhone")}
+              placeholder="8885909724"
+              inputMode="numeric"
+              maxLength={10}
+            />
+            <FormSelect
+              required
+              disabled={shouldDisableTypeSelection}
+              label="Type"
+              scope={form.scope("typeId")}
+              placeholder="Select type"
+              options={contactTypes.map((ct) => ({
+                label: ct.name,
+                value: ct.id,
+              }))}
+            />
+            <FormField
+              label="Organization Name"
+              scope={form.scope("organizationName")}
+              description="Required if type is Organization"
+            />
+          </>
 
           {!addressEnabled ? (
             <Button type="button" variant="outline" onClick={() => setAddressEnabled(true)}>
               Add Address
             </Button>
           ) : (
-            <AddressForm />
+            <fieldset className="space-y-4">
+              <FormField label="Street 1" placeholder="1234 Main St." scope={form.scope("address.street")} required />
+              <div className="flex items-start gap-2">
+                <FormField label="Street 2" placeholder="Apt 4" scope={form.scope("address.street2")} />
+                <FormField label="City" placeholder="Richardson" scope={form.scope("address.city")} required />
+              </div>
+              <div className="grid grid-cols-2 items-start gap-2 md:grid-cols-12">
+                <div className="col-span-6">
+                  <FormField label="State / Province" placeholder="TX" scope={form.scope("address.state")} required />
+                </div>
+                <div className="col-span-1 w-full sm:col-span-3">
+                  <FormField label="Postal Code" placeholder="75080" scope={form.scope("address.zip")} required />
+                </div>
+                <div className="col-span-1 w-full sm:col-span-3">
+                  <FormField
+                    label="Country"
+                    placeholder="US"
+                    scope={form.scope("address.country")}
+                    required
+                    defaultValue="US"
+                  />
+                </div>
+              </div>
+            </fieldset>
           )}
           <Separator className="my-4" />
           {contact.typeId !== ContactType.Staff ? (
@@ -303,12 +382,14 @@ export default function EditContactPage() {
             </>
           ) : null}
           <div className="flex items-center gap-2">
-            <SubmitButton>Save</SubmitButton>
+            <SubmitButton isSubmitting={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
+              Save
+            </SubmitButton>
             <Button type="reset" variant="outline">
               Reset
             </Button>
           </div>
-        </ValidatedForm>
+        </form>
       </PageContainer>
     </>
   );

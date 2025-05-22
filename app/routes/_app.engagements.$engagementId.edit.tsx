@@ -98,35 +98,52 @@ export default function EditEngagementPage() {
     <>
       <PageHeader title="Edit Engagement" />
       <PageContainer>
-        <ValidatedForm id="engagement-form" method="post" validator={validator} className="space-y-4 sm:max-w-md">
-          <input type="hidden" name="id" value={engagement.id} />
-          <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
-            <FormField
-              required
-              name="date"
-              label="Date"
-              type="date"
-              defaultValue={dayjs(engagement.date).utc().format("YYYY-MM-DD")}
-            />
-            <FormSelect
-              required
-              name="typeId"
-              label="Type"
-              placeholder="Select type"
-              options={engagementTypes.map((t) => ({
-                value: t.id,
-                label: t.name,
-              }))}
-            />
-          </div>
-          <ContactDropdown types={contactTypes} contacts={contacts} name="contactId" label="Contact" required />
-          <FormTextarea name="description" label="Description" rows={8} />
-          <ButtonGroup>
-            <SubmitButton>Save</SubmitButton>
-            <Button variant="outline" type="reset">
-              Reset
-            </Button>
-          </ButtonGroup>
+        <ValidatedForm
+          method="post"
+          validator={validator}
+          defaultValues={{ ...engagement, date: dayjs(engagement.date).format("YYYY-MM-DD") }}
+          className="space-y-4 sm:max-w-md"
+        >
+          {(form) => (
+            <>
+              <input type="hidden" name="id" value={engagement.id} />
+              <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
+                <FormField
+                  required
+                  scope={form.scope("date")}
+                  label="Date"
+                  type="date"
+                  defaultValue={dayjs(engagement.date).utc().format("YYYY-MM-DD")}
+                />
+                <FormSelect
+                  required
+                  scope={form.scope("typeId")}
+                  label="Type"
+                  placeholder="Select type"
+                  options={engagementTypes.map((t) => ({
+                    value: t.id,
+                    label: t.name,
+                  }))}
+                />
+              </div>
+              <ContactDropdown
+                types={contactTypes}
+                contacts={contacts}
+                scope={form.scope("contactId")}
+                label="Contact"
+                required
+              />
+              <FormTextarea scope={form.scope("description")} label="Description" rows={8} />
+              <ButtonGroup>
+                <SubmitButton isSubmitting={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
+                  Save
+                </SubmitButton>
+                <Button variant="outline" type="reset">
+                  Reset
+                </Button>
+              </ButtonGroup>
+            </>
+          )}
         </ValidatedForm>
       </PageContainer>
     </>

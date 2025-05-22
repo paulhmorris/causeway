@@ -72,7 +72,10 @@ export const NewContactSchema = z.object({
   alternateEmail: zfd.text(EmailSchema.optional()),
   phone: zfd.text(PhoneNumberSchema.optional()),
   alternatePhone: zfd.text(PhoneNumberSchema.optional()),
-  typeId: z.coerce.number().pipe(z.nativeEnum(ContactType)),
+  typeId: z
+    .string()
+    .transform((v) => +v)
+    .pipe(z.nativeEnum(ContactType)),
   address: AddressSchema.optional(),
   assignedUserIds: zfd.repeatableOfType(zfd.text()).optional(),
 });

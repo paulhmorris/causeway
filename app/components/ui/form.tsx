@@ -28,7 +28,7 @@ function FieldDescription({ id, description }: { id: string; description?: strin
 
 type BaseFieldProps = Omit<ComponentPropsWithRef<"input">, "type">;
 interface FieldProps<Type extends string> extends BaseFieldProps {
-  scope: FormScope<ValueOfInputType<Type> | undefined>;
+  scope: FormScope<ValueOfInputType<Type> | null | undefined>;
   label: string;
   type?: Type;
   description?: string;
@@ -116,7 +116,7 @@ export const FormField = forwardRef<HTMLInputElement, FieldProps<string>>(
 );
 
 interface FormTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  scope: FormScope<string | undefined>;
+  scope: FormScope<string | null | undefined>;
   label: string;
   description?: string;
   hideLabel?: boolean;

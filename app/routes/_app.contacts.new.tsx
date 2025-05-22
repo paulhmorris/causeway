@@ -1,17 +1,15 @@
 import { MembershipRole, Prisma } from "@prisma/client";
-import { ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import { useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
-import { useLoaderData } from "react-router";
+import { useLoaderData, useLocation } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
-import { AddressForm } from "~/components/contacts/address-fields";
-import { ContactFields } from "~/components/contacts/contact-fields";
 import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
+import { FormField, FormSelect } from "~/components/ui/form";
 import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { SubmitButton } from "~/components/ui/submit-button";
@@ -23,8 +21,6 @@ import { getPrismaErrorText, handlePrismaError, serverError } from "~/lib/respon
 import { Toasts } from "~/lib/toast.server";
 import { NewContactSchema } from "~/models/schemas";
 import { SessionService } from "~/services.server/session";
-
-const NewContactValidator = withZod(NewContactSchema);
 
 export const meta: MetaFunction = () => [{ title: "New Contact" }];
 
@@ -81,7 +77,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   await SessionService.requireUser(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await NewContactValidator.validate(await request.formData());
+  const result = await parseFormData(request, NewContactSchema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -140,15 +136,78 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function NewContactPage() {
   const sessionUser = useUser();
+  const location = useLocation();
   const { contactTypes, usersWhoCanBeAssigned } = useLoaderData<typeof loader>();
   const [addressEnabled, setAddressEnabled] = useState(false);
+  const form = useForm({
+    schema: NewContactSchema,
+    method: "put",
+    defaultValues: {
+      phone: "",
+      email: "",
+      lastName: "",
+      firstName: "",
+      alternateEmail: "",
+      alternatePhone: "",
+      organizationName: "",
+      assignedUserIds: [],
+      typeId: "",
+      address: undefined,
+    },
+  });
+
+  const shouldDisableTypeSelection = sessionUser.isMember && location.pathname.includes(sessionUser.contactId);
 
   return (
     <>
       <PageHeader title="New Contact" />
       <PageContainer>
-        <ValidatedForm validator={NewContactValidator} method="post" className="space-y-4 sm:max-w-md">
-          <ContactFields contactTypes={contactTypes} />
+        <form {...form.getFormProps()} className="space-y-4 sm:max-w-md">
+          <>
+            <div className="flex items-start gap-2">
+              <FormField label="First name" id="firstName" scope={form.scope("firstName")} placeholder="Joe" required />
+              <FormField label="Last name" id="lastName" scope={form.scope("lastName")} placeholder="Donor" />
+            </div>
+            <FormField label="Email" id="email" scope={form.scope("email")} placeholder="joe@donor.com" />
+            <FormField
+              label="Alternate Email"
+              id="email"
+              scope={form.scope("alternateEmail")}
+              placeholder="joe2@donor.com"
+            />
+            <FormField
+              label="Phone"
+              id="phone"
+              scope={form.scope("phone")}
+              placeholder="8885909724"
+              inputMode="numeric"
+              maxLength={10}
+            />
+            <FormField
+              label="Alternate Phone"
+              id="phone"
+              scope={form.scope("alternatePhone")}
+              placeholder="8885909724"
+              inputMode="numeric"
+              maxLength={10}
+            />
+            <FormSelect
+              required
+              disabled={shouldDisableTypeSelection}
+              label="Type"
+              scope={form.scope("typeId")}
+              placeholder="Select type"
+              options={contactTypes.map((ct) => ({
+                label: ct.name,
+                value: ct.id,
+              }))}
+            />
+            <FormField
+              label="Organization Name"
+              scope={form.scope("organizationName")}
+              description="Required if type is Organization"
+            />
+          </>
           {!addressEnabled ? (
             <Button type="button" variant="outline" onClick={() => setAddressEnabled(true)}>
               Add Address
@@ -158,7 +217,30 @@ export default function NewContactPage() {
               <Button type="button" variant="outline" onClick={() => setAddressEnabled(false)}>
                 Remove Address
               </Button>
-              <AddressForm />
+              <fieldset className="space-y-4">
+                <FormField label="Street 1" placeholder="1234 Main St." scope={form.scope("address.street")} required />
+                <div className="flex items-start gap-2">
+                  <FormField label="Street 2" placeholder="Apt 4" scope={form.scope("address.street2")} />
+                  <FormField label="City" placeholder="Richardson" scope={form.scope("address.city")} required />
+                </div>
+                <div className="grid grid-cols-2 items-start gap-2 md:grid-cols-12">
+                  <div className="col-span-6">
+                    <FormField label="State / Province" placeholder="TX" scope={form.scope("address.state")} required />
+                  </div>
+                  <div className="col-span-1 w-full sm:col-span-3">
+                    <FormField label="Postal Code" placeholder="75080" scope={form.scope("address.zip")} required />
+                  </div>
+                  <div className="col-span-1 w-full sm:col-span-3">
+                    <FormField
+                      label="Country"
+                      placeholder="US"
+                      scope={form.scope("address.country")}
+                      required
+                      defaultValue="US"
+                    />
+                  </div>
+                </div>
+              </fieldset>
             </>
           )}
           <Separator className="my-4" />
@@ -186,12 +268,12 @@ export default function NewContactPage() {
           </fieldset>
           <Separator className="my-4" />
           <div className="flex items-center gap-2">
-            <SubmitButton>Create Contact</SubmitButton>
+            <SubmitButton isSubmitting={form.formState.isSubmitting}>Create Contact</SubmitButton>
             <Button type="reset" variant="outline">
               Reset
             </Button>
           </div>
-        </ValidatedForm>
+        </form>
       </PageContainer>
     </>
   );
