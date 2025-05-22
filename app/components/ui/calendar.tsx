@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import * as React from "react";
 import { DayPicker } from "react-day-picker";
@@ -46,8 +45,12 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         ...classNames,
       }}
       components={{
-        IconLeft: ({ ...props }) => <IconChevronLeft className="h-4 w-4" />,
-        IconRight: ({ ...props }) => <IconChevronRight className="h-4 w-4" />,
+        Chevron: (props) => {
+          if (props.orientation === "left") {
+            return <IconChevronLeft className="h-4 w-4" />;
+          }
+          return <IconChevronRight className="h-4 w-4" />;
+        },
       }}
       {...props}
     />
