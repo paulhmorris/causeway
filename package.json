@@ -9,12 +9,14 @@
     "email": "email dev --port 3001",
     "format": "prettier --write .",
     "lint": "eslint . --cache",
+    "lint:ci": "react-router typegen && eslint . --cache --max-warnings 0",
     "start": "NODE_OPTIONS='--import ./instrument.server.mjs PORT=3000 remix-serve ./build/server/index.js",
     "postinstall": "prisma generate --no-hints && patch-package",
     "pretest:e2e:run": "npm run build",
     "start:mocks": "NODE_ENV=production tsx ./server.ts",
     "test": "vitest",
     "test:e2e": "playwright test",
+    "typecheck": "react-router typegen && tsc",
     "prepare": "husky"
   },
   "dependencies": {
