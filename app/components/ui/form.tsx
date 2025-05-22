@@ -169,7 +169,7 @@ export interface FormSelectProps extends React.ButtonHTMLAttributes<HTMLButtonEl
   placeholder: string;
   description?: string;
   required?: boolean;
-  options?: Array<{ value: string | number | null; label: string | JSX.Element | null }>;
+  options?: Array<{ value: string | number | null; label: string | JSX.Element | null; disabled?: boolean }>;
   hideLabel?: boolean;
   divProps?: React.HTMLAttributes<HTMLDivElement>;
   children?: React.ReactNode;
@@ -230,7 +230,7 @@ export function FormSelect(props: FormSelectProps) {
                 if (o.value === null || o.label === null) return null;
 
                 return (
-                  <SelectItem key={o.value} value={o.value.toString()}>
+                  <SelectItem disabled={o.disabled} key={o.value} value={o.value.toString()}>
                     {o.label}
                   </SelectItem>
                 );

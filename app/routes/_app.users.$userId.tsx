@@ -147,17 +147,21 @@ export default function UserDetailsLayout() {
             method="post"
             action="/resources/reset-password"
           >
-            <input type="hidden" name="username" value={user.username} />
-            <SubmitButton
-              variant="outline"
-              type="submit"
-              formId="reset-password-form"
-              name="_action"
-              value={hasPassword ? "reset" : "setup"}
-            >
-              <span>Send Password {hasPassword ? "Reset" : "Setup"}</span>
-              {!hasPassword ? <IconLockPlus className="size-4" /> : null}
-            </SubmitButton>
+            {(form) => (
+              <>
+                <input type="hidden" name="username" value={user.username} />
+                <SubmitButton
+                  isSubmitting={form.formState.isSubmitting}
+                  variant="outline"
+                  type="submit"
+                  name="_action"
+                  value={hasPassword ? "reset" : "setup"}
+                >
+                  <span>Send Password {hasPassword ? "Reset" : "Setup"}</span>
+                  {!hasPassword ? <IconLockPlus className="size-4" /> : null}
+                </SubmitButton>
+              </>
+            )}
           </ValidatedForm>
         </div>
       </PageHeader>

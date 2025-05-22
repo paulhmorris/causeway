@@ -69,7 +69,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const fromAccountBalanceInCents = fromAccountBalance._sum.amountInCents ?? 0;
 
     if (amountInCents > fromAccountBalanceInCents) {
-      return Toasts.dataWithWarning(null, { message: "Warning", description: "Insufficient funds in from account." });
+      return Toasts.dataWithError(null, { message: "Warning", description: "Insufficient funds in from account." });
     }
 
     await db.$transaction([
@@ -118,7 +118,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
+    return Toasts.dataWithError(null, { message: "An unknown error occurred" });
   }
 };
 
@@ -129,35 +129,54 @@ export default function AddTransferPage() {
     <>
       <PageHeader title="Add Transfer" />
       <PageContainer>
-        <ValidatedForm id="transfer-form" method="post" validator={validator} className="space-y-2 sm:max-w-md">
-          <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
-            <div className="w-auto">
-              <FormField required name="date" label="Date" type="date" defaultValue={getToday()} />
-            </div>
-            <FormField name="description" label="Description" />
-          </div>
-          <FormSelect
-            required
-            name="fromAccountId"
-            label="From"
-            placeholder="Select from account"
-            options={accounts.map((a) => ({
-              value: a.id,
-              label: `${a.code} - ${a.description}`,
-            }))}
-          />
-          <FormSelect
-            required
-            name="toAccountId"
-            label="To"
-            placeholder="Select to account"
-            options={accounts.map((a) => ({
-              value: a.id,
-              label: `${a.code} - ${a.description}`,
-            }))}
-          />
-          <FormField isCurrency required name="amountInCents" label="Amount" className="w-36" />
-          <SubmitButton>Submit Transfer</SubmitButton>
+        <ValidatedForm
+          method="post"
+          validator={validator}
+          defaultValues={{
+            date: dayjs().format("YYYY-MM-DD"),
+            description: "",
+            fromAccountId: "",
+            toAccountId: "",
+            amountInCents: "",
+          }}
+          className="space-y-2 sm:max-w-md"
+        >
+          {(form) => (
+            <>
+              <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
+                <div className="w-auto">
+                  <FormField required scope={form.scope("date")} label="Date" type="date" defaultValue={getToday()} />
+                </div>
+                <FormField scope={form.scope("description")} label="Description" />
+              </div>
+              <FormSelect
+                required
+                scope={form.scope("fromAccountId")}
+                label="From"
+                placeholder="Select from account"
+                options={accounts.map((a) => ({
+                  value: a.id,
+                  label: `${a.code} - ${a.description}`,
+                  disabled: a.id === form.field("toAccountId").value(),
+                }))}
+              />
+              <FormSelect
+                required
+                scope={form.scope("toAccountId")}
+                label="To"
+                placeholder="Select to account"
+                options={accounts.map((a) => ({
+                  value: a.id,
+                  label: `${a.code} - ${a.description}`,
+                  disabled: a.id === form.field("fromAccountId").value(),
+                }))}
+              />
+              <FormField isCurrency required scope={form.scope("amountInCents")} label="Amount" className="w-36" />
+              <SubmitButton isSubmitting={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
+                Submit Transfer
+              </SubmitButton>
+            </>
+          )}
         </ValidatedForm>
       </PageContainer>
     </>

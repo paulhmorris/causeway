@@ -58,7 +58,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   try {
     const url = new URL("/", `https://${org.subdomain ? org.subdomain + "." : ""}${org.host}`).toString();
-    const html = render(<NewInquiryEmail url={url} username={user.username} {...result.data} />);
+    const html = await render(<NewInquiryEmail url={url} username={user.username} {...result.data} />);
 
     const { messageId } = await sendEmail({
       from: `${org.name} <${org.replyToEmail}@${org.host}>`,

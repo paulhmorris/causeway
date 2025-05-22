@@ -129,36 +129,46 @@ export default function TransactionDetailsPage() {
                 }}
                 className="flex flex-col"
               >
-                <input type="hidden" name="id" value={transaction.id} />
-                <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                  <dt className="text-sm font-semibold capitalize">Date</dt>
-                  <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
-                    <FormField name="date" label="Date" hideLabel type="date" />
-                  </dd>
-                </div>
-                <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                  <dt className="text-sm font-semibold capitalize">Category</dt>
-                  <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
-                    <FormSelect
-                      hideLabel
-                      required
-                      name="categoryId"
-                      label="Category"
-                      placeholder="Select category"
-                      options={categories.map((c) => ({
-                        value: c.id,
-                        label: c.name,
-                      }))}
-                    />
-                  </dd>
-                </div>
-                <div className="items-start py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                  <dt className="text-sm font-semibold capitalize">Description</dt>
-                  <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
-                    <FormTextarea name="description" label="Description" hideLabel />
-                  </dd>
-                </div>
-                <SubmitButton className="ml-auto">Save</SubmitButton>
+                {(form) => (
+                  <>
+                    <input type="hidden" name="id" value={transaction.id} />
+                    <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                      <dt className="text-sm font-semibold capitalize">Date</dt>
+                      <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
+                        <FormField scope={form.scope("date")} label="Date" hideLabel type="date" />
+                      </dd>
+                    </div>
+                    <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                      <dt className="text-sm font-semibold capitalize">Category</dt>
+                      <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
+                        <FormSelect
+                          hideLabel
+                          required
+                          scope={form.scope("categoryId")}
+                          label="Category"
+                          placeholder="Select category"
+                          options={categories.map((c) => ({
+                            value: c.id,
+                            label: c.name,
+                          }))}
+                        />
+                      </dd>
+                    </div>
+                    <div className="items-start py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                      <dt className="text-sm font-semibold capitalize">Description</dt>
+                      <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
+                        <FormTextarea scope={form.scope("description")} label="Description" hideLabel />
+                      </dd>
+                    </div>
+                    <SubmitButton
+                      isSubmitting={form.formState.isSubmitting}
+                      disabled={!form.formState.isDirty}
+                      className="ml-auto"
+                    >
+                      Save
+                    </SubmitButton>
+                  </>
+                )}
               </ValidatedForm>
             </dl>
           </div>

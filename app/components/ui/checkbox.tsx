@@ -8,6 +8,7 @@ const Checkbox = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
 >(({ className, children, ...props }, ref) => (
   <CheckboxPrimitive.Root
+    type="button"
     ref={ref}
     className={cn(
       "peer border-muted-foreground/50 ring-offset-background focus-visible:ring-ring h-4 w-4 shrink-0 rounded-sm border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
@@ -17,7 +18,7 @@ const Checkbox = React.forwardRef<
     {...props}
   >
     {children}
-    <CheckboxPrimitive.Indicator className={cn("flex items-center justify-center text-current text-white")}>
+    <CheckboxPrimitive.Indicator className={cn("flex items-center justify-center text-white")}>
       <svg
         viewBox="0 0 16 16"
         stroke="currentColor"

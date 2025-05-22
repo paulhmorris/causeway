@@ -132,84 +132,99 @@ export default function UserDetailsPage() {
 
   return (
     <>
-      <ValidatedForm id="user-form" validator={validator} method="post">
-        <div className="space-y-4 sm:max-w-md">
-          <div className="flex gap-2">
-            <FormField label="First name" id="firstName" name="firstName" required />
-            <FormField label="Last name" id="lastName" name="lastName" required />
-          </div>
-          <input type="hidden" name="id" value={user.id} />
-          {!authorizedUser.isMember ? (
-            <>
-              <FormField
-                label="Username"
-                id="username"
-                name="username"
-                disabled={authorizedUser.role === MembershipRole.MEMBER}
-                required
-              />
-              <FormSelect
-                required
-                disabled={isYou}
-                description={isYou ? "You cannot edit your own role." : ""}
-                name="role"
-                label="Role"
-                placeholder="Select a role"
-              >
-                <SelectItem value="USER">User</SelectItem>
-                <SelectItem value="ADMIN">Admin</SelectItem>
-                {authorizedUser.isSuperAdmin ? <SelectItem value="SUPERADMIN">Super Admin</SelectItem> : null}
-              </FormSelect>
-            </>
-          ) : (
-            <>
-              <input type="hidden" name="username" value={user.username} />
-              <input type="hidden" name="role" value={user.role} />
-            </>
-          )}
-          {!authorizedUser.isMember ? (
-            <FormSelect
-              name="accountId"
-              label="Linked Account"
-              placeholder="Select an account"
-              defaultValue={user.account?.id}
-              description="Link this user to an account. They will be able to see this account and all related transactions."
-              options={accounts.map((a) => ({ label: `${a.code} - ${a.description}`, value: a.id }))}
-            />
-          ) : (
-            <input type="hidden" name="accountId" value={user.account?.id} />
-          )}
-        </div>
-        <fieldset className="mt-4 sm:max-w-2xl">
-          <legend className="text-sm font-medium">
-            Account Subscriptions <span className="text-muted-foreground text-xs">(optional)</span>
-          </legend>
-          <p className="text-muted-foreground text-sm">
-            Users can be subscribed to another account. When they log in, they will see it on their dashboard.
-          </p>
-          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {layoutData.accountsThatCanBeSubscribedTo.map((a) => {
-              return (
-                <Label key={a.id} className="inline-flex cursor-pointer items-center gap-2">
-                  <Checkbox
-                    name="subscribedAccountIds"
-                    value={a.id}
-                    defaultChecked={user.contact.accountSubscriptions.some((acc) => acc.accountId === a.id)}
+      <ValidatedForm
+        validator={validator}
+        defaultValues={{
+          id: user.id,
+          firstName: user.contact.firstName ?? "",
+          lastName: user.contact.lastName ?? "",
+          username: user.username,
+          role: user.role,
+          accountId: user.account?.id ?? "",
+          subscribedAccountIds: user.contact.accountSubscriptions.map((a) => a.accountId),
+        }}
+        method="post"
+      >
+        {(form) => (
+          <>
+            <div className="space-y-4 sm:max-w-md">
+              <div className="flex gap-2">
+                <FormField label="First name" scope={form.scope("firstName")} required />
+                <FormField label="Last name" scope={form.scope("lastName")} required />
+              </div>
+              <input type="hidden" name="id" value={user.id} />
+              {!authorizedUser.isMember ? (
+                <>
+                  <FormField
+                    label="Username"
+                    scope={form.scope("username")}
+                    disabled={authorizedUser.role === MembershipRole.MEMBER}
+                    required
                   />
-                  <span>
-                    {a.code} - {a.description}
-                  </span>
-                </Label>
-              );
-            })}
-          </div>
-        </fieldset>
-        <ButtonGroup className="mt-4">
-          <SubmitButton>Save</SubmitButton>
-          <Button type="reset" variant="outline">
-            Reset
-          </Button>
-        </ButtonGroup>
+                  <FormSelect
+                    required
+                    disabled={isYou}
+                    description={isYou ? "You cannot edit your own role." : ""}
+                    scope={form.scope("role")}
+                    label="Role"
+                    placeholder="Select a role"
+                  >
+                    <SelectItem value="USER">User</SelectItem>
+                    <SelectItem value="ADMIN">Admin</SelectItem>
+                    {authorizedUser.isSuperAdmin ? <SelectItem value="SUPERADMIN">Super Admin</SelectItem> : null}
+                  </FormSelect>
+                </>
+              ) : (
+                <>
+                  <input type="hidden" name="username" value={user.username} />
+                  <input type="hidden" name="role" value={user.role} />
+                </>
+              )}
+              {!authorizedUser.isMember ? (
+                <FormSelect
+                  scope={form.scope("accountId")}
+                  label="Linked Account"
+                  placeholder="Select an account"
+                  defaultValue={user.account?.id}
+                  description="Link this user to an account. They will be able to see this account and all related transactions."
+                  options={accounts.map((a) => ({ label: `${a.code} - ${a.description}`, value: a.id }))}
+                />
+              ) : (
+                <input type="hidden" name="accountId" value={user.account?.id} />
+              )}
+            </div>
+            <fieldset className="mt-4 sm:max-w-2xl">
+              <legend className="text-sm font-medium">
+                Account Subscriptions <span className="text-muted-foreground text-xs">(optional)</span>
+              </legend>
+              <p className="text-muted-foreground text-sm">
+                Users can be subscribed to another account. When they log in, they will see it on their dashboard.
+              </p>
+              <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {layoutData.accountsThatCanBeSubscribedTo.map((a) => {
+                  return (
+                    <Label key={a.id} className="inline-flex cursor-pointer items-center gap-2">
+                      <Checkbox
+                        name="subscribedAccountIds"
+                        value={a.id}
+                        defaultChecked={user.contact.accountSubscriptions.some((acc) => acc.accountId === a.id)}
+                      />
+                      <span>
+                        {a.code} - {a.description}
+                      </span>
+                    </Label>
+                  );
+                })}
+              </div>
+            </fieldset>
+            <ButtonGroup className="mt-4">
+              <SubmitButton isSubmitting={form.formState.isSubmitting}>Save</SubmitButton>
+              <Button type="reset" variant="outline">
+                Reset
+              </Button>
+            </ButtonGroup>
+          </>
+        )}
       </ValidatedForm>
       <div className="mt-4 max-w-lg">
         {user.contactAssignments.length > 0 ? (

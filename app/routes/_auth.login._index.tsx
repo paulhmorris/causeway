@@ -92,28 +92,32 @@ export default function LoginPage() {
   return (
     <AuthCard>
       <h1 className="text-3xl font-extrabold">Login</h1>
-      <ValidatedForm validator={validator} method="post" className="mt-4 space-y-4">
-        <FormField
-          label="Email"
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          defaultValue={process.env.NODE_ENV === "development" ? "paulh.morris@gmail.com" : ""}
-          required
-        />
-        <FormField
-          label="Password"
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          defaultValue={process.env.NODE_ENV === "development" ? "password" : ""}
-          required
-        />
+      <ValidatedForm
+        validator={validator}
+        method="post"
+        className="mt-4 space-y-4"
+        defaultValues={{
+          email: import.meta.env.DEV ? "paulh.morris@gmail.com" : "",
+          password: import.meta.env.DEV ? "password" : "",
+        }}
+      >
+        {(form) => (
+          <>
+            <FormField label="Email" scope={form.scope("email")} type="email" autoComplete="email username" required />
+            <FormField
+              label="Password"
+              scope={form.scope("password")}
+              type="password"
+              autoComplete="current-password"
+              required
+            />
 
-        <input type="hidden" name="redirectTo" value={redirectTo} />
-        <SubmitButton className="w-full">Log in</SubmitButton>
+            <input type="hidden" name="redirectTo" value={redirectTo} />
+            <SubmitButton isSubmitting={form.formState.isSubmitting} className="w-full">
+              Log in
+            </SubmitButton>
+          </>
+        )}
       </ValidatedForm>
     </AuthCard>
   );

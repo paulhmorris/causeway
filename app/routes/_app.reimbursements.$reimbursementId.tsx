@@ -411,76 +411,80 @@ export default function ReimbursementRequestPage() {
               validator={validator}
               className="flex w-full"
               defaultValues={{
-                amount: rr.amountInCents / 100.0,
-                categoryId: relatedTrx?.transaction.category?.id.toString() as unknown as number,
+                amount: String(rr.amountInCents / 100.0),
+                categoryId: relatedTrx?.transaction.category?.id.toString() ?? ("" as unknown as number),
                 ...rr,
               }}
             >
-              <input type="hidden" name="id" value={rr.id} />
-              {rr.status === ReimbursementRequestStatus.PENDING ? (
-                <fieldset>
-                  <legend>
-                    <Callout>
-                      <span>Approving this will deduct from the below account for the amount specified.</span>
-                    </Callout>
-                  </legend>
-                  <div className="mt-4 space-y-4">
-                    <FormTextarea name="description" label="Requester Notes" readOnly />
-                    <FormField name="amount" label="Amount" isCurrency required />
-                    <FormSelect
-                      required
-                      name="categoryId"
-                      label="Transaction Category"
-                      placeholder="Select category"
-                      options={transactionCategories.map((c) => ({
-                        value: c.id,
-                        label: c.name,
-                      }))}
-                    />
-                    <FormSelect
-                      name="accountId"
-                      label="Account to deduct from"
-                      placeholder="Select account"
-                      description="Required for approvals"
-                      options={accounts.map((a) => ({
-                        value: a.id,
-                        label: `${a.code} - ${a.description}`,
-                      }))}
-                    />
-                    <FormTextarea
-                      name="approverNote"
-                      label="Approver Notes"
-                      description="Also appears as the transaction description"
-                    />
-                    <Separator />
-                    <div className="flex w-full flex-col gap-2 sm:flex-row-reverse sm:items-center">
+              {(form) => (
+                <>
+                  <input type="hidden" name="id" value={rr.id} />
+                  {rr.status === ReimbursementRequestStatus.PENDING ? (
+                    <fieldset>
+                      <legend>
+                        <Callout>
+                          <span>Approving this will deduct from the below account for the amount specified.</span>
+                        </Callout>
+                      </legend>
+                      <div className="mt-4 space-y-4">
+                        <FormTextarea scope={form.scope("description")} label="Requester Notes" readOnly />
+                        <FormField scope={form.scope("amount")} type="number" label="Amount" isCurrency required />
+                        <FormSelect
+                          required
+                          scope={form.scope("categoryId")}
+                          label="Transaction Category"
+                          placeholder="Select category"
+                          options={transactionCategories.map((c) => ({
+                            value: c.id,
+                            label: c.name,
+                          }))}
+                        />
+                        <FormSelect
+                          scope={form.scope("accountId")}
+                          label="Account to deduct from"
+                          placeholder="Select account"
+                          description="Required for approvals"
+                          options={accounts.map((a) => ({
+                            value: a.id,
+                            label: `${a.code} - ${a.description}`,
+                          }))}
+                        />
+                        <FormTextarea
+                          scope={form.scope("approverNote")}
+                          label="Approver Notes"
+                          description="Also appears as the transaction description"
+                        />
+                        <Separator />
+                        <div className="flex w-full flex-col gap-2 sm:flex-row-reverse sm:items-center">
+                          <Button
+                            name="_action"
+                            value={ReimbursementRequestStatus.APPROVED}
+                            className="mb-24 sm:mb-0 md:ml-auto"
+                          >
+                            Approve
+                          </Button>
+                          <Button variant="outline" name="_action" value={ReimbursementRequestStatus.VOID}>
+                            Void
+                          </Button>
+                          <Button variant="destructive" name="_action" value={ReimbursementRequestStatus.REJECTED}>
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    </fieldset>
+                  ) : (
+                    <>
+                      <input type="hidden" name="amount" value={rr.amountInCents} />
                       <Button
                         name="_action"
-                        value={ReimbursementRequestStatus.APPROVED}
-                        className="mb-24 sm:mb-0 md:ml-auto"
+                        value={ReimbursementRequestStatus.PENDING}
+                        variant="outline"
+                        className="ml-auto"
                       >
-                        Approve
+                        Reopen
                       </Button>
-                      <Button variant="outline" name="_action" value={ReimbursementRequestStatus.VOID}>
-                        Void
-                      </Button>
-                      <Button variant="destructive" name="_action" value={ReimbursementRequestStatus.REJECTED}>
-                        Reject
-                      </Button>
-                    </div>
-                  </div>
-                </fieldset>
-              ) : (
-                <>
-                  <input type="hidden" name="amount" value={rr.amountInCents} />
-                  <Button
-                    name="_action"
-                    value={ReimbursementRequestStatus.PENDING}
-                    variant="outline"
-                    className="ml-auto"
-                  >
-                    Reopen
-                  </Button>
+                    </>
+                  )}
                 </>
               )}
             </ValidatedForm>

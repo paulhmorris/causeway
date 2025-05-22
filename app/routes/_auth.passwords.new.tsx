@@ -20,8 +20,8 @@ const validator = withZod(
   z
     .object({
       token: z.string(),
-      newPassword: z.string().min(8, "Password must be at least 8 characters"),
-      confirmation: z.string().min(8, "Password must be at least 8 characters"),
+      newPassword: z.string().min(1, "Required").min(8, "Password must be at least 8 characters"),
+      confirmation: z.string().min(1, "Required").min(8, "Password must be at least 8 characters"),
     })
     .superRefine(({ newPassword, confirmation }, ctx) => {
       if (newPassword !== confirmation) {
@@ -130,17 +130,29 @@ export default function NewPassword() {
   return (
     <AuthCard>
       <h1 className="text-3xl font-extrabold">Set a new password.</h1>
-      <ValidatedForm id="password-form" validator={validator} method="post" className="mt-4 space-y-4">
-        <input type="hidden" name="token" value={searchParams.get("token") ?? ""} />
-        <FormField label="New Password" name="newPassword" type="password" autoComplete="new-password" required />
-        <FormField
-          label="Confirm New Password"
-          name="confirmation"
-          type="password"
-          autoComplete="new-password"
-          required
-        />
-        <SubmitButton>{isReset ? "Reset" : "Create"} Password</SubmitButton>
+      <ValidatedForm validator={validator} method="post" className="mt-4 space-y-4">
+        {(form) => (
+          <>
+            <input type="hidden" name="token" value={searchParams.get("token") ?? ""} />
+            <FormField
+              required
+              label="New Password"
+              scope={form.scope("newPassword")}
+              type="password"
+              autoComplete="new-password"
+            />
+            <FormField
+              required
+              label="Confirm New Password"
+              scope={form.scope("confirmation")}
+              type="password"
+              autoComplete="new-password"
+            />
+            <SubmitButton isSubmitting={form.formState.isSubmitting}>
+              {isReset ? "Reset" : "Create"} Password
+            </SubmitButton>
+          </>
+        )}
       </ValidatedForm>
     </AuthCard>
   );

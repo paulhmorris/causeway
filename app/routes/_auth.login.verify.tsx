@@ -90,29 +90,39 @@ export default function VerifyPage() {
     <AuthCard>
       <h1 className="text-3xl font-extrabold">Enter Verification Code</h1>
       <ValidatedForm validator={validator} method="post" className="mt-4 space-y-4">
-        <FormField
-          label="Email"
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          defaultValue={
-            process.env.NODE_ENV === "development" ? "paulh.morris@gmail.com" : (searchParams.get("email") ?? "")
-          }
-          required
-        />
-        <FormField label="Code" id="code" name="verificationCode" type="text" autoComplete="one-time-code" required />
+        {(form) => (
+          <>
+            <FormField
+              label="Email"
+              id="email"
+              scope={form.scope("email")}
+              type="email"
+              autoComplete="email"
+              defaultValue={import.meta.env.DEV ? "paulh.morris@gmail.com" : (searchParams.get("email") ?? "")}
+              required
+            />
+            <FormField
+              label="Code"
+              id="code"
+              scope={form.scope("verificationCode")}
+              autoComplete="one-time-code"
+              required
+            />
 
-        <input type="hidden" name="redirectTo" value={redirectTo} />
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Checkbox id="remember" name="remember" aria-label="Remember this device for 7 days" />
-            <Label htmlFor="remember" className="cursor-pointer">
-              Remember this device for 7 days
-            </Label>
-          </div>
-        </div>
-        <SubmitButton className="w-full">Log in</SubmitButton>
+            <input type="hidden" name="redirectTo" value={redirectTo} />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Checkbox id="remember" name="remember" aria-label="Remember this device for 7 days" />
+                <Label htmlFor="remember" className="cursor-pointer">
+                  Remember this device for 7 days
+                </Label>
+              </div>
+            </div>
+            <SubmitButton isSubmitting={form.formState.isSubmitting} className="w-full">
+              Log in
+            </SubmitButton>
+          </>
+        )}
       </ValidatedForm>
     </AuthCard>
   );

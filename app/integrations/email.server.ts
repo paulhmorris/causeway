@@ -54,6 +54,11 @@ export async function sendEmail(props: SendEmailInput) {
     >;
   }
 
-  console.debug("Email sent", input);
+  console.debug("Email sent", {
+    From: props.from,
+    To: props.to,
+    Subject: props.subject,
+    Body: props.html,
+  });
   return { messageId: "test", $metadata: {} };
 }

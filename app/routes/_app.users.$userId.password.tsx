@@ -99,24 +99,36 @@ export default function UserPassword() {
   return (
     <>
       <h2 className="sr-only">Change Password</h2>
-      <ValidatedForm
-        id="password-form"
-        validator={validator}
-        method="post"
-        className="mt-4 max-w-md space-y-4"
-        resetAfterSubmit
-      >
-        <input type="hidden" name="username" value={user.username} />
-        <FormField label="Old password" name="oldPassword" type="password" autoComplete="current-password" required />
-        <FormField label="New Password" name="newPassword" type="password" autoComplete="new-password" required />
-        <FormField
-          label="Confirm New Password"
-          name="confirmation"
-          type="password"
-          autoComplete="new-password"
-          required
-        />
-        <SubmitButton>Save Changes</SubmitButton>
+      <ValidatedForm validator={validator} method="post" className="mt-4 max-w-md space-y-4" resetAfterSubmit>
+        {(form) => (
+          <>
+            <input type="hidden" name="username" value={user.username} />
+            <FormField
+              label="Old password"
+              scope={form.scope("oldPassword")}
+              type="password"
+              autoComplete="current-password"
+              required
+            />
+            <FormField
+              label="New Password"
+              scope={form.scope("newPassword")}
+              type="password"
+              autoComplete="new-password"
+              required
+            />
+            <FormField
+              label="Confirm New Password"
+              scope={form.scope("confirmation")}
+              type="password"
+              autoComplete="new-password"
+              required
+            />
+            <SubmitButton isSubmitting={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
+              Save Changes
+            </SubmitButton>
+          </>
+        )}
       </ValidatedForm>
     </>
   );

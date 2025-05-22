@@ -14,7 +14,7 @@ export function comparePasswords(password: string, hash: string) {
 }
 
 export async function generateVerificationCode(userId: string) {
-  const nanoid = customAlphabet("123456789ABCDEFGHJKLMNPQRSTUVWXYZ", 6);
+  const nanoid = customAlphabet("1234567890", 6);
   const verificationCode = nanoid(6);
 
   const user = await db.user.update({
