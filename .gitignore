@@ -8,6 +8,7 @@ node_modules
 
 /postgres-data
 
+.eslintcache
 .sentryclirc
 .vercel
 .trigger

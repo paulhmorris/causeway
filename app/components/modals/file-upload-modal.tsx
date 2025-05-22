@@ -96,7 +96,7 @@ export function FileUploadModal() {
         uploadedFilesCount++;
       }
 
-      navigate(".", { replace: true });
+      await navigate(".", { replace: true });
       setUploadStatus((s) => ({
         ...s,
         status: "success",

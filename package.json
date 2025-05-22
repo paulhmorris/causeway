@@ -4,15 +4,18 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "dev": "NODE_OPTIONS='--import ./instrument.server.mjs' react-router dev",
     "build": "react-router build",
-    "start": "NODE_OPTIONS='--import ./instrument.server.mjs PORT=3000 remix-serve ./build/server/index.js",
+    "dev": "NODE_OPTIONS='--import ./instrument.server.mjs' react-router dev",
     "email": "email dev --port 3001",
+    "format": "prettier --write .",
+    "lint": "eslint . --cache",
+    "start": "NODE_OPTIONS='--import ./instrument.server.mjs PORT=3000 remix-serve ./build/server/index.js",
     "postinstall": "prisma generate --no-hints && patch-package",
+    "pretest:e2e:run": "npm run build",
     "start:mocks": "NODE_ENV=production tsx ./server.ts",
     "test": "vitest",
     "test:e2e": "playwright test",
-    "pretest:e2e:run": "npm run build"
+    "prepare": "husky"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.815.0",
@@ -121,6 +124,8 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^16.1.0",
     "happy-dom": "^12.10.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.0.0",
     "morgan": "^1.10.0",
     "postcss": "^8.5.3",
     "prettier": "3.5.3",
@@ -133,6 +138,9 @@
     "vite": "^6.3.5",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.1.4"
+  },
+  "lint-staged": {
+    "*": "prettier --write --ignore-unknown"
   },
   "engines": {
     "node": "22.x"

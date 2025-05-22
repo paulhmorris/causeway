@@ -25,7 +25,7 @@ export default tseslint.config(
   },
 
   // global ignores
-  { ignores: ["build/", "public/", "playwright/", "node_modules/", "test-results", "*.env"] },
+  { ignores: ["build/", "public/", "playwright/", "node_modules/", "test-results", "*.env", ".react-router/"] },
 
   // global language options
   {
