@@ -105,17 +105,18 @@ export const reminderTask = schedules.task({
     }, {});
 
     // Convert the map into an array of emails.
-    const mappedEmails: Array<SendEmailInput & { to: string }> = Object.values(temp).map(({ user, contacts }) => {
+    const mappedEmails = [];
+    for (const { user, contacts } of Object.values(temp)) {
       const org = contacts[0].org;
-      return {
+      const email: SendEmailInput = {
         from: constructOrgMailFrom(org),
         to: user.email,
         subject: "Contact Reminder",
-        html: render(<EngagementReminderEmail contacts={contacts} userFirstName={user.firstName} />),
+        html: await render(<EngagementReminderEmail contacts={contacts} userFirstName={user.firstName} />),
       };
-    });
+      mappedEmails.push(email);
+    }
 
-    // send all emails in promise.allsettled with try/catch
     const emails = await Promise.allSettled(mappedEmails.map((email) => sendEmail(email)));
 
     emails.forEach((result) => {

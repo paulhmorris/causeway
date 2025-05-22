@@ -7,6 +7,7 @@ import {
 import { useEffect } from "react";
 import { useRouteLoaderData } from "react-router";
 import { useTheme } from "remix-themes";
+import { ClientOnly } from "remix-utils/client-only";
 import { Toaster, toast } from "sonner";
 
 import { loader } from "~/root";
@@ -55,17 +56,21 @@ export function Notifications() {
   }, [data]);
 
   return (
-    <Toaster
-      expand
-      richColors
-      closeButton
-      duration={5000}
-      theme={theme ?? undefined}
-      toastOptions={{
-        classNames: {
-          closeButton: "bg-background! text-foreground! border-border!",
-        },
-      }}
-    />
+    <ClientOnly fallback={null}>
+      {() => (
+        <Toaster
+          expand
+          richColors
+          closeButton
+          duration={5000}
+          theme={theme ?? undefined}
+          toastOptions={{
+            classNames: {
+              closeButton: "bg-background! text-foreground! border-border!",
+            },
+          }}
+        />
+      )}
+    </ClientOnly>
   );
 }

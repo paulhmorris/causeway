@@ -63,9 +63,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     transactionItemTypes,
     categories,
     receipts,
-    // ...setFormDefaults("expense-form", {
-    //   transactionItems: [{ id: nanoid() }],
-    // }),
   };
 };
 
@@ -259,7 +256,7 @@ export default function AddExpensePage() {
             <ReceiptSelector receipts={receipts} />
             <SubmitButton
               isSubmitting={form.formState.isSubmitting}
-              disabled={form.array("transactionItems").length() === 0}
+              disabled={!form.formState.isDirty || form.array("transactionItems").length() === 0}
             >
               Submit Expense
             </SubmitButton>

@@ -55,19 +55,25 @@ export default function FeatureRequestPage() {
       <PageHeader title="Feature Request" description="Request an improvement or feature" />
       <PageContainer className="max-w-sm">
         <ValidatedForm validator={validator} method="post" className="grid gap-4">
-          <FormField name="title" label="Title" placeholder="I'd like to see..." required />
-          <FormSelect name="type" label="Type" placeholder="Select issue type" required>
-            <SelectItem value="bug">Bug</SelectItem>
-            <SelectItem value="feature">Feature</SelectItem>
-            <SelectItem value="improvement">Improvement</SelectItem>
-          </FormSelect>
-          <FormTextarea
-            name="description"
-            label="Description"
-            placeholder="Please enter everything relevant to your request."
-            required
-          />
-          <SubmitButton type="submit">Submit</SubmitButton>
+          {(form) => (
+            <>
+              <FormField scope={form.scope("title")} label="Title" placeholder="I'd like to see..." required />
+              <FormSelect scope={form.scope("type")} label="Type" placeholder="Select issue type" required>
+                <SelectItem value="bug">Bug</SelectItem>
+                <SelectItem value="feature">Feature</SelectItem>
+                <SelectItem value="improvement">Improvement</SelectItem>
+              </FormSelect>
+              <FormTextarea
+                scope={form.scope("description")}
+                label="Description"
+                placeholder="Please enter everything relevant to your request."
+                required
+              />
+              <SubmitButton isSubmitting={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
+                Submit
+              </SubmitButton>
+            </>
+          )}
         </ValidatedForm>
       </PageContainer>
     </>

@@ -40,15 +40,20 @@ export async function sendEmail(props: SendEmailInput) {
     },
   };
 
-  const command = new SendEmailCommand(input);
-  const response = await client.send(command);
-  if (!response.MessageId) {
-    throw new Error("Email not sent");
+  if (import.meta.env.PROD) {
+    const command = new SendEmailCommand(input);
+    const response = await client.send(command);
+    if (!response.MessageId) {
+      throw new Error("Email not sent");
+    }
+
+    return { messageId: response.MessageId, $metadata: response.$metadata } as Prettify<
+      { messageId: string } & {
+        $metadata: SendEmailCommandOutput["$metadata"];
+      }
+    >;
   }
 
-  return { messageId: response.MessageId, $metadata: response.$metadata } as Prettify<
-    { messageId: string } & {
-      $metadata: SendEmailCommandOutput["$metadata"];
-    }
-  >;
+  console.debug("Email sent", input);
+  return { messageId: "test", $metadata: {} };
 }

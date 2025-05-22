@@ -1,9 +1,7 @@
 import { TransactionItemTypeDirection } from "@prisma/client";
 import { render } from "@react-email/render";
-import { useFieldArray, ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { FormScope, parseFormData, useForm, validationError } from "@rvf/react-router";
 import { IconPlus } from "@tabler/icons-react";
-import { nanoid } from "nanoid";
 import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs, type MetaFunction } from "react-router";
 
 import { IncomeNotificationEmail } from "emails/income-notification";
@@ -30,7 +28,7 @@ import { getContactTypes } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
 import { generateTransactionItems, getTransactionItemMethods } from "~/services.server/transaction";
 
-const validator = withZod(TransactionSchema.extend({ shouldNotifyUser: CheckboxSchema }));
+const schema = TransactionSchema.extend({ shouldNotifyUser: CheckboxSchema });
 
 export const meta: MetaFunction = () => [{ title: "Add Income" }];
 
@@ -42,7 +40,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     await db.$transaction([
       db.contact.findMany({ where: { orgId }, include: { type: true } }),
       getContactTypes(orgId),
-      db.account.findMany({ where: { orgId }, orderBy: { code: "asc" } }),
+      db.account.findMany({
+        where: { orgId },
+        select: {
+          id: true,
+          code: true,
+          description: true,
+          user: { select: { id: true } },
+          _count: { select: { subscribers: true } },
+        },
+        orderBy: { code: "asc" },
+      }),
       getTransactionItemMethods(orgId),
       db.transactionItemType.findMany({
         where: {
@@ -74,9 +82,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     transactionItemTypes,
     categories,
     receipts,
-    // ...setFormDefaults("income-form", {
-    //   transactionItems: [{ id: nanoid() }],
-    // }),
   };
 };
 
@@ -84,7 +89,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -133,9 +138,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (shouldNotifyUser) {
       const email = transaction.account.user?.contact.email;
       if (!email) {
-        return Toasts.dataWithError(null, {
+        return Toasts.redirectWithError(`/accounts/${transaction.account.id}`, {
           message: "Error notifying subscribers",
-          description: "We couldn't find the account for this transaction. Your transaction was created.",
+          description: "We couldn't find any subscribers to this account. Your transaction was created.",
         });
       }
 
@@ -144,7 +149,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         from: constructOrgMailFrom(org),
         to: email,
         subject: "You have new income!",
-        html: render(
+        html: await render(
           <IncomeNotificationEmail
             url={constructOrgURL("/", org).toString()}
             accountName={transaction.account.code}
@@ -169,22 +174,43 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function AddIncomePage() {
   const { contacts, contactTypes, accounts, transactionItemMethods, transactionItemTypes, receipts, categories } =
     useLoaderData<typeof loader>();
-  const [items, { push, remove }] = useFieldArray("transactionItems", { formId: "income-form" });
+  const form = useForm({
+    schema: TransactionSchema,
+    method: "post",
+    defaultValues: {
+      accountId: "",
+      contactId: "",
+      categoryId: "",
+      description: "",
+      date: getToday(),
+      receiptIds: [],
+      transactionItems: [
+        {
+          methodId: "",
+          typeId: "",
+        },
+      ],
+    },
+  });
+
+  const selectedAccountId = form.field("accountId").value();
+  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+  const accountHasUserOrSubscribers = Boolean(selectedAccount?.user) || Boolean(selectedAccount?._count.subscribers);
 
   return (
     <>
       <PageHeader title="Add Income" />
       <PageContainer>
-        <ValidatedForm id="income-form" method="post" validator={validator} className="sm:max-w-xl">
+        <form {...form.getFormProps()} className="sm:max-w-xl">
           <div className="mt-8 space-y-8">
             <div className="space-y-2">
               <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
                 <div className="w-auto">
-                  <FormField required name="date" label="Date" type="date" defaultValue={getToday()} />
+                  <FormField required scope={form.scope("date")} label="Date" type="date" defaultValue={getToday()} />
                 </div>
                 <FormSelect
                   required
-                  name="categoryId"
+                  scope={form.scope("categoryId")}
                   label="Category"
                   placeholder="Select category"
                   options={categories.map((c) => ({
@@ -195,26 +221,39 @@ export default function AddIncomePage() {
               </div>
               <FormTextarea
                 required
-                name="description"
+                scope={form.scope("description")}
                 label="Note"
                 description="Shown on transaction tables and reports"
                 placeholder="Select description"
               />
-              <FormSelect
-                required
-                name="accountId"
-                label="Account"
-                placeholder="Select account"
-                options={accounts.map((a) => ({
-                  value: a.id,
-                  label: `${a.code} - ${a.description}`,
-                }))}
+              <div>
+                <FormSelect
+                  required
+                  scope={form.scope("accountId")}
+                  label="Account"
+                  placeholder="Select account"
+                  options={accounts.map((a) => ({
+                    value: a.id,
+                    label: `${a.code} - ${a.description}`,
+                  }))}
+                />
+                {accountHasUserOrSubscribers ? (
+                  <Label className="my-2 inline-flex cursor-pointer items-center gap-2">
+                    <Checkbox name="shouldNotifyUser" aria-label="Notify User" />
+                    <span>Notify User</span>
+                  </Label>
+                ) : null}
+              </div>
+              <ContactDropdown
+                types={contactTypes}
+                contacts={contacts}
+                scope={form.scope("contactId")}
+                label="Contact"
               />
-              <ContactDropdown types={contactTypes} contacts={contacts} name="contactId" label="Contact" />
             </div>
             <ul className="flex flex-col gap-4">
-              {items.map(({ key }, index) => {
-                const fieldPrefix = `transactionItems[${index}]`;
+              {form.array("transactionItems").map((key, item, index) => {
+                const prefix = `transactionItems[${index}]`;
                 return (
                   <li key={key}>
                     <Card>
@@ -222,16 +261,21 @@ export default function AddIncomePage() {
                         <CardTitle>Item {index + 1}</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <input type="hidden" name={`${fieldPrefix}.id`} />
+                        <input type="hidden" name={`${prefix}.id`} />
                         <fieldset className="space-y-3">
-                          <div className="grid grid-cols-10 gap-2">
+                          <div className="grid grid-cols-10 items-start gap-2">
                             <div className="col-span-3 sm:col-span-2">
-                              <FormField required name={`${fieldPrefix}.amountInCents`} label="Amount" isCurrency />
+                              <FormField
+                                required
+                                label="Amount"
+                                isCurrency
+                                scope={item.scope("amountInCents") as FormScope<string>}
+                              />
                             </div>
                             <FormSelect
                               divProps={{ className: "col-span-3 sm:col-span-4" }}
                               required
-                              name={`${fieldPrefix}.methodId`}
+                              scope={item.scope("methodId")}
                               label="Method"
                               placeholder="Select method"
                               options={transactionItemMethods.map((t) => ({
@@ -242,7 +286,7 @@ export default function AddIncomePage() {
                             <FormSelect
                               divProps={{ className: "col-span-4" }}
                               required
-                              name={`${fieldPrefix}.typeId`}
+                              scope={item.scope("typeId")}
                               label="Type"
                               placeholder="Select type"
                               options={transactionItemTypes.map((t) => ({
@@ -252,16 +296,16 @@ export default function AddIncomePage() {
                             />
                           </div>
                           <FormField
-                            name={`${fieldPrefix}.description`}
+                            scope={item.scope("description")}
                             label="Description"
-                            description="Only shown in transaction details and reports"
+                            description="Will only be shown in transaction details and reports"
                           />
                         </fieldset>
                       </CardContent>
                       <CardFooter>
                         <Button
                           aria-label={`Remove item ${index + 1}`}
-                          onClick={() => remove(index)}
+                          onClick={() => form.array("transactionItems").remove(index)}
                           variant="destructive"
                           type="button"
                           className="ml-auto"
@@ -275,7 +319,7 @@ export default function AddIncomePage() {
               })}
             </ul>
             <Button
-              onClick={() => push({ id: nanoid() })}
+              onClick={() => form.array("transactionItems").push({ methodId: "", typeId: "" })}
               variant="outline"
               className="flex items-center gap-2"
               type="button"
@@ -285,17 +329,15 @@ export default function AddIncomePage() {
             </Button>
             <Separator className="my-4" />
             <ReceiptSelector receipts={receipts} />
-            <div>
-              <div>
-                <Label className="mb-2 inline-flex cursor-pointer items-center gap-2">
-                  <Checkbox name="shouldNotifyUser" aria-label="Notify User" />
-                  <span>Notify User</span>
-                </Label>
-              </div>
-              <SubmitButton disabled={items.length === 0}>Submit Income</SubmitButton>
-            </div>
+
+            <SubmitButton
+              isSubmitting={form.formState.isSubmitting}
+              disabled={!form.formState.isDirty || form.array("transactionItems").length() === 0}
+            >
+              Submit Income
+            </SubmitButton>
           </div>
-        </ValidatedForm>
+        </form>
       </PageContainer>
     </>
   );

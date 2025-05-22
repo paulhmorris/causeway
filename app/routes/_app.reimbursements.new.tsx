@@ -2,6 +2,7 @@ import { ReimbursementRequestStatus } from "@prisma/client";
 import { render } from "@react-email/render";
 import { ValidatedForm, validationError } from "@rvf/react-router";
 import { withZod } from "@rvf/zod";
+import dayjs from "dayjs";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData } from "react-router";
 import { z } from "zod";
@@ -20,7 +21,7 @@ import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
-import { constructOrgMailFrom, constructOrgURL, getToday } from "~/lib/utils";
+import { constructOrgMailFrom, constructOrgURL } from "~/lib/utils";
 import { CurrencySchema } from "~/models/schemas";
 import { generateS3Urls } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
@@ -133,7 +134,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       from: constructOrgMailFrom(rr.org),
       to: `${rr.org.administratorEmail}@${rr.org.host}`,
       subject: "New Reimbursement Request",
-      html: render(
+      html: await render(
         <ReimbursementRequestEmail
           accountName={rr.account.code}
           amountInCents={rr.amountInCents}
@@ -150,7 +151,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    return Toasts.dataWithError({ message: "An unknown error occurred" }, { message: "An unknown error occurred" });
+    return Toasts.dataWithError(null, { message: "An unknown error occurred" }, { status: 500 });
   }
 };
 
@@ -161,50 +162,69 @@ export default function NewReimbursementPage() {
     <>
       <PageHeader title="New Reimbursement Request" />
       <PageContainer>
-        <ValidatedForm id="reimbursement-form" method="post" validator={validator} className="space-y-4 sm:max-w-2xl">
-          <FormField name="vendor" label="Vendor" />
-          <FormTextarea
-            required
-            name="description"
-            label="Description"
-            placeholder="Leave some notes about what you purchased..."
-          />
-          <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
-            <div className="w-auto">
-              <FormField name="date" label="Date" type="date" defaultValue={getToday()} required />
-            </div>
-            <div className="w-auto min-w-12">
-              <FormField name="amountInCents" label="Amount" required isCurrency />
-            </div>
-            <FormSelect
-              required
-              name="methodId"
-              label="Method"
-              placeholder="Select method"
-              options={methods.map((t) => ({
-                value: t.id,
-                label: t.name,
-              }))}
-            />
-          </div>
-          <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
-            <FormSelect
-              required
-              name="accountId"
-              label="Account"
-              placeholder="Select account"
-              description="The account that will be deducted from."
-              options={accounts.map((t) => ({
-                value: t.id,
-                label: `${t.code} - ${t.type.name}`,
-              }))}
-            />
-          </div>
-          <ReceiptSelector receipts={receipts} />
-          <Callout variant="warning">
-            High quality images of itemized receipts are required. Please allow two weeks for processing.
-          </Callout>
-          <SubmitButton>Submit</SubmitButton>
+        <ValidatedForm
+          method="post"
+          defaultValues={{
+            vendor: "",
+            methodId: "",
+            description: "",
+            date: dayjs().format("YYYY-MM-DD"),
+            amountInCents: "",
+            accountId: "",
+            receiptIds: [],
+          }}
+          validator={validator}
+          className="space-y-4 sm:max-w-2xl"
+        >
+          {(form) => (
+            <>
+              <FormField scope={form.scope("vendor")} label="Vendor" />
+              <FormTextarea
+                required
+                scope={form.scope("description")}
+                label="Description"
+                placeholder="Leave some notes about what you purchased..."
+              />
+              <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
+                <div className="w-auto">
+                  <FormField scope={form.scope("date")} label="Date" type="date" required />
+                </div>
+                <div className="w-auto min-w-12">
+                  <FormField scope={form.scope("amountInCents")} label="Amount" required isCurrency />
+                </div>
+                <FormSelect
+                  required
+                  scope={form.scope("methodId")}
+                  label="Method"
+                  placeholder="Select method"
+                  options={methods.map((t) => ({
+                    value: t.id,
+                    label: t.name,
+                  }))}
+                />
+              </div>
+              <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
+                <FormSelect
+                  required
+                  scope={form.scope("accountId")}
+                  label="Account"
+                  placeholder="Select account"
+                  description="The account that will be deducted from."
+                  options={accounts.map((t) => ({
+                    value: t.id,
+                    label: `${t.code} - ${t.type.name}`,
+                  }))}
+                />
+              </div>
+              <ReceiptSelector receipts={receipts} />
+              <Callout variant="warning">
+                High quality images of itemized receipts are required. Please allow two weeks for processing.
+              </Callout>
+              <SubmitButton isSubmitting={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
+                Submit
+              </SubmitButton>
+            </>
+          )}
         </ValidatedForm>
       </PageContainer>
     </>
