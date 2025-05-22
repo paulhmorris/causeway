@@ -1,8 +1,6 @@
 import { TransactionItemTypeDirection } from "@prisma/client";
-import { useFieldArray, ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { FormScope, parseFormData, useForm, validationError } from "@rvf/react-router";
 import { IconPlus } from "@tabler/icons-react";
-import { nanoid } from "nanoid";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData } from "react-router";
 
@@ -24,8 +22,6 @@ import { TransactionSchema } from "~/models/schemas";
 import { getContactTypes } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
 import { generateTransactionItems, getTransactionItemMethods } from "~/services.server/transaction";
-
-const validator = withZod(TransactionSchema);
 
 export const meta: MetaFunction = () => [{ title: "Add Expense" }];
 
@@ -77,7 +73,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, TransactionSchema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -118,22 +114,39 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function AddExpensePage() {
   const { contacts, contactTypes, accounts, transactionItemMethods, transactionItemTypes, categories, receipts } =
     useLoaderData<typeof loader>();
-  const [items, { push, remove }] = useFieldArray("transactionItems", { formId: "expense-form" });
+  const form = useForm({
+    schema: TransactionSchema,
+    method: "post",
+    defaultValues: {
+      accountId: "",
+      contactId: "",
+      categoryId: "",
+      description: "",
+      date: getToday(),
+      receiptIds: [],
+      transactionItems: [
+        {
+          methodId: "",
+          typeId: "",
+        },
+      ],
+    },
+  });
 
   return (
     <>
       <PageHeader title="Add Expense" />
       <PageContainer>
-        <ValidatedForm id="expense-form" method="post" validator={validator} className="sm:max-w-xl">
+        <form {...form.getFormProps()} className="sm:max-w-xl">
           <div className="mt-8 space-y-8">
             <div className="space-y-2">
               <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
                 <div className="w-auto">
-                  <FormField required name="date" label="Date" type="date" defaultValue={getToday()} />
+                  <FormField required scope={form.scope("date")} label="Date" type="date" />
                 </div>
                 <FormSelect
                   required
-                  name="categoryId"
+                  scope={form.scope("categoryId")}
                   label="Category"
                   placeholder="Select category"
                   options={categories.map((c) => ({
@@ -144,14 +157,14 @@ export default function AddExpensePage() {
               </div>
               <FormTextarea
                 required
-                name="description"
+                scope={form.scope("description")}
                 label="Note"
                 description="Shown on transaction tables and reports"
                 placeholder="Select description"
               />
               <FormSelect
                 required
-                name="accountId"
+                scope={form.scope("accountId")}
                 label="Account"
                 placeholder="Select account"
                 options={accounts.map((a) => ({
@@ -159,11 +172,16 @@ export default function AddExpensePage() {
                   label: `${a.code} - ${a.description}`,
                 }))}
               />
-              <ContactDropdown types={contactTypes} contacts={contacts} name="contactId" label="Payable To" />
+              <ContactDropdown
+                types={contactTypes}
+                contacts={contacts}
+                scope={form.scope("contactId")}
+                label="Payable To"
+              />
             </div>
             <ul className="flex flex-col gap-4">
-              {items.map(({ key }, index) => {
-                const fieldPrefix = `transactionItems[${index}]`;
+              {form.array("transactionItems").map((key, item, index) => {
+                const prefix = `transactionItems[${index}]`;
                 return (
                   <li key={key}>
                     <Card>
@@ -171,16 +189,21 @@ export default function AddExpensePage() {
                         <CardTitle>Item {index + 1}</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <input type="hidden" name={`${fieldPrefix}.id`} />
+                        <input type="hidden" name={`${prefix}.id`} />
                         <fieldset className="space-y-3">
                           <div className="grid grid-cols-10 items-start gap-2">
                             <div className="col-span-3 sm:col-span-2">
-                              <FormField required name={`${fieldPrefix}.amountInCents`} label="Amount" isCurrency />
+                              <FormField
+                                required
+                                label="Amount"
+                                isCurrency
+                                scope={item.scope("amountInCents") as FormScope<string>}
+                              />
                             </div>
                             <FormSelect
                               divProps={{ className: "col-span-3 sm:col-span-4" }}
                               required
-                              name={`${fieldPrefix}.methodId`}
+                              scope={item.scope("methodId")}
                               label="Method"
                               placeholder="Select method"
                               options={transactionItemMethods.map((t) => ({
@@ -191,7 +214,7 @@ export default function AddExpensePage() {
                             <FormSelect
                               divProps={{ className: "col-span-4" }}
                               required
-                              name={`${fieldPrefix}.typeId`}
+                              scope={item.scope("typeId")}
                               label="Type"
                               placeholder="Select type"
                               options={transactionItemTypes.map((t) => ({
@@ -201,7 +224,7 @@ export default function AddExpensePage() {
                             />
                           </div>
                           <FormField
-                            name={`${fieldPrefix}.description`}
+                            scope={item.scope("description")}
                             label="Description"
                             description="Will only be shown in transaction details and reports"
                           />
@@ -210,7 +233,7 @@ export default function AddExpensePage() {
                       <CardFooter>
                         <Button
                           aria-label={`Remove item ${index + 1}`}
-                          onClick={() => remove(index)}
+                          onClick={() => form.array("transactionItems").remove(index)}
                           variant="destructive"
                           type="button"
                           className="ml-auto"
@@ -224,7 +247,7 @@ export default function AddExpensePage() {
               })}
             </ul>
             <Button
-              onClick={() => push({ id: nanoid() })}
+              onClick={() => form.array("transactionItems").push({ methodId: "", typeId: "" })}
               variant="outline"
               className="flex items-center gap-2"
               type="button"
@@ -234,9 +257,14 @@ export default function AddExpensePage() {
             </Button>
             <Separator />
             <ReceiptSelector receipts={receipts} />
-            <SubmitButton disabled={items.length === 0}>Submit Expense</SubmitButton>
+            <SubmitButton
+              isSubmitting={form.formState.isSubmitting}
+              disabled={form.array("transactionItems").length() === 0}
+            >
+              Submit Expense
+            </SubmitButton>
           </div>
-        </ValidatedForm>
+        </form>
       </PageContainer>
     </>
   );

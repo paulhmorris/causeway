@@ -30,20 +30,27 @@ export const CurrencySchema = z.preprocess(
 );
 
 export const TransactionItemSchema = z.object({
-  typeId: z.coerce.number().pipe(z.nativeEnum(TransactionItemType, { invalid_type_error: "Invalid type" })),
-  methodId: z.coerce.number().pipe(z.nativeEnum(TransactionItemMethod, { invalid_type_error: "Invalid method" })),
+  typeId: z
+    .string()
+    .transform((v) => +v)
+    .pipe(z.nativeEnum(TransactionItemType, { invalid_type_error: "Invalid type" })),
+  methodId: z
+    .string()
+    .transform((v) => +v)
+    .pipe(z.nativeEnum(TransactionItemMethod, { invalid_type_error: "Invalid method" })),
   amountInCents: CurrencySchema,
   description: z.string().optional(),
 });
 
-// (d) => dayjs(d).startOf("day").toDate()
-
 export const TransactionSchema = z.object({
-  date: z.coerce.date().transform((d) => dayjs.utc(d).startOf("day").toDate()),
+  date: z.string().transform((d) => dayjs.utc(d).startOf("day").toDate()),
   description: z.string().optional(),
-  categoryId: z.coerce.number(),
+  categoryId: z.string().transform((v) => +v),
   accountId: z.string().cuid({ message: "Account required" }),
-  contactId: z.string().optional(),
+  contactId: z
+    .string()
+    .transform((v) => (v === "Select contact" ? undefined : v))
+    .optional(),
   transactionItems: z.array(TransactionItemSchema),
   receiptIds: zfd.repeatableOfType(z.string().cuid().optional()),
 });

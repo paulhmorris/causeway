@@ -8,7 +8,7 @@ import { PageHeader } from "~/components/common/page-header";
 import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
 import { ButtonGroup } from "~/components/ui/button-group";
-import { FormField } from "~/components/ui/form";
+import { FormField, FormSelect } from "~/components/ui/form";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { AccountType } from "~/lib/constants";
@@ -19,8 +19,14 @@ import { SessionService } from "~/services.server/session";
 const schema = z.object({
   code: z.string().min(1, { message: "Code is required" }),
   description: z.string().min(1, { message: "Description is required" }),
-  typeId: z.coerce.number().pipe(z.nativeEnum(AccountType)),
-  userId: z.string().optional(),
+  typeId: z
+    .string()
+    .transform((v) => +v)
+    .pipe(z.nativeEnum(AccountType)),
+  userId: z
+    .string()
+    .transform((v) => (v === "Select user" ? undefined : v))
+    .optional(),
 });
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -101,10 +107,10 @@ export default function NewAccountPage() {
     schema,
     method: "POST",
     defaultValues: {
-      typeId: 1,
       code: "",
-      description: "",
       userId: "",
+      typeId: "",
+      description: "",
     },
   });
   return (
@@ -114,21 +120,20 @@ export default function NewAccountPage() {
         <form {...form.getFormProps()} className="space-y-4 sm:max-w-md">
           <FormField label="Code" scope={form.scope("code")} required />
           <FormField label="Description" scope={form.scope("description")} required />
-          <input type="text" name="typeId" value={1} />
-          {/* <FormSelect
+          <FormSelect
             required
             label="Type"
-            name="typeId"
+            scope={form.scope("typeId")}
             placeholder="Select type"
             options={accountTypes.map((a) => ({ label: a.name, value: a.id }))}
           />
           <FormSelect
             label="Linked User"
-            name="userId"
+            scope={form.scope("userId")}
             placeholder="Select user"
             description="Link this account to a user. They will be able to see this account and all related transactions."
             options={users.map((a) => ({ label: `${a.contact.firstName} ${a.contact.lastName}`, value: a.id }))}
-          /> */}
+          />
 
           <ButtonGroup>
             <Button>Create Account</Button>

@@ -28,7 +28,7 @@ function FieldDescription({ id, description }: { id: string; description?: strin
 
 type BaseFieldProps = Omit<ComponentPropsWithRef<"input">, "type">;
 interface FieldProps<Type extends string> extends BaseFieldProps {
-  scope: FormScope<ValueOfInputType<Type>>;
+  scope: FormScope<ValueOfInputType<Type> | undefined>;
   label: string;
   type?: Type;
   description?: string;
@@ -164,12 +164,11 @@ export function FormTextarea({ hideLabel = false, scope, label, className, descr
 }
 
 export interface FormSelectProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  scope: FormScope<string | undefined>;
+  scope: FormScope<string | number | undefined>;
   label: string;
   placeholder: string;
   description?: string;
   required?: boolean;
-  id?: string;
   options?: Array<{ value: string | number | null; label: string | JSX.Element | null }>;
   hideLabel?: boolean;
   divProps?: React.HTMLAttributes<HTMLDivElement>;
@@ -180,14 +179,13 @@ export function FormSelect(props: FormSelectProps) {
   const { scope, label, placeholder, options, hideLabel, divProps, ...rest } = props;
   const field = useField(scope);
   const { onChange, ...input } = field.getControlProps();
-  const fallbackId = useId();
+  const selectId = useId();
   const error = field.error();
-  const id = props.id ?? fallbackId;
 
   return (
     <div {...divProps} className={cn("relative w-full", divProps?.className)}>
       <Label
-        htmlFor={id}
+        htmlFor={selectId}
         className={cn(
           hideLabel ? "sr-only" : "mb-1",
           error && "text-destructive",
@@ -206,7 +204,7 @@ export function FormSelect(props: FormSelectProps) {
       </Label>
       <Select {...input} value={String(input.value)} onValueChange={onChange}>
         <SelectTrigger
-          id={id}
+          id={selectId}
           {...rest}
           aria-label={placeholder}
           className={cn(error && "border-destructive focus-visible:ring-destructive/50", rest.className)}
@@ -239,8 +237,8 @@ export function FormSelect(props: FormSelectProps) {
               })
             : props.children}
         </SelectContent>
-        <FieldDescription id={id} description={props.description} />
-        <FieldError id={id} error={error} />
+        <FieldDescription id={selectId} description={props.description} />
+        <FieldError id={selectId} error={error} />
       </Select>
     </div>
   );

@@ -56,8 +56,6 @@ export async function action({ request }: ActionFunctionArgs) {
   const keep = categories.filter((t) => t.id !== undefined) as Array<{ id: number; name: string }>;
   const _delete = current.filter((t) => !keep.some((k) => k.id === t.id)).map((t) => t.id);
 
-  console.debug({ create, keep, _delete });
-
   try {
     await db.$transaction([
       db.transactionCategory.createMany({
