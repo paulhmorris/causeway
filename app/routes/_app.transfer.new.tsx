@@ -1,9 +1,8 @@
-import { ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData } from "react-router";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
 import { ErrorComponent } from "~/components/error-component";
@@ -19,15 +18,13 @@ import { CurrencySchema } from "~/models/schemas";
 import { SessionService } from "~/services.server/session";
 import { getTransactionItemMethods } from "~/services.server/transaction";
 
-const validator = withZod(
-  z.object({
-    date: z.coerce.date().transform((d) => dayjs(d).startOf("day").toDate()),
-    description: z.string().optional(),
-    fromAccountId: z.string().cuid({ message: "From Account required" }),
-    toAccountId: z.string().cuid({ message: "To Account required" }),
-    amountInCents: CurrencySchema.pipe(z.number().positive({ message: "Amount must be greater than $0.00" })),
-  }),
-);
+const schema = z.object({
+  date: z.coerce.date().transform((d) => dayjs(d).startOf("day").toDate()),
+  description: z.string().optional(),
+  fromAccountId: z.cuid({ message: "From Account required" }),
+  toAccountId: z.cuid({ message: "To Account required" }),
+  amountInCents: CurrencySchema.pipe(z.number().positive({ message: "Amount must be greater than $0.00" })),
+});
 
 export const meta: MetaFunction = () => [{ title: "Add Transfer" }];
 
@@ -50,7 +47,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -131,7 +128,7 @@ export default function AddTransferPage() {
       <PageContainer>
         <ValidatedForm
           method="post"
-          validator={validator}
+          schema={schema}
           defaultValues={{
             date: dayjs().format("YYYY-MM-DD"),
             description: "",

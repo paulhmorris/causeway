@@ -10,7 +10,7 @@ import { DrawerDialog } from "~/components/ui/drawer-dialog";
 import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
 import { SelectItem } from "~/components/ui/select";
 import { useUser } from "~/hooks/useUser";
-import { validator } from "~/routes/api.inquiries";
+import { schema } from "~/routes/api.inquiries";
 
 export function NewInquiryModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const user = useUser();
@@ -40,7 +40,7 @@ export function NewInquiryModal({ open, onOpenChange }: { open: boolean; onOpenC
         method="post"
         action="/api/inquiries"
         fetcher={fetcher}
-        validator={validator}
+        schema={schema}
         defaultValues={{
           name: `${user.contact.firstName} ${user.contact.lastName}`,
           email: user.username,

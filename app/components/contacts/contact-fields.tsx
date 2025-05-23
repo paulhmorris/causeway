@@ -1,7 +1,7 @@
 import { ContactType } from "@prisma/client";
 import { FormScope, useFormScope } from "@rvf/react-router";
 import { useLocation } from "react-router";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { FormField, FormSelect } from "~/components/ui/form";
 import { useUser } from "~/hooks/useUser";

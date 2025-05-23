@@ -1,10 +1,9 @@
-import { ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { ActionFunctionArgs, Link, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
-import { z } from "zod";
+import { z } from "zod/v4";
 dayjs.extend(utc);
 
 import { PageHeader } from "~/components/common/page-header";
@@ -21,14 +20,12 @@ import { Toasts } from "~/lib/toast.server";
 import { cn, formatCentsAsDollars } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
 
-const schema = withZod(
-  z.object({
-    id: z.string().cuid(),
-    date: z.string(),
-    categoryId: z.string(),
-    description: z.string().optional(),
-  }),
-);
+const schema = z.object({
+  id: z.cuid(),
+  date: z.string(),
+  categoryId: z.string(),
+  description: z.string().optional(),
+});
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   invariant(params.transactionId, "transactionId not found");
@@ -63,7 +60,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await schema.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -120,9 +117,10 @@ export default function TransactionDetailsPage() {
               ) : null}
               <ValidatedForm
                 id="transaction-edit"
-                validator={schema}
+                schema={schema}
                 method="PUT"
                 defaultValues={{
+                  ...transaction,
                   date: dayjs(transaction.date).utc().format("YYYY-MM-DD"),
                   description: transaction.description ?? "",
                   categoryId: String(transaction.categoryId),

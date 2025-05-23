@@ -20,9 +20,9 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.816.0",
-    "@aws-sdk/client-sesv2": "^3.816.0",
-    "@aws-sdk/s3-request-presigner": "^3.816.0",
+    "@aws-sdk/client-s3": "^3.817.0",
+    "@aws-sdk/client-sesv2": "^3.817.0",
+    "@aws-sdk/s3-request-presigner": "^3.817.0",
     "@chronicstone/typed-xlsx": "^0.2.17",
     "@fontsource-variable/dm-sans": "^5.2.5",
     "@neondatabase/serverless": "^1.0.0",
@@ -51,7 +51,6 @@
     "@react-router/node": "^7.6.0",
     "@react-router/serve": "^7.6.0",
     "@rvf/react-router": "^7.1.5",
-    "@rvf/zod": "^7.0.3",
     "@sentry/profiling-node": "^9.22.0",
     "@sentry/react-router": "^9.22.0",
     "@tabler/icons-react": "^3.33.0",
@@ -89,9 +88,7 @@
     "usehooks-ts": "^3.1.1",
     "vaul": "^1.1.2",
     "ws": "^8.18.2",
-    "zod": "^3.25.20",
-    "zod-form-data": "^2.0.7",
-    "zod-validation-error": "^3.4.1"
+    "zod": "^3.25.24"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.1",
@@ -112,7 +109,7 @@
     "@types/react-dom": "^19.1.5",
     "@types/source-map-support": "^0.5.10",
     "@types/ws": "^8.18.1",
-    "@vitejs/plugin-react": "^4.4.1",
+    "@vitejs/plugin-react": "^4.5.0",
     "@vitest/coverage-v8": "^3.1.4",
     "cookie": "^1.0.2",
     "eslint": "^9.27.0",

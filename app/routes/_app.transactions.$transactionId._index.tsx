@@ -1,11 +1,10 @@
-import { validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, validationError } from "@rvf/react-router";
 import { IconExternalLink } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { ActionFunctionArgs, Link, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
-import { z } from "zod";
+import { z } from "zod/v4";
 dayjs.extend(utc);
 
 import { PageHeader } from "~/components/common/page-header";
@@ -23,7 +22,7 @@ import { cn, formatCentsAsDollars } from "~/lib/utils";
 import { generateS3Urls } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
 
-const validator = withZod(z.object({ _action: z.literal("delete") }));
+const schema = z.object({ _action: z.literal("delete") });
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   invariant(params.transactionId, "transactionId not found");
@@ -112,7 +111,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
   await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }

@@ -1,9 +1,8 @@
-import { ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import { IconChevronRight } from "@tabler/icons-react";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { redirect, useLoaderData, useSearchParams } from "react-router";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { AuthCard } from "~/components/auth/auth-card";
 import { BigButton } from "~/components/ui/big-button";
@@ -15,13 +14,11 @@ import { normalizeEnum } from "~/lib/utils";
 import { CheckboxSchema } from "~/models/schemas";
 import { SessionService, sessionStorage } from "~/services.server/session";
 
-const validator = withZod(
-  z.object({
-    orgId: z.string().min(1, { message: "Organization is required" }),
-    redirectTo: z.string().optional(),
-    rememberSelection: CheckboxSchema,
-  }),
-);
+const schema = z.object({
+  orgId: z.string().min(1, { message: "Organization is required" }),
+  redirectTo: z.string().optional(),
+  rememberSelection: CheckboxSchema,
+});
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const userId = await SessionService.requireUserId(request);
@@ -65,7 +62,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const userId = await SessionService.requireUserId(request);
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
 
   if (result.error) {
     return validationError(result.error);
@@ -118,7 +115,16 @@ export default function LoginPage() {
     <AuthCard>
       <h1 className="text-4xl font-extrabold">Choose organization</h1>
       <p className="text-muted-foreground mt-1 text-sm">You can change organizations at any time.</p>
-      <ValidatedForm validator={validator} method="post" className="mt-6 space-y-4">
+      <ValidatedForm
+        schema={schema}
+        method="post"
+        className="mt-6 space-y-4"
+        defaultValues={{
+          redirectTo: redirectTo === "/" ? undefined : redirectTo,
+          rememberSelection: "",
+          orgId: "",
+        }}
+      >
         <input type="hidden" name="redirectTo" value={redirectTo === "/choose-org" ? "/" : redirectTo} />
         <Label className="inline-flex cursor-pointer items-center gap-2">
           <Checkbox

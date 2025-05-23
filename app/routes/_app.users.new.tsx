@@ -1,8 +1,7 @@
 import { MembershipRole, UserRole } from "@prisma/client";
-import { ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs, type MetaFunction } from "react-router";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
 import { ErrorComponent } from "~/components/error-component";
@@ -24,21 +23,19 @@ import { sendPasswordSetupEmail } from "~/services.server/mail";
 import { generatePasswordReset } from "~/services.server/password";
 import { SessionService } from "~/services.server/session";
 
-const validator = withZod(
-  z.object({
-    firstName: z.string().min(1, { message: "First name is required" }),
-    lastName: z.string().optional(),
-    username: z.string().email({ message: "Invalid email address" }),
-    role: z.nativeEnum(MembershipRole),
-    systemRole: z.nativeEnum(UserRole),
-    typeId: z.coerce.number().pipe(z.nativeEnum(ContactType)),
-    sendPasswordSetup: CheckboxSchema,
-    accountId: z
-      .string()
-      .transform((v) => (v === "Select an account" ? undefined : v))
-      .optional(),
-  }),
-);
+const schema = z.object({
+  firstName: z.string().min(1, { error: "First name is required" }),
+  lastName: z.string().optional(),
+  username: z.email({ error: "Invalid email address" }),
+  role: z.enum(MembershipRole),
+  systemRole: z.enum(UserRole),
+  typeId: z.coerce.number().pipe(z.enum(ContactType)),
+  sendPasswordSetup: CheckboxSchema,
+  accountId: z
+    .string()
+    .transform((v) => (v === "Select an account" ? undefined : v))
+    .optional(),
+});
 
 export const meta: MetaFunction = () => [{ title: "New User" }];
 
@@ -62,7 +59,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const authorizedUser = await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -154,7 +151,7 @@ export default function NewUserPage() {
       />
       <PageContainer>
         <ValidatedForm
-          validator={validator}
+          schema={schema}
           defaultValues={{
             firstName: "",
             lastName: "",
@@ -163,6 +160,7 @@ export default function NewUserPage() {
             typeId: "",
             systemRole: UserRole.USER,
             accountId: "",
+            sendPasswordSetup: "",
           }}
           method="post"
           className="space-y-4 sm:max-w-md"

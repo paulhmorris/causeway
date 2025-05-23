@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import { loadEnv } from "vite";
-import { TypeOf, z } from "zod";
+import { TypeOf, z } from "zod/v4";
 
 const serverEnvValidation = z.object({
   // CI
@@ -55,11 +55,9 @@ export function validateEnv(): void {
     serverEnvValidation.parse(env);
   } catch (err) {
     if (err instanceof z.ZodError) {
-      const { fieldErrors } = err.flatten();
-      const errorMessage = Object.entries(fieldErrors)
-        .map(([field, errors]) => (errors ? `${field}: ${errors.join(", ")}` : field))
-        .join("\n  ");
-      throw new Error(`Missing environment variables:\n  ${errorMessage}`);
+      const tree = z.treeifyError(err);
+      const message = tree.errors.join("\n  ");
+      throw new Error(`Missing environment variables:\n  ${message}`);
     }
   }
 }

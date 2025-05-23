@@ -1,7 +1,7 @@
 import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import { IconMinus, IconPlus } from "@tabler/icons-react";
 import { ActionFunctionArgs, LoaderFunctionArgs, useFetcher, useLoaderData } from "react-router";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { Button } from "~/components/ui/button";
 import { FormField } from "~/components/ui/form";

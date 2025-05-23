@@ -6,7 +6,7 @@ import {
   type LoaderFunctionArgs,
   type MetaFunction,
 } from "react-router";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
 import { ContactDropdown } from "~/components/contacts/contact-dropdown";
@@ -29,8 +29,8 @@ const schema = z.object({
   typeId: z
     .string()
     .transform((v) => Number(v))
-    .pipe(z.nativeEnum(EngagementType)),
-  contactId: z.string().cuid({ message: "Contact required" }),
+    .pipe(z.enum(EngagementType)),
+  contactId: z.cuid({ message: "Contact required" }),
 });
 
 export const meta: MetaFunction = () => [{ title: "Add Engagement" }];

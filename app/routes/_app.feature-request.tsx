@@ -1,7 +1,6 @@
-import { ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import { ActionFunctionArgs, MetaFunction } from "react-router";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
 import { PageContainer } from "~/components/page-container";
@@ -13,14 +12,12 @@ import { Toasts } from "~/lib/toast.server";
 import { constructOrgMailFrom } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
 
-const validator = withZod(
-  z.object({
-    title: z.string(),
-    description: z.string(),
-    type: z.string(),
-    attachmentUrl: z.string().url().or(z.literal("")),
-  }),
-);
+const schema = z.object({
+  title: z.string(),
+  type: z.string(),
+  description: z.string(),
+  attachmentUrl: z.string().url().or(z.literal("")),
+});
 
 export async function action({ request }: ActionFunctionArgs) {
   const user = await SessionService.requireUser(request);
@@ -28,7 +25,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return new Response(null, { status: 405 });
   }
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -54,7 +51,17 @@ export default function FeatureRequestPage() {
     <>
       <PageHeader title="Feature Request" description="Request an improvement or feature" />
       <PageContainer className="max-w-sm">
-        <ValidatedForm validator={validator} method="post" className="grid gap-4">
+        <ValidatedForm
+          schema={schema}
+          method="post"
+          className="grid gap-4"
+          defaultValues={{
+            title: "",
+            type: "",
+            description: "",
+            attachmentUrl: "",
+          }}
+        >
           {(form) => (
             <>
               <FormField scope={form.scope("title")} label="Title" placeholder="I'd like to see..." required />

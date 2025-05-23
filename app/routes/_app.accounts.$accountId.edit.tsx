@@ -3,7 +3,7 @@ import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
 import { ErrorComponent } from "~/components/error-component";
@@ -21,10 +21,10 @@ import { getAccountTypes } from "~/services.server/account";
 import { SessionService } from "~/services.server/session";
 
 const schema = z.object({
-  id: z.string().cuid(),
+  id: z.cuid(),
   code: z.string().min(1, { message: "Code is required" }),
   description: z.string().min(1, { message: "Description is required" }),
-  typeId: z.coerce.number().pipe(z.nativeEnum(AccountType)),
+  typeId: z.coerce.number().pipe(z.enum(AccountType)),
   userId: z
     .string()
     .transform((v) => (v === "Select user" ? undefined : v))

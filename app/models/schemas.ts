@@ -1,7 +1,6 @@
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { z } from "zod";
-import { zfd } from "zod-form-data";
+import { z } from "zod/v4";
 
 dayjs.extend(utc);
 
@@ -22,7 +21,7 @@ export const EmailSchema = z.string().email({ message: "Invalid email address" }
 export const CurrencySchema = z.preprocess(
   (v) => (typeof v === "string" && v.startsWith("$") ? v.slice(1) : v),
   z.coerce
-    .number({ invalid_type_error: "Must be a number", required_error: "Amount required" })
+    .number({ error: (e) => (e.input === undefined ? "Amount required" : "Must be a number") })
     .multipleOf(0.01, { message: "Must be multiple of $0.01" })
     .nonnegative({ message: "Must be greater than $0.00" })
     .max(99_999, { message: "Must be less than $100,000" })
@@ -33,11 +32,11 @@ export const TransactionItemSchema = z.object({
   typeId: z
     .string()
     .transform((v) => +v)
-    .pipe(z.nativeEnum(TransactionItemType, { invalid_type_error: "Invalid type" })),
+    .pipe(z.enum(TransactionItemType, { error: "Invalid type" })),
   methodId: z
     .string()
     .transform((v) => +v)
-    .pipe(z.nativeEnum(TransactionItemMethod, { invalid_type_error: "Invalid method" })),
+    .pipe(z.enum(TransactionItemMethod, { error: "Invalid method" })),
   amountInCents: CurrencySchema,
   description: z.string().optional(),
 });
@@ -46,13 +45,13 @@ export const TransactionSchema = z.object({
   date: z.string().transform((d) => dayjs.utc(d).startOf("day").toDate()),
   description: z.string().optional(),
   categoryId: z.string().transform((v) => +v),
-  accountId: z.string().cuid({ message: "Account required" }),
+  accountId: z.cuid({ message: "Account required" }),
   contactId: z
     .string()
     .transform((v) => (v === "Select contact" ? undefined : v))
     .optional(),
   transactionItems: z.array(TransactionItemSchema),
-  receiptIds: zfd.repeatableOfType(z.string().cuid().optional()),
+  receiptIds: z.array(z.cuid().optional()),
 });
 
 export const AddressSchema = z.object({
@@ -68,18 +67,18 @@ export const NewContactSchema = z.object({
   firstName: z.string().max(255).optional(),
   lastName: z.string().max(255).optional(),
   organizationName: z.string().max(255).optional(),
-  email: zfd.text(EmailSchema.optional()),
-  alternateEmail: zfd.text(EmailSchema.optional()),
-  phone: zfd.text(PhoneNumberSchema.optional()),
-  alternatePhone: zfd.text(PhoneNumberSchema.optional()),
+  email: EmailSchema.optional(),
+  alternateEmail: EmailSchema.optional(),
+  phone: PhoneNumberSchema.optional(),
+  alternatePhone: PhoneNumberSchema.optional(),
   typeId: z
     .string()
     .transform((v) => +v)
-    .pipe(z.nativeEnum(ContactType)),
+    .pipe(z.enum(ContactType)),
   address: AddressSchema.optional(),
-  assignedUserIds: zfd.repeatableOfType(zfd.text()).optional(),
+  assignedUserIds: z.array(z.cuid()).optional(),
 });
 
 export const UpdateContactSchema = NewContactSchema.extend({
-  id: z.string().cuid(),
+  id: z.cuid(),
 });

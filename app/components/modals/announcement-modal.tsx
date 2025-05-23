@@ -1,5 +1,5 @@
 import { Announcement } from "@prisma/client";
-import { ValidatedForm } from "@rvf/react-router";
+import { FormScope, ValidatedForm } from "@rvf/react-router";
 import { IconLoader, IconPlus } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
@@ -8,7 +8,7 @@ import { useFetcher } from "react-router";
 import { Button } from "~/components/ui/button";
 import { DrawerDialog, DrawerDialogFooter } from "~/components/ui/drawer-dialog";
 import { FormField, FormTextarea } from "~/components/ui/form";
-import { validator } from "~/routes/api.announcements";
+import { schema } from "~/routes/api.announcements";
 
 export function AnnouncementModal({
   intent,
@@ -46,19 +46,21 @@ export function AnnouncementModal({
         <ValidatedForm
           method="post"
           action="/api/announcements"
-          validator={validator}
+          schema={schema}
           fetcher={fetcher}
           id="announcement-form"
           className="space-y-4"
           defaultValues={{
-            title: intent === "update" ? announcement?.title : "",
-            content: intent === "update" ? announcement?.content : "",
+            intent: "update",
+            id: announcement?.id,
+            title: intent === "update" ? (announcement?.title ?? "") : "",
+            content: intent === "update" ? (announcement?.content ?? "") : "",
             expiresAt:
               intent === "update"
                 ? announcement?.expiresAt
                   ? dayjs(announcement.expiresAt).format("YYYY-MM-DD")
-                  : undefined
-                : undefined,
+                  : ""
+                : "",
           }}
         >
           {(form) => (
@@ -68,7 +70,7 @@ export function AnnouncementModal({
               <FormTextarea label="Content" scope={form.scope("content")} required />
               <FormField
                 label="Expires"
-                scope={form.scope("expiresAt")}
+                scope={form.scope("expiresAt") as FormScope<string>}
                 type="date"
                 description="Will disappear after midnight on this day"
                 min={dayjs().format("YYYY-MM-DD")}

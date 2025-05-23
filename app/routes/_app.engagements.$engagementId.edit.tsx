@@ -1,10 +1,9 @@
-import { ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { ActionFunctionArgs, LoaderFunctionArgs, useLoaderData, type MetaFunction } from "react-router";
 import invariant from "tiny-invariant";
-import { z } from "zod";
+import { z } from "zod/v4";
 dayjs.extend(utc);
 
 import { PageHeader } from "~/components/common/page-header";
@@ -22,15 +21,13 @@ import { getContactTypes } from "~/services.server/contact";
 import { getEngagementTypes } from "~/services.server/engagement";
 import { SessionService } from "~/services.server/session";
 
-const validator = withZod(
-  z.object({
-    id: z.coerce.number(),
-    date: z.coerce.date(),
-    description: z.string().optional(),
-    typeId: z.coerce.number().pipe(z.nativeEnum(EngagementType)),
-    contactId: z.string().cuid({ message: "Contact required" }),
-  }),
-);
+const schema = z.object({
+  id: z.coerce.number(),
+  date: z.coerce.date(),
+  description: z.string().nullable().optional(),
+  typeId: z.coerce.number().pipe(z.enum(EngagementType)),
+  contactId: z.cuid({ error: "Contact required" }),
+});
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const user = await SessionService.requireUser(request);
@@ -78,7 +75,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   await SessionService.requireUser(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -100,7 +97,7 @@ export default function EditEngagementPage() {
       <PageContainer>
         <ValidatedForm
           method="post"
-          validator={validator}
+          schema={schema}
           defaultValues={{ ...engagement, date: dayjs(engagement.date).format("YYYY-MM-DD") }}
           className="space-y-4 sm:max-w-md"
         >

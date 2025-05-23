@@ -1,10 +1,8 @@
 import { MembershipRole, UserRole } from "@prisma/client";
-import { ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import type { ActionFunctionArgs } from "react-router";
 import { Link, useRouteLoaderData } from "react-router";
-import { z } from "zod";
-import { zfd } from "zod-form-data";
+import { z } from "zod/v4";
 
 import { ErrorComponent } from "~/components/error-component";
 import { Button } from "~/components/ui/button";
@@ -22,27 +20,25 @@ import { Toasts } from "~/lib/toast.server";
 import { loader } from "~/routes/_app.users.$userId";
 import { SessionService } from "~/services.server/session";
 
-const validator = withZod(
-  z.object({
-    id: z.string().cuid(),
-    firstName: z.string().min(1, { message: "First name is required" }),
-    lastName: z.string().min(1, { message: "Last name is required" }),
-    username: z.string().email({ message: "Invalid email address" }).optional(),
-    role: z.nativeEnum(UserRole),
-    accountId: z.preprocess((val) => {
-      if (val === "Select an account") {
-        return undefined;
-      }
-    }, z.string().optional()),
-    subscribedAccountIds: zfd.repeatableOfType(zfd.text()).optional(),
-  }),
-);
+const schema = z.object({
+  id: z.cuid(),
+  firstName: z.string().min(1, { message: "First name is required" }),
+  lastName: z.string().min(1, { message: "Last name is required" }),
+  username: z.string().email({ message: "Invalid email address" }).optional(),
+  role: z.enum(UserRole),
+  accountId: z.preprocess((val) => {
+    if (val === "Select an account") {
+      return undefined;
+    }
+  }, z.string().optional()),
+  subscribedAccountIds: z.array(z.string()).optional(),
+});
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const authorizedUser = await SessionService.requireUser(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -133,7 +129,7 @@ export default function UserDetailsPage() {
   return (
     <>
       <ValidatedForm
-        validator={validator}
+        schema={schema}
         defaultValues={{
           id: user.id,
           firstName: user.contact.firstName ?? "",

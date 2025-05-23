@@ -164,7 +164,7 @@ export function FormTextarea({ hideLabel = false, scope, label, className, descr
 }
 
 export interface FormSelectProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  scope: FormScope<string | number | undefined>;
+  scope: FormScope<string | number | null | undefined>;
   label: string;
   placeholder: string;
   description?: string;

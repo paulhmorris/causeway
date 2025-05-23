@@ -18,6 +18,7 @@ export default defineConfig((config) => ({
   resolve: {
     alias: {
       ".prisma/client/index-browser": "./node_modules/.prisma/client/index-browser.js",
+      "@tabler/icons-react": "@tabler/icons-react/dist/esm/icons/index.mjs",
     },
   },
   server: {

@@ -2,7 +2,7 @@ import { MembershipRole } from "@prisma/client";
 import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData } from "react-router";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
 import { PageContainer } from "~/components/page-container";
@@ -22,7 +22,7 @@ const schema = z.object({
   typeId: z
     .string()
     .transform((v) => +v)
-    .pipe(z.nativeEnum(AccountType)),
+    .pipe(z.enum(AccountType)),
   userId: z
     .string()
     .transform((v) => (v === "Select user" ? undefined : v))

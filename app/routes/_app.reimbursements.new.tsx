@@ -1,12 +1,10 @@
 import { ReimbursementRequestStatus } from "@prisma/client";
 import { render } from "@react-email/render";
-import { ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData } from "react-router";
-import { z } from "zod";
-import { zfd } from "zod-form-data";
+import { z } from "zod/v4";
 
 import { ReimbursementRequestEmail } from "emails/reimbursement-request";
 import { PageHeader } from "~/components/common/page-header";
@@ -27,17 +25,15 @@ import { generateS3Urls } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
 import { getTransactionItemMethods } from "~/services.server/transaction";
 
-const validator = withZod(
-  z.object({
-    date: z.coerce.date({ message: "Invalid date", required_error: "Date required" }),
-    vendor: z.string().optional(),
-    description: z.string().optional(),
-    amountInCents: CurrencySchema,
-    accountId: z.string().cuid("Invalid account"),
-    receiptIds: zfd.repeatableOfType(z.string().cuid().optional()),
-    methodId: z.coerce.number().pipe(z.nativeEnum(TransactionItemMethod, { message: "Invalid method" })),
-  }),
-);
+const schema = z.object({
+  date: z.coerce.date({ error: (e) => (e.input === undefined ? "Date required" : "Invalid date") }),
+  vendor: z.string().optional(),
+  description: z.string().optional(),
+  amountInCents: CurrencySchema,
+  accountId: z.cuid({ error: "Invalid account" }),
+  receiptIds: z.array(z.cuid().optional()),
+  methodId: z.coerce.number().pipe(z.enum(TransactionItemMethod, { message: "Invalid method" })),
+});
 
 export const meta: MetaFunction = () => [{ title: "New Reimbursement Request" }];
 
@@ -70,7 +66,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await SessionService.requireUser(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -173,7 +169,7 @@ export default function NewReimbursementPage() {
             accountId: "",
             receiptIds: [],
           }}
-          validator={validator}
+          schema={schema}
           className="space-y-4 sm:max-w-2xl"
         >
           {(form) => (

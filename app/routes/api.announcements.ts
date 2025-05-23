@@ -1,10 +1,8 @@
-import { validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { ActionFunctionArgs } from "react-router";
-import { z } from "zod";
-import { zfd } from "zod-form-data";
+import { z } from "zod/v4";
 dayjs.extend(utc);
 
 import { db } from "~/integrations/prisma.server";
@@ -12,33 +10,35 @@ import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
 import { SessionService } from "~/services.server/session";
 
-export const validator = withZod(
-  z.discriminatedUnion("intent", [
-    z.object({
-      intent: z.literal("create"),
-      title: z.string(),
-      content: z.string(),
-      expiresAt: zfd.text(z.coerce.date().optional()),
-    }),
-    z.object({
-      intent: z.literal("update"),
-      id: z.coerce.number(),
-      title: z.string(),
-      content: z.string(),
-      expiresAt: zfd.text(z.coerce.date().optional()),
-    }),
-    z.object({
-      intent: z.literal("expire"),
-      id: z.coerce.number(),
-    }),
-  ]),
-);
+export const schema = z.discriminatedUnion("intent", [
+  z.object({
+    intent: z.literal("create"),
+    id: z.never(),
+    title: z.string(),
+    content: z.string(),
+    expiresAt: z.coerce.date().optional(),
+  }),
+  z.object({
+    intent: z.literal("update"),
+    id: z.coerce.number(),
+    title: z.string(),
+    content: z.string(),
+    expiresAt: z.coerce.date().optional(),
+  }),
+  z.object({
+    intent: z.literal("expire"),
+    id: z.coerce.number(),
+    title: z.never(),
+    content: z.never(),
+    expiresAt: z.never(),
+  }),
+]);
 
 export async function action({ request }: ActionFunctionArgs) {
   await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }

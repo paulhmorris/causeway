@@ -188,6 +188,7 @@ export default function AddIncomePage() {
         {
           methodId: "",
           typeId: "",
+          amountInCents: "",
         },
       ],
     },
@@ -319,7 +320,7 @@ export default function AddIncomePage() {
               })}
             </ul>
             <Button
-              onClick={() => form.array("transactionItems").push({ methodId: "", typeId: "" })}
+              onClick={() => form.array("transactionItems").push({ methodId: "", typeId: "", amountInCents: "" })}
               variant="outline"
               className="flex items-center gap-2"
               type="button"

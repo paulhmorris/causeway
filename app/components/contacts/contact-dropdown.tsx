@@ -7,10 +7,10 @@ import { ContactType } from "~/lib/constants";
 
 export function ContactDropdown(
   props: {
-    scope: FormScope<string | number | undefined>;
+    scope: FormScope<string>;
     types: Array<PContactType>;
     contacts: Array<Contact>;
-  } & Omit<FormSelectProps, "name" | "placeholder">,
+  } & Omit<FormSelectProps, "name" | "placeholder" | "scope">,
 ) {
   const { types, contacts, label, scope, ...rest } = props;
   return (

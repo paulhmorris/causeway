@@ -125,6 +125,7 @@ export default function AddExpensePage() {
         {
           methodId: "",
           typeId: "",
+          amountInCents: "",
         },
       ],
     },
@@ -244,7 +245,7 @@ export default function AddExpensePage() {
               })}
             </ul>
             <Button
-              onClick={() => form.array("transactionItems").push({ methodId: "", typeId: "" })}
+              onClick={() => form.array("transactionItems").push({ methodId: "", typeId: "", amountInCents: "" })}
               variant="outline"
               className="flex items-center gap-2"
               type="button"

@@ -1,12 +1,10 @@
 import { ReimbursementRequestStatus } from "@prisma/client";
-import { ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import { IconExternalLink } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
-import { z } from "zod";
-import { zfd } from "zod-form-data";
+import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
 import { PageContainer } from "~/components/page-container";
@@ -15,7 +13,9 @@ import { Button } from "~/components/ui/button";
 import { Callout } from "~/components/ui/callout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "~/components/ui/card";
 import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
+import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
+import { Textarea } from "~/components/ui/textarea";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod, TransactionItemType } from "~/lib/constants";
@@ -32,30 +32,40 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => [
   },
 ];
 
-const validator = withZod(
-  z.discriminatedUnion("_action", [
-    z.object({
-      _action: z.literal(ReimbursementRequestStatus.APPROVED),
-      id: z.string().cuid(),
-      amount: CurrencySchema,
-      categoryId: zfd.numeric(z.number().positive()),
-      accountId: z.string().optional(),
-      approverNote: z.string().max(2000).optional(),
-    }),
-    z.object({
-      _action: z.literal(ReimbursementRequestStatus.VOID),
-      id: z.string().cuid(),
-    }),
-    z.object({
-      _action: z.literal(ReimbursementRequestStatus.PENDING),
-      id: z.string().cuid(),
-    }),
-    z.object({
-      _action: z.literal(ReimbursementRequestStatus.REJECTED),
-      id: z.string().cuid(),
-    }),
-  ]),
-);
+const schema = z.discriminatedUnion("_action", [
+  z.object({
+    _action: z.literal(ReimbursementRequestStatus.APPROVED),
+    id: z.cuid(),
+    amount: CurrencySchema,
+    categoryId: z.number().positive(),
+    accountId: z.string().nullable().optional(),
+    approverNote: z.string().max(2000).nullable().optional(),
+  }),
+  z.object({
+    _action: z.literal(ReimbursementRequestStatus.VOID),
+    id: z.cuid(),
+    amount: z.never(),
+    categoryId: z.never(),
+    accountId: z.never(),
+    approverNote: z.never(),
+  }),
+  z.object({
+    _action: z.literal(ReimbursementRequestStatus.PENDING),
+    id: z.cuid(),
+    amount: z.never(),
+    categoryId: z.never(),
+    accountId: z.never(),
+    approverNote: z.never(),
+  }),
+  z.object({
+    _action: z.literal(ReimbursementRequestStatus.REJECTED),
+    id: z.cuid(),
+    amount: z.never(),
+    categoryId: z.never(),
+    accountId: z.never(),
+    approverNote: z.never(),
+  }),
+]);
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
   await SessionService.requireAdmin(request);
@@ -141,7 +151,7 @@ export async function action({ request }: ActionFunctionArgs) {
   await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
 
   if (result.error) {
     return validationError(result.error);
@@ -358,13 +368,6 @@ export default function ReimbursementRequestPage() {
                 </>
               ) : null}
 
-              {rr.description ? (
-                <>
-                  <dt className="font-semibold capitalize">Requester Notes</dt>
-                  <dd className="text-muted-foreground col-span-2">{rr.description}</dd>
-                </>
-              ) : null}
-
               {rr.approverNote ? (
                 <>
                   <dt className="font-semibold capitalize">Approver Notes</dt>
@@ -408,12 +411,14 @@ export default function ReimbursementRequestPage() {
             <ValidatedForm
               id="reimbursement-request"
               method="post"
-              validator={validator}
+              schema={schema}
               className="flex w-full"
               defaultValues={{
-                amount: String(rr.amountInCents / 100.0),
-                categoryId: relatedTrx?.transaction.category?.id.toString() ?? ("" as unknown as number),
                 ...rr,
+                _action: ReimbursementRequestStatus.APPROVED,
+                approverNote: rr.approverNote ?? "",
+                amount: String(rr.amountInCents / 100.0),
+                categoryId: relatedTrx?.transaction.category?.id ?? ("" as unknown as number),
               }}
             >
               {(form) => (
@@ -427,7 +432,10 @@ export default function ReimbursementRequestPage() {
                         </Callout>
                       </legend>
                       <div className="mt-4 space-y-4">
-                        <FormTextarea scope={form.scope("description")} label="Requester Notes" readOnly />
+                        <div>
+                          <Label className="mb-1.5">Requester Notes</Label>
+                          <Textarea name="description" required readOnly defaultValue={rr.description ?? ""} />
+                        </div>
                         <FormField scope={form.scope("amount")} type="number" label="Amount" isCurrency required />
                         <FormSelect
                           required
