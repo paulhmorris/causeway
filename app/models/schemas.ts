@@ -16,7 +16,7 @@ export const PhoneNumberSchema = z
   .transform((val) => val.replace(/\D/g, ""))
   .pipe(z.string().length(10, { message: "Invalid phone number" }));
 
-export const EmailSchema = z.string().email({ message: "Invalid email address" });
+export const EmailSchema = z.email({ error: (e) => (!e.input ? "Email required" : "Must be an email address") });
 
 export const CurrencySchema = z.preprocess(
   (v) => (typeof v === "string" && v.startsWith("$") ? v.slice(1) : v),

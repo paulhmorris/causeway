@@ -17,7 +17,7 @@ import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
-import { CheckboxSchema } from "~/models/schemas";
+import { CheckboxSchema, EmailSchema } from "~/models/schemas";
 import { getContactTypes } from "~/services.server/contact";
 import { sendPasswordSetupEmail } from "~/services.server/mail";
 import { generatePasswordReset } from "~/services.server/password";
@@ -26,7 +26,7 @@ import { SessionService } from "~/services.server/session";
 const schema = z.object({
   firstName: z.string().min(1, { error: "First name is required" }),
   lastName: z.string().optional(),
-  username: z.email({ error: "Invalid email address" }),
+  username: EmailSchema,
   role: z.enum(MembershipRole),
   systemRole: z.enum(UserRole),
   typeId: z.coerce.number().pipe(z.enum(ContactType)),

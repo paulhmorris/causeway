@@ -6,11 +6,12 @@ import { z } from "zod/v4";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
+import { EmailSchema } from "~/models/schemas";
 import { sendPasswordResetEmail, sendPasswordSetupEmail } from "~/services.server/mail";
 import { deletePasswordReset, generatePasswordReset, getPasswordResetByUserId } from "~/services.server/password";
 
 export const passwordResetSchema = z.object({
-  username: z.email(),
+  username: EmailSchema,
   _action: z.enum(["reset", "setup"]),
 });
 

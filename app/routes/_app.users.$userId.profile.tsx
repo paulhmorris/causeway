@@ -17,6 +17,7 @@ import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
 import { notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
+import { EmailSchema } from "~/models/schemas";
 import { loader } from "~/routes/_app.users.$userId";
 import { SessionService } from "~/services.server/session";
 
@@ -24,9 +25,7 @@ const schema = z.object({
   id: z.cuid(),
   firstName: z.string().min(1, { error: "First name required" }),
   lastName: z.string().min(1, { error: "Last name required" }),
-  username: z.email({
-    error: (i) => (!i.input ? "Username required" : "Username must be an email address"),
-  }),
+  username: EmailSchema,
   role: z.enum(UserRole),
   accountId: z.preprocess((val) => {
     if (val === "Select an account") {

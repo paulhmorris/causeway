@@ -7,13 +7,14 @@ import { NewInquiryEmail } from "emails/new-inquiry";
 import { sendEmail } from "~/integrations/email.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
+import { EmailSchema } from "~/models/schemas";
 import { SessionService } from "~/services.server/session";
 
 export const schema = z.object({
   name: z.string().trim(),
   method: z.string(),
   otherMethod: z.string().optional(),
-  email: z.email({ message: "Invalid email address" }).optional(),
+  email: EmailSchema.optional(),
   phone: z
     .string()
     .transform((val) => val.replace(/\D/g, ""))
