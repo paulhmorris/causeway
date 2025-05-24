@@ -22,9 +22,11 @@ import { SessionService } from "~/services.server/session";
 
 const schema = z.object({
   id: z.cuid(),
-  firstName: z.string().min(1, { message: "First name is required" }),
-  lastName: z.string().min(1, { message: "Last name is required" }),
-  username: z.string().email({ message: "Invalid email address" }).optional(),
+  firstName: z.string().min(1, { error: "First name required" }),
+  lastName: z.string().min(1, { error: "Last name required" }),
+  username: z.email({
+    error: (i) => (!i.input ? "Username required" : "Username must be an email address"),
+  }),
   role: z.enum(UserRole),
   accountId: z.preprocess((val) => {
     if (val === "Select an account") {
@@ -129,17 +131,17 @@ export default function UserDetailsPage() {
   return (
     <>
       <ValidatedForm
+        method="post"
         schema={schema}
         defaultValues={{
           id: user.id,
-          firstName: user.contact.firstName ?? "",
-          lastName: user.contact.lastName ?? "",
-          username: user.username,
           role: user.role,
+          username: user.username,
           accountId: user.account?.id ?? "",
+          lastName: user.contact.lastName ?? "",
+          firstName: user.contact.firstName ?? "",
           subscribedAccountIds: user.contact.accountSubscriptions.map((a) => a.accountId),
         }}
-        method="post"
       >
         {(form) => (
           <>

@@ -15,6 +15,7 @@
     "start:mocks": "NODE_ENV=production tsx ./server.ts",
     "test": "vitest",
     "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "typegen": "react-router typegen",
     "typecheck": "tsc",
     "prepare": "husky"

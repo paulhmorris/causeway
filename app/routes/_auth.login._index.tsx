@@ -100,7 +100,7 @@ export default function LoginPage() {
       >
         {(form) => (
           <>
-            <FormField label="Email" scope={form.scope("email")} type="email" autoComplete="email username" required />
+            <FormField label="Email" scope={form.scope("email")} type="email" autoComplete="username" required />
             <FormField
               label="Password"
               scope={form.scope("password")}
