@@ -13,7 +13,6 @@
     "postinstall": "prisma generate --no-hints && patch-package",
     "pretest:e2e:run": "npm run build",
     "start:mocks": "NODE_ENV=production tsx ./server.ts",
-    "test": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "typegen": "react-router typegen",
@@ -111,7 +110,6 @@
     "@types/source-map-support": "^0.5.10",
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^4.5.0",
-    "@vitest/coverage-v8": "^3.1.4",
     "cookie": "^1.0.2",
     "eslint": "^9.27.0",
     "eslint-config-prettier": "^10.1.5",
@@ -135,8 +133,7 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.32.1",
     "vite": "^6.3.5",
-    "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.1.4"
+    "vite-tsconfig-paths": "^5.1.4"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown"
