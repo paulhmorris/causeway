@@ -8,26 +8,27 @@ dayjs.extend(utc);
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
+import { number, optionalDate, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
 export const schema = z.discriminatedUnion("intent", [
   z.object({
     intent: z.literal("create"),
     id: z.never(),
-    title: z.string(),
-    content: z.string(),
-    expiresAt: z.coerce.date().optional(),
+    title: text,
+    content: text,
+    expiresAt: optionalDate,
   }),
   z.object({
     intent: z.literal("update"),
-    id: z.coerce.number(),
-    title: z.string(),
-    content: z.string(),
-    expiresAt: z.coerce.date().optional(),
+    id: number,
+    title: text,
+    content: text,
+    expiresAt: optionalDate,
   }),
   z.object({
     intent: z.literal("expire"),
-    id: z.coerce.number(),
+    id: number,
     title: z.never(),
     content: z.never(),
     expiresAt: z.never(),

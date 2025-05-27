@@ -17,16 +17,17 @@ import { db } from "~/integrations/prisma.server";
 import { ContactType, EngagementType } from "~/lib/constants";
 import { notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
+import { cuid, date, number, optionalLongText } from "~/schemas/fields";
 import { getContactTypes } from "~/services.server/contact";
 import { getEngagementTypes } from "~/services.server/engagement";
 import { SessionService } from "~/services.server/session";
 
 const schema = z.object({
-  id: z.coerce.number(),
-  date: z.coerce.date(),
-  description: z.string().nullable().optional(),
-  typeId: z.coerce.number().pipe(z.enum(EngagementType)),
-  contactId: z.cuid({ error: "Contact required" }),
+  id: number,
+  date: date,
+  description: optionalLongText,
+  typeId: number.pipe(z.enum(EngagementType)),
+  contactId: cuid,
 });
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
@@ -98,7 +99,11 @@ export default function EditEngagementPage() {
         <ValidatedForm
           method="post"
           schema={schema}
-          defaultValues={{ ...engagement, date: dayjs(engagement.date).format("YYYY-MM-DD") }}
+          defaultValues={{
+            ...engagement,
+            description: engagement.description ?? "",
+            date: dayjs(engagement.date).format("YYYY-MM-DD"),
+          }}
           className="space-y-4 sm:max-w-md"
         >
           {(form) => (

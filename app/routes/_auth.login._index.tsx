@@ -9,14 +9,14 @@ import { FormField } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { Toasts } from "~/lib/toast.server";
 import { safeRedirect } from "~/lib/utils";
-import { EmailSchema } from "~/models/schemas";
+import { email, optionalText, password } from "~/schemas/fields";
 import { generateVerificationCode, verifyLogin } from "~/services.server/auth";
 import { SessionService } from "~/services.server/session";
 
 const schema = z.object({
-  email: EmailSchema,
-  password: z.string().min(8, { message: "Password must be 8 or more characters." }),
-  redirectTo: z.string().optional(),
+  email: email,
+  password: password,
+  redirectTo: optionalText,
 });
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {

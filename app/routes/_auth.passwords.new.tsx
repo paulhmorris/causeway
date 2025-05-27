@@ -11,15 +11,16 @@ import { db } from "~/integrations/prisma.server";
 import { unauthorized } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { getSearchParam } from "~/lib/utils";
+import { password, text } from "~/schemas/fields";
 import { hashPassword } from "~/services.server/auth";
 import { expirePasswordReset, getPasswordResetByToken } from "~/services.server/password";
 import { SessionService, sessionStorage } from "~/services.server/session";
 
 const schema = z
   .object({
-    token: z.string(),
-    newPassword: z.string().min(1, "Required").min(8, "Password must be at least 8 characters"),
-    confirmation: z.string().min(1, "Required").min(8, "Password must be at least 8 characters"),
+    token: text,
+    newPassword: password,
+    confirmation: password,
   })
   .check((ctx) => {
     if (ctx.value.newPassword !== ctx.value.confirmation) {

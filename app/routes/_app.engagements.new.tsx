@@ -19,18 +19,17 @@ import { Sentry } from "~/integrations/sentry";
 import { ContactType, EngagementType } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
 import { getToday } from "~/lib/utils";
+import { cuid, number, optionalLongText, text } from "~/schemas/fields";
 import { getContactTypes } from "~/services.server/contact";
 import { getEngagementTypes } from "~/services.server/engagement";
 import { SessionService } from "~/services.server/session";
 
 const schema = z.object({
-  date: z.string(),
-  description: z.string().optional(),
-  typeId: z
-    .string()
-    .transform((v) => Number(v))
-    .pipe(z.enum(EngagementType)),
-  contactId: z.cuid({ message: "Contact required" }),
+  // This doesn't use date because it needs to be in YYYY-MM-DD format
+  date: text,
+  description: optionalLongText,
+  typeId: number.pipe(z.enum(EngagementType)),
+  contactId: cuid,
 });
 
 export const meta: MetaFunction = () => [{ title: "Add Engagement" }];

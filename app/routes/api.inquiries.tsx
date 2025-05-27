@@ -7,20 +7,16 @@ import { NewInquiryEmail } from "emails/new-inquiry";
 import { sendEmail } from "~/integrations/email.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
-import { EmailSchema } from "~/models/schemas";
+import { email, longText, optionalText, phoneNumber, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
 export const schema = z.object({
-  name: z.string().trim(),
-  method: z.string(),
-  otherMethod: z.string().optional(),
-  email: EmailSchema.optional(),
-  phone: z
-    .string()
-    .transform((val) => val.replace(/\D/g, ""))
-    .pipe(z.string().length(10, { message: "Invalid phone number" }))
-    .optional(),
-  message: z.string().max(1000),
+  name: text,
+  method: text,
+  otherMethod: optionalText,
+  email: email.optional(),
+  phone: phoneNumber.optional(),
+  message: longText,
 });
 
 export async function action({ request }: ActionFunctionArgs) {

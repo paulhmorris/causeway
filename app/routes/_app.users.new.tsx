@@ -17,24 +17,22 @@ import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
-import { CheckboxSchema, EmailSchema } from "~/models/schemas";
+import { email, number, optionalSelect, optionalText, text } from "~/schemas/fields";
+import { CheckboxSchema } from "~/schemas/schemas";
 import { getContactTypes } from "~/services.server/contact";
 import { sendPasswordSetupEmail } from "~/services.server/mail";
 import { generatePasswordReset } from "~/services.server/password";
 import { SessionService } from "~/services.server/session";
 
 const schema = z.object({
-  firstName: z.string().min(1, { error: "First name is required" }),
-  lastName: z.string().optional(),
-  username: EmailSchema,
+  firstName: text,
+  lastName: optionalText,
+  username: email,
   role: z.enum(MembershipRole),
   systemRole: z.enum(UserRole),
-  typeId: z.coerce.number().pipe(z.enum(ContactType)),
+  typeId: number.pipe(z.enum(ContactType)),
   sendPasswordSetup: CheckboxSchema,
-  accountId: z
-    .string()
-    .transform((v) => (v === "Select an account" ? undefined : v))
-    .optional(),
+  accountId: optionalSelect.transform((v) => (v === "Select an account" ? undefined : v)),
 });
 
 export const meta: MetaFunction = () => [{ title: "New User" }];

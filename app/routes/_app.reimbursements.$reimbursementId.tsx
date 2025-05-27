@@ -21,7 +21,7 @@ import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod, TransactionItemType } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
 import { capitalize, formatCentsAsDollars } from "~/lib/utils";
-import { CurrencySchema } from "~/models/schemas";
+import { cuid, currency, number, optionalLongText, optionalText } from "~/schemas/fields";
 import { sendReimbursementRequestUpdateEmail } from "~/services.server/mail";
 import { generateS3Urls } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
@@ -35,15 +35,15 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => [
 const schema = z.discriminatedUnion("_action", [
   z.object({
     _action: z.literal(ReimbursementRequestStatus.APPROVED),
-    id: z.cuid(),
-    amount: CurrencySchema,
-    categoryId: z.number().positive(),
-    accountId: z.string().nullable().optional(),
-    approverNote: z.string().max(2000).nullable().optional(),
+    id: cuid,
+    amount: currency,
+    categoryId: number.positive(),
+    accountId: optionalText.nullable(),
+    approverNote: optionalLongText.nullable(),
   }),
   z.object({
     _action: z.literal(ReimbursementRequestStatus.VOID),
-    id: z.cuid(),
+    id: cuid,
     amount: z.never(),
     categoryId: z.never(),
     accountId: z.never(),
@@ -51,7 +51,7 @@ const schema = z.discriminatedUnion("_action", [
   }),
   z.object({
     _action: z.literal(ReimbursementRequestStatus.PENDING),
-    id: z.cuid(),
+    id: cuid,
     amount: z.never(),
     categoryId: z.never(),
     accountId: z.never(),
@@ -59,7 +59,7 @@ const schema = z.discriminatedUnion("_action", [
   }),
   z.object({
     _action: z.literal(ReimbursementRequestStatus.REJECTED),
-    id: z.cuid(),
+    id: cuid,
     amount: z.never(),
     categoryId: z.never(),
     accountId: z.never(),

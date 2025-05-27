@@ -14,16 +14,16 @@ import { Sentry } from "~/integrations/sentry";
 import { TransactionCategory, TransactionItemType } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
 import { getToday } from "~/lib/utils";
-import { CurrencySchema } from "~/models/schemas";
+import { cuid, currency, date, optionalLongText } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 import { getTransactionItemMethods } from "~/services.server/transaction";
 
 const schema = z.object({
-  date: z.coerce.date().transform((d) => dayjs(d).startOf("day").toDate()),
-  description: z.string().optional(),
-  fromAccountId: z.cuid({ message: "From Account required" }),
-  toAccountId: z.cuid({ message: "To Account required" }),
-  amountInCents: CurrencySchema.pipe(z.number().positive({ message: "Amount must be greater than $0.00" })),
+  date: date.transform((d) => dayjs(d).startOf("day").toDate()),
+  description: optionalLongText,
+  fromAccountId: cuid,
+  toAccountId: cuid,
+  amountInCents: currency.pipe(z.number().positive({ error: "Amount must be greater than $0.00" })),
 });
 
 export const meta: MetaFunction = () => [{ title: "Add Transfer" }];

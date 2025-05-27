@@ -18,13 +18,14 @@ import { Sentry } from "~/integrations/sentry";
 import { notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cn, formatCentsAsDollars } from "~/lib/utils";
+import { cuid, optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
 const schema = z.object({
-  id: z.cuid(),
-  date: z.string(),
-  categoryId: z.string(),
-  description: z.string().optional(),
+  id: cuid,
+  date: text,
+  categoryId: text,
+  description: optionalText,
 });
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {

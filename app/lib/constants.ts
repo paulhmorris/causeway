@@ -198,9 +198,9 @@ export const globalNavLinks: ReadonlyArray<AppNavLink> = [
 export const userNavLinks: ReadonlyArray<AppNavLink> = [] as const;
 
 export const adminNavLinks: ReadonlyArray<AppNavLink> = [
-  { name: "Add Income", to: "/income/new", end: false, icon: IconCreditCardRefund },
-  { name: "Add Expense", to: "/expense/new", end: false, icon: IconCreditCardPay },
-  { name: "Add Transfer", to: "/transfer/new", end: false, icon: IconTransfer },
+  { name: "Income", to: "/income/new", end: false, icon: IconCreditCardRefund },
+  { name: "Expense", to: "/expense/new", end: false, icon: IconCreditCardPay },
+  { name: "Transfer", to: "/transfer/new", end: false, icon: IconTransfer },
   { name: "Accounts", to: "/accounts", end: false, icon: IconBuildingBank },
   { name: "Users", to: "/users", end: false, icon: IconUsersGroup },
   { name: "Reimbursements", to: "/reimbursements", end: true, icon: IconCoin },

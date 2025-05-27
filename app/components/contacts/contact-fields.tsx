@@ -5,7 +5,7 @@ import { z } from "zod/v4";
 
 import { FormField, FormSelect } from "~/components/ui/form";
 import { useUser } from "~/hooks/useUser";
-import { NewContactSchema } from "~/models/schemas";
+import { NewContactSchema } from "~/schemas/schemas";
 
 export function ContactFields({
   contactTypes,

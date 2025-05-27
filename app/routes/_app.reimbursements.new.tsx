@@ -20,19 +20,19 @@ import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
 import { constructOrgMailFrom, constructOrgURL } from "~/lib/utils";
-import { CurrencySchema } from "~/models/schemas";
+import { cuid, currency, date, number, optionalLongText, optionalText } from "~/schemas/fields";
 import { generateS3Urls } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
 import { getTransactionItemMethods } from "~/services.server/transaction";
 
 const schema = z.object({
-  date: z.coerce.date({ error: (e) => (e.input === undefined ? "Date required" : "Invalid date") }),
-  vendor: z.string().optional(),
-  description: z.string().optional(),
-  amountInCents: CurrencySchema,
-  accountId: z.cuid({ error: "Invalid account" }),
-  receiptIds: z.array(z.cuid().optional()),
-  methodId: z.coerce.number().pipe(z.enum(TransactionItemMethod, { message: "Invalid method" })),
+  date: date,
+  vendor: optionalText,
+  description: optionalLongText,
+  amountInCents: currency,
+  accountId: cuid,
+  receiptIds: z.array(cuid.optional()),
+  methodId: number.pipe(z.enum(TransactionItemMethod, { message: "Invalid method" })),
 });
 
 export const meta: MetaFunction = () => [{ title: "New Reimbursement Request" }];

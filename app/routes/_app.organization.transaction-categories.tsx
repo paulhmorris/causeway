@@ -9,6 +9,7 @@ import { Separator } from "~/components/ui/separator";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
+import { number, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -32,9 +33,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 const schema = z.object({
   categories: z.array(
     z.object({
-      id: z.coerce.number().optional(),
-      name: z.string().max(255).nonempty({ message: "Name is required" }),
-      _count: z.object({ transactions: z.number() }).optional(),
+      id: number.optional(),
+      name: text,
+      _count: z.object({ transactions: number }).optional(),
     }),
   ),
 });

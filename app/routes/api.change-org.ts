@@ -5,11 +5,12 @@ import { z } from "zod/v4";
 
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
+import { optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
 const schema = z.object({
-  orgId: z.string().min(1, { message: "Organization is required" }),
-  pathname: z.string().optional(),
+  orgId: text,
+  pathname: optionalText,
 });
 
 export const action = async ({ request }: ActionFunctionArgs) => {

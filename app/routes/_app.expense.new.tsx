@@ -18,7 +18,7 @@ import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
 import { formatCentsAsDollars, getToday } from "~/lib/utils";
-import { TransactionSchema } from "~/models/schemas";
+import { TransactionSchema } from "~/schemas/schemas";
 import { getContactTypes } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
 import { generateTransactionItems, getTransactionItemMethods } from "~/services.server/transaction";

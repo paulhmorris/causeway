@@ -10,13 +10,14 @@ import { SubmitButton } from "~/components/ui/submit-button";
 import { sendEmail } from "~/integrations/email.server";
 import { Toasts } from "~/lib/toast.server";
 import { constructOrgMailFrom } from "~/lib/utils";
+import { longText, text, url } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
 const schema = z.object({
-  title: z.string(),
-  type: z.string(),
-  description: z.string(),
-  attachmentUrl: z.string().url().or(z.literal("")),
+  title: text,
+  type: text,
+  description: longText,
+  attachmentUrl: url.or(z.literal("")),
 });
 
 export async function action({ request }: ActionFunctionArgs) {

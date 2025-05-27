@@ -11,13 +11,13 @@ import { Label } from "~/components/ui/label";
 import { db } from "~/integrations/prisma.server";
 import { Toasts } from "~/lib/toast.server";
 import { normalizeEnum } from "~/lib/utils";
-import { CheckboxSchema } from "~/models/schemas";
+import { checkbox, optionalText, text } from "~/schemas/fields";
 import { SessionService, sessionStorage } from "~/services.server/session";
 
 const schema = z.object({
-  orgId: z.string().min(1, { message: "Organization is required" }),
-  redirectTo: z.string().optional(),
-  rememberSelection: CheckboxSchema,
+  orgId: text,
+  redirectTo: optionalText,
+  rememberSelection: checkbox,
 });
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {

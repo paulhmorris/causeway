@@ -10,15 +10,15 @@ import { FormField } from "~/components/ui/form";
 import { Label } from "~/components/ui/label";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { safeRedirect } from "~/lib/utils";
-import { CheckboxSchema } from "~/models/schemas";
+import { checkbox, email, optionalText, text } from "~/schemas/fields";
 import { checkVerificationCode } from "~/services.server/auth";
 import { SessionService } from "~/services.server/session";
 
 const schema = z.object({
-  email: z.string().min(1, { message: "Email is required" }).email(),
-  verificationCode: z.string().min(1, { message: "Verification code is required" }),
-  remember: CheckboxSchema,
-  redirectTo: z.string().optional(),
+  email: email,
+  verificationCode: text,
+  remember: checkbox,
+  redirectTo: optionalText,
 });
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {

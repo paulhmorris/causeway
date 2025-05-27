@@ -108,11 +108,6 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       user: userWithoutPassword,
       accountsThatCanBeSubscribedTo,
       hasPassword: !!_password,
-      // ...setFormDefaults("user-form", {
-      //   ...userWithPassword,
-      //   ...userWithPassword.contact,
-      //   accountId: userWithPassword.account?.id,
-      // }),
     };
   } catch (error) {
     console.error(error);

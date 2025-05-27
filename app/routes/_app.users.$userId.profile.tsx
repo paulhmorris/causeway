@@ -17,21 +17,17 @@ import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
 import { notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
-import { EmailSchema } from "~/models/schemas";
 import { loader } from "~/routes/_app.users.$userId";
+import { cuid, email, optionalSelect, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
 const schema = z.object({
-  id: z.cuid(),
-  firstName: z.string().min(1, { error: "First name required" }),
-  lastName: z.string().min(1, { error: "Last name required" }),
-  username: EmailSchema,
+  id: cuid,
+  firstName: text,
+  lastName: text,
+  username: email,
   role: z.enum(UserRole),
-  accountId: z.preprocess((val) => {
-    if (val === "Select an account") {
-      return undefined;
-    }
-  }, z.string().optional()),
+  accountId: optionalSelect.transform((v) => (v === "Select an account" ? undefined : v)),
   subscribedAccountIds: z.array(z.string()).optional(),
 });
 

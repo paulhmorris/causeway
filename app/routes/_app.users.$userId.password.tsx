@@ -10,14 +10,15 @@ import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { unauthorized } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
+import { password } from "~/schemas/fields";
 import { hashPassword, verifyLogin } from "~/services.server/auth";
 import { SessionService } from "~/services.server/session";
 
 const schema = z
   .object({
-    oldPassword: z.string().min(8, "Password must be at least 8 characters").or(z.literal("")),
-    newPassword: z.string().min(8, "Password must be at least 8 characters"),
-    confirmation: z.string().min(8, "Password must be at least 8 characters"),
+    oldPassword: password,
+    newPassword: password,
+    confirmation: password,
   })
   .check((ctx) => {
     if (ctx.value.newPassword !== ctx.value.confirmation) {

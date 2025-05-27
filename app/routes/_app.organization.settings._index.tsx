@@ -13,15 +13,16 @@ import { Sentry } from "~/integrations/sentry";
 import { handlePrismaError, serverError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { loader } from "~/routes/_app.organization";
+import { optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
 const schema = z.object({
-  name: z.string().nonempty("Organization name is required"),
-  host: z.string().nonempty("Host is required"),
-  subdomain: z.string().optional(),
-  replyToEmail: z.string().nonempty("Reply-to email is required"),
-  administratorEmail: z.string().optional(),
-  inquiriesEmail: z.string().optional(),
+  name: text,
+  host: text,
+  subdomain: optionalText,
+  replyToEmail: text,
+  administratorEmail: optionalText,
+  inquiriesEmail: optionalText,
 });
 
 export async function action({ request }: ActionFunctionArgs) {

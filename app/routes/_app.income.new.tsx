@@ -23,12 +23,13 @@ import { Sentry } from "~/integrations/sentry";
 import { TransactionItemType } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
 import { constructOrgMailFrom, constructOrgURL, formatCentsAsDollars, getToday } from "~/lib/utils";
-import { CheckboxSchema, TransactionSchema } from "~/models/schemas";
+import { checkbox } from "~/schemas/fields";
+import { TransactionSchema } from "~/schemas/schemas";
 import { getContactTypes } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
 import { generateTransactionItems, getTransactionItemMethods } from "~/services.server/transaction";
 
-const schema = TransactionSchema.extend({ shouldNotifyUser: CheckboxSchema });
+const schema = TransactionSchema.extend({ shouldNotifyUser: checkbox });
 
 export const meta: MetaFunction = () => [{ title: "Add Income" }];
 
