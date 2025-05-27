@@ -2,7 +2,7 @@ import { FormScope, useFormScope } from "@rvf/react-router";
 import { z } from "zod/v4";
 
 import { FormField } from "~/components/ui/form";
-import { AddressSchema } from "~/schemas/schemas";
+import { AddressSchema } from "~/schemas";
 
 export function AddressForm({ scope }: { scope: FormScope<z.infer<typeof AddressSchema>> }) {
   const form = useFormScope(scope);

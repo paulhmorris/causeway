@@ -17,8 +17,7 @@ import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
-import { email, number, optionalSelect, optionalText, text } from "~/schemas/fields";
-import { CheckboxSchema } from "~/schemas/schemas";
+import { checkbox, email, number, optionalSelect, optionalText, text } from "~/schemas/fields";
 import { getContactTypes } from "~/services.server/contact";
 import { sendPasswordSetupEmail } from "~/services.server/mail";
 import { generatePasswordReset } from "~/services.server/password";
@@ -31,7 +30,7 @@ const schema = z.object({
   role: z.enum(MembershipRole),
   systemRole: z.enum(UserRole),
   typeId: number.pipe(z.enum(ContactType)),
-  sendPasswordSetup: CheckboxSchema,
+  sendPasswordSetup: checkbox,
   accountId: optionalSelect.transform((v) => (v === "Select an account" ? undefined : v)),
 });
 

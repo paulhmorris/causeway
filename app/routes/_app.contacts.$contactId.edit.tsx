@@ -23,7 +23,7 @@ import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
 import { forbidden, notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
-import { UpdateContactSchema } from "~/schemas/schemas";
+import { UpdateContactSchema } from "~/schemas";
 import { getContactTypes } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
 

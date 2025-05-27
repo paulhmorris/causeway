@@ -5,32 +5,12 @@ import { z } from "zod/v4";
 dayjs.extend(utc);
 
 import { ContactType, TransactionItemMethod, TransactionItemType } from "~/lib/constants";
-import { cuid, email, number, optionalSelect, optionalText, text } from "~/schemas/fields";
-
-export const CheckboxSchema = z
-  .string()
-  .transform((val) => val === "on")
-  .or(z.undefined());
-
-export const PhoneNumberSchema = z
-  .string()
-  .transform((val) => val.replace(/\D/g, ""))
-  .pipe(z.string().length(10, { error: "Invalid phone number" }));
-
-export const CurrencySchema = z.preprocess(
-  (v) => (typeof v === "string" && v.startsWith("$") ? v.slice(1) : v),
-  z.coerce
-    .number({ error: (e) => (e.input === undefined ? "Amount required" : "Must be a number") })
-    .multipleOf(0.01, { error: "Must be multiple of $0.01" })
-    .nonnegative({ error: "Must be greater than $0.00" })
-    .max(99_999, { error: "Must be less than $100,000" })
-    .transform((dollars) => Math.round(dollars * 100)),
-);
+import { cuid, currency, email, number, optionalSelect, optionalText, phoneNumber, text } from "~/schemas/fields";
 
 export const TransactionItemSchema = z.object({
   typeId: number.pipe(z.enum(TransactionItemType, { error: "Invalid type" })),
   methodId: number.pipe(z.enum(TransactionItemMethod, { error: "Invalid method" })),
-  amountInCents: CurrencySchema,
+  amountInCents: currency,
   description: optionalText,
 });
 
@@ -59,8 +39,8 @@ export const NewContactSchema = z.object({
   organizationName: optionalText,
   email: email.optional(),
   alternateEmail: email.optional(),
-  phone: PhoneNumberSchema.optional(),
-  alternatePhone: PhoneNumberSchema.optional(),
+  phone: phoneNumber.optional(),
+  alternatePhone: phoneNumber.optional(),
   typeId: number.pipe(z.enum(ContactType)),
   address: AddressSchema.optional(),
   assignedUserIds: z.array(cuid).optional(),
