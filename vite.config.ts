@@ -10,6 +10,9 @@ const sentryConfig: SentryReactRouterBuildOptions = {
   org: "cosmic-labs",
   project: "np-ally",
   authToken: process.env.SENTRY_AUTH_TOKEN,
+  sourceMapsUploadOptions: {
+    filesToDeleteAfterUpload: ["**/*.map"],
+  },
 };
 
 const isCI = process.env.CI;
