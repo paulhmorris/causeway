@@ -78,13 +78,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   try {
     const { transactionItems: trxItems, totalInCents } = await generateTransactionItems(transactionItems, orgId);
+    const receiptIdArr = typeof receiptIds === "string" ? [receiptIds] : receiptIds?.length ? receiptIds : [];
+
     const transaction = await db.transaction.create({
       data: {
         orgId,
         amountInCents: totalInCents,
         contactId: contactId ?? undefined,
         transactionItems: { createMany: { data: trxItems } },
-        receipts: receiptIds?.length ? { connect: receiptIds.map((id) => ({ id })) } : undefined,
+        receipts: receiptIdArr.length ? { connect: receiptIdArr.map((id) => ({ id })) } : undefined,
+
         ...rest,
       },
       select: {

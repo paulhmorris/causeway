@@ -17,7 +17,7 @@ export const optionalDate = date.optional();
 export const checkbox = z.coerce.boolean();
 export const optionalCheckbox = checkbox.optional();
 
-export const checkboxGroup = z.array(z.coerce.string());
+export const checkboxGroup = z.array(z.coerce.string()).or(z.string());
 export const optionalCheckboxGroup = checkboxGroup.optional();
 
 export const select = z.coerce

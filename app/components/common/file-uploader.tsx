@@ -69,7 +69,7 @@ export function FileUploader() {
         uploadedFilesCount++;
       }
 
-      await navigate(".", { replace: true });
+      await navigate(".", { replace: true, preventScrollReset: true });
       setUploadStatus((s) => ({
         ...s,
         success: true,
