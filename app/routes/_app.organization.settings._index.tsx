@@ -139,9 +139,7 @@ export default function OrganizationSettings() {
                 </div>
               </fieldset>
               <ButtonGroup>
-                <SubmitButton isSubmitting={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
-                  Save
-                </SubmitButton>
+                <SubmitButton isSubmitting={form.formState.isSubmitting}>Save</SubmitButton>
                 <Button type="reset" variant="outline">
                   Reset
                 </Button>

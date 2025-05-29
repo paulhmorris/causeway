@@ -137,9 +137,7 @@ export default function EditEngagementPage() {
               />
               <FormTextarea scope={form.scope("description")} label="Description" rows={8} />
               <ButtonGroup>
-                <SubmitButton isSubmitting={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
-                  Save
-                </SubmitButton>
+                <SubmitButton isSubmitting={form.formState.isSubmitting}>Save</SubmitButton>
                 <Button variant="outline" type="reset">
                   Reset
                 </Button>

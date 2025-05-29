@@ -136,9 +136,7 @@ export default function EditAccountPage() {
             options={users.map((a) => ({ label: `${a.contact.firstName} ${a.contact.lastName}`, value: a.id }))}
           />
           <ButtonGroup>
-            <SubmitButton disabled={!form.formState.isDirty} isSubmitting={form.formState.isSubmitting}>
-              Save
-            </SubmitButton>
+            <SubmitButton isSubmitting={form.formState.isSubmitting}>Save</SubmitButton>
             <Button type="reset" variant="outline">
               Reset
             </Button>

@@ -127,9 +127,7 @@ export default function UserPassword() {
               autoComplete="new-password"
               required
             />
-            <SubmitButton isSubmitting={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
-              Save Changes
-            </SubmitButton>
+            <SubmitButton isSubmitting={form.formState.isSubmitting}>Save Changes</SubmitButton>
           </>
         )}
       </ValidatedForm>

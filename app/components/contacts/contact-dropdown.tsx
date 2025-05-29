@@ -15,29 +15,24 @@ export function ContactDropdown(
   const { types, contacts, label, scope, ...rest } = props;
   return (
     <FormSelect scope={scope} label={label} placeholder="Select contact" {...rest}>
-      {contacts.length === 0 ? (
-        // @ts-expect-error see https://github.com/radix-ui/primitives/issues/1569#issuecomment-1567414323
-        <SelectItem value={null} disabled>
-          No Contacts
-        </SelectItem>
-      ) : null}
-      {types.map((type) => {
-        if (!contacts.some((c) => c.typeId === type.id)) {
-          return null;
-        }
-        return (
-          <SelectGroup key={type.name}>
-            <SelectLabel>{type.name}</SelectLabel>
-            {contacts
-              .filter((c) => c.typeId === type.id)
-              .map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.typeId === ContactType.Organization ? `${c.organizationName}` : `${c.firstName} ${c.lastName}`}
-                </SelectItem>
-              ))}
-          </SelectGroup>
-        );
-      })}
+      {types
+        .filter((t) => contacts.some((c) => c.typeId === t.id))
+        .map((type) => {
+          return (
+            <SelectGroup key={type.name}>
+              <SelectLabel>{type.name}</SelectLabel>
+              {contacts
+                .filter((c) => c.typeId === type.id)
+                .map((c) => {
+                  return (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.typeId === ContactType.Organization ? `${c.organizationName}` : `${c.firstName} ${c.lastName}`}
+                    </SelectItem>
+                  );
+                })}
+            </SelectGroup>
+          );
+        })}
     </FormSelect>
   );
 }

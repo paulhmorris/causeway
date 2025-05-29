@@ -118,7 +118,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
   {
-    title: `User ${data?.user.contact.firstName}${data?.user.contact.lastName ? " " + data.user.contact.lastName : ""}`,
+    title: `${data?.user.contact.firstName}${data?.user.contact.lastName ? " " + data.user.contact.lastName : ""}`,
   },
 ];
 

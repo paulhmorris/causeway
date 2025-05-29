@@ -169,9 +169,7 @@ export default function AddTransferPage() {
                 }))}
               />
               <FormField isCurrency required scope={form.scope("amountInCents")} label="Amount" className="w-36" />
-              <SubmitButton isSubmitting={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
-                Submit Transfer
-              </SubmitButton>
+              <SubmitButton isSubmitting={form.formState.isSubmitting}>Submit Transfer</SubmitButton>
             </>
           )}
         </ValidatedForm>

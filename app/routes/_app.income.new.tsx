@@ -104,7 +104,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         amountInCents: totalInCents,
         contactId: contactId ?? undefined,
         transactionItems: { createMany: { data: trxItems } },
-        receipts: receiptIds.length > 0 ? { connect: receiptIds.map((id) => ({ id })) } : undefined,
+        receipts: receiptIds?.length ? { connect: receiptIds.map((id) => ({ id })) } : undefined,
         ...rest,
       },
       select: {
@@ -332,12 +332,7 @@ export default function AddIncomePage() {
             <Separator className="my-4" />
             <ReceiptSelector receipts={receipts} />
 
-            <SubmitButton
-              isSubmitting={form.formState.isSubmitting}
-              disabled={!form.formState.isDirty || form.array("transactionItems").length() === 0}
-            >
-              Submit Income
-            </SubmitButton>
+            <SubmitButton isSubmitting={form.formState.isSubmitting}>Submit Income</SubmitButton>
           </div>
         </form>
       </PageContainer>

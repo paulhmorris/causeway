@@ -159,11 +159,7 @@ export default function TransactionDetailsPage() {
                         <FormTextarea scope={form.scope("description")} label="Description" hideLabel />
                       </dd>
                     </div>
-                    <SubmitButton
-                      isSubmitting={form.formState.isSubmitting}
-                      disabled={!form.formState.isDirty}
-                      className="ml-auto"
-                    >
+                    <SubmitButton isSubmitting={form.formState.isSubmitting} className="ml-auto">
                       Save
                     </SubmitButton>
                   </>

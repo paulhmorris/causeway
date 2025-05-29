@@ -22,14 +22,14 @@ export function Notifications() {
       case "success": {
         toast.success(message, {
           ...rest,
-          icon: <IconCircleCheckFilled className="h-5 w-5" />,
+          icon: <IconCircleCheckFilled className="size-5" />,
         });
         break;
       }
       case "error": {
         toast.error(message, {
           ...rest,
-          icon: <IconAlertCircleFilled className="h-5 w-5" />,
+          icon: <IconAlertCircleFilled className="size-5" />,
           duration: Infinity,
         });
         break;
@@ -37,14 +37,14 @@ export function Notifications() {
       case "warning": {
         toast.warning(message, {
           ...rest,
-          icon: <IconAlertTriangleFilled className="h-5 w-5" />,
+          icon: <IconAlertTriangleFilled className="size-5" />,
         });
         break;
       }
       case "info": {
         toast.info(message, {
           ...rest,
-          icon: <IconInfoCircleFilled className="h-5 w-5" />,
+          icon: <IconInfoCircleFilled className="size-5" />,
         });
         break;
       }

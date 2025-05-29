@@ -27,7 +27,7 @@ test.describe("Login Page", () => {
     await email.clear();
     await page.getByRole("button", { name: /log in/i }).click();
     await expect(email).toHaveAttribute("aria-invalid", "true");
-    await expect(page.getByText(/email required/i)).toBeVisible();
+    await expect(page.getByText(/required/i)).toBeVisible();
 
     const password = page.getByRole("textbox", { name: "Password" });
     await password.clear();

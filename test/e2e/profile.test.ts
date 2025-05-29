@@ -12,7 +12,7 @@ test.describe("Profile", () => {
 
   test("should display profile", async ({ page }) => {
     await expect(page).toHaveURL(/users/i);
-    await expect(page).toHaveTitle(/user/i);
+    await expect(page).toHaveTitle(/admin/i);
   });
 
   test("should display user details", async ({ page }) => {
@@ -30,24 +30,28 @@ test.describe("Profile", () => {
     await expectVisibleNotification(page, { expectedMessage: /updated/i, expectedType: "success" });
   });
 
-  test("should not allow blank first, last, or username", async ({ page }) => {
+  test("should not allow blank first name", async ({ page }) => {
     await page.getByRole("textbox", { name: /first name/i }).fill("");
     await page.getByRole("button", { name: /save/i }).click();
-    await expect(page.getByText(/first name required/i)).toBeVisible();
+    await expect(page.getByText(/required/i)).toBeVisible();
+  });
 
+  test("should not allow blank last name", async ({ page }) => {
     await page.getByRole("textbox", { name: /last name/i }).fill("");
     await page.getByRole("button", { name: /save/i }).click();
-    await expect(page.getByText(/last name required/i)).toBeVisible();
+    await expect(page.getByText(/required/i)).toBeVisible();
+  });
 
+  test("should not allow blank username", async ({ page }) => {
     await page.getByRole("textbox", { name: /username/i }).fill("");
     await page.getByRole("button", { name: /save/i }).click();
-    await expect(page.getByText(/username required/i)).toBeVisible();
+    await expect(page.getByText(/required/i)).toBeVisible();
   });
 
   test("should not allow invalid username", async ({ page }) => {
     await page.getByRole("textbox", { name: /username/i }).fill("invalid-email");
     await page.getByRole("button", { name: /save/i }).click();
-    await expect(page.getByText(/username must be an email address/i)).toBeVisible();
+    await expect(page.getByText(/invalid email address/i)).toBeVisible();
   });
 
   test("should not be able to change role", async ({ page }) => {

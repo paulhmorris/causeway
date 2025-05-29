@@ -169,7 +169,7 @@ export default function OrganizationTransactionCategories() {
               <IconPlus className="size-5" />
             </Button>
           </div>
-          <Button className="mt-4" type="submit" disabled={!form.formState.isDirty}>
+          <Button className="mt-4" type="submit">
             Save
           </Button>
         </form>

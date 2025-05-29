@@ -382,9 +382,7 @@ export default function EditContactPage() {
             </>
           ) : null}
           <div className="flex items-center gap-2">
-            <SubmitButton isSubmitting={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
-              Save
-            </SubmitButton>
+            <SubmitButton isSubmitting={form.formState.isSubmitting}>Save</SubmitButton>
             <Button type="reset" variant="outline">
               Reset
             </Button>

@@ -235,8 +235,12 @@ export function FormSelect(props: FormSelectProps) {
             </SelectItem>
           ) : (
             !props.required && (
-              // @ts-expect-error see https://github.com/radix-ui/primitives/issues/1569#issuecomment-1567414323
-              <SelectItem value={undefined} className="text-muted-foreground/60 focus:text-muted-foreground/60">
+              <SelectItem
+                key={`${selectId}-undefined-option`}
+                // @ts-expect-error see https://github.com/radix-ui/primitives/issues/1569#issuecomment-1567414323
+                value={undefined}
+                className="text-muted-foreground/60 focus:text-muted-foreground/60"
+              >
                 {placeholder}
               </SelectItem>
             )
@@ -246,7 +250,11 @@ export function FormSelect(props: FormSelectProps) {
                 if (o.value === null || o.label === null) return null;
 
                 return (
-                  <SelectItem disabled={o.disabled} key={o.value} value={o.value.toString()}>
+                  <SelectItem
+                    disabled={o.disabled}
+                    key={`${selectId}-${o.value.toString()}`}
+                    value={o.value.toString()}
+                  >
                     {o.label}
                   </SelectItem>
                 );

@@ -216,9 +216,7 @@ export default function NewReimbursementPage() {
               <Callout variant="warning">
                 High quality images of itemized receipts are required. Please allow two weeks for processing.
               </Callout>
-              <SubmitButton isSubmitting={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
-                Submit
-              </SubmitButton>
+              <SubmitButton isSubmitting={form.formState.isSubmitting}>Submit</SubmitButton>
             </>
           )}
         </ValidatedForm>

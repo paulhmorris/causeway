@@ -77,9 +77,7 @@ export default function FeatureRequestPage() {
                 placeholder="Please enter everything relevant to your request."
                 required
               />
-              <SubmitButton isSubmitting={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
-                Submit
-              </SubmitButton>
+              <SubmitButton isSubmitting={form.formState.isSubmitting}>Submit</SubmitButton>
             </>
           )}
         </ValidatedForm>
