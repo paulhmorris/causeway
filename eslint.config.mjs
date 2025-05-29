@@ -119,5 +119,14 @@ export default tseslint.config(
   {
     files: ["test/e2e/*.ts"],
     ...playwright.configs["flat/recommended"],
+    rules: {
+      ...playwright.configs["flat/recommended"].rules,
+      "playwright/expect-expect": [
+        "warn",
+        {
+          assertFunctionNames: ["expectVisibleNotification"],
+        },
+      ],
+    },
   },
 );

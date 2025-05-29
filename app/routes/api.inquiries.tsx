@@ -1,32 +1,23 @@
 import { render } from "@react-email/render";
-import { validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, validationError } from "@rvf/react-router";
 import { ActionFunctionArgs, data } from "react-router";
-import { z } from "zod";
-import { zfd } from "zod-form-data";
+import { z } from "zod/v4";
 
 import { NewInquiryEmail } from "emails/new-inquiry";
 import { sendEmail } from "~/integrations/email.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
+import { email, longText, optionalText, phoneNumber, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
-export const validator = withZod(
-  z.object({
-    name: z.string().trim(),
-    method: z.string(),
-    otherMethod: z.string().optional(),
-    email: zfd.text(z.string().email({ message: "Invalid email address" }).optional()),
-    phone: zfd.text(
-      z
-        .string()
-        .transform((val) => val.replace(/\D/g, ""))
-        .pipe(z.string().length(10, { message: "Invalid phone number" }))
-        .optional(),
-    ),
-    message: z.string().max(1000),
-  }),
-);
+export const schema = z.object({
+  name: text,
+  method: text,
+  otherMethod: optionalText,
+  email: email.optional(),
+  phone: phoneNumber.optional(),
+  message: longText,
+});
 
 export async function action({ request }: ActionFunctionArgs) {
   const user = await SessionService.requireUser(request);
@@ -40,7 +31,7 @@ export async function action({ request }: ActionFunctionArgs) {
     throw data({ success: false, message: "Method Not Allowed" }, { status: 405 });
   }
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }

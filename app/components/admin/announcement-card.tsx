@@ -11,7 +11,7 @@ import { Button } from "~/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "~/components/ui/collapsible";
 import { Separator } from "~/components/ui/separator";
 import { useUser } from "~/hooks/useUser";
-import { validator } from "~/routes/api.announcements";
+import { schema } from "~/routes/api.announcements";
 
 export function AnnouncementCard({ announcement }: { announcement: Announcement }) {
   const user = useUser();
@@ -47,8 +47,15 @@ export function AnnouncementCard({ announcement }: { announcement: Announcement 
               method="post"
               action="/api/announcements"
               fetcher={fetcher}
-              validator={validator}
+              schema={schema}
               className="my-2 flex items-center gap-2"
+              defaultValues={{
+                intent: "update",
+                id: announcement.id,
+                title: announcement.title,
+                content: announcement.content,
+                expiresAt: announcement.expiresAt ? dayjs(announcement.expiresAt).format("YYYY-MM-DD") : "",
+              }}
             >
               <input type="hidden" name="id" value={announcement.id} />
               <AnnouncementModal intent="update" announcement={announcement} />

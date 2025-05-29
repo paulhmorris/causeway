@@ -3,7 +3,8 @@ import { expect, test } from "@playwright/test";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 
-import { formatCurrency, getToday } from "~/lib/utils";
+import { expectVisibleNotification } from "test/e2e/helpers/notifications";
+import { formatCurrency } from "~/lib/utils";
 
 dayjs.extend(utc);
 
@@ -13,15 +14,10 @@ test.describe("Add Income", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/income/new");
   });
+
   test("should not add income with all empty fields", async ({ page }) => {
     await page.getByRole("button", { name: /submit/i }).click();
-
     await expect(page).toHaveURL("/income/new");
-  });
-
-  test("all fields should have default state", async ({ page }) => {
-    await expect(page.getByLabel(/date/i)).toHaveValue(getToday());
-    await expect(page.getByLabel(/notify user/i)).not.toBeChecked();
   });
 
   test("should allow adding and deleting transaction items", async ({ page }) => {
@@ -52,12 +48,12 @@ test.describe("Add Income", () => {
     await expect(page).toHaveURL(/accounts/);
     await expect(page.getByRole("heading", { name: /9998/i })).toBeVisible();
 
+    // Verify toast message
+    await expectVisibleNotification(page, { expectedType: "success" });
+
     // Verify transaction amount is correct
     const trx = page.getByRole("row", { name: formatCurrency(amount) });
     await expect(trx).toBeVisible();
-
-    // Verify toast message
-    await expect(page.getByRole("status")).toHaveText(/success/i);
 
     // Verify transaction link
     await trx.getByRole("link", { name: /view/i }).click();

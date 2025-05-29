@@ -127,7 +127,7 @@ export function FileUploader() {
             disabled={uploadStatus.uploading || !files}
             variant="outline"
             type="button"
-            className="flex w-full items-center gap-2 shadow-none sm:w-auto"
+            className="flex h-10 w-full items-center gap-2 shadow-none sm:h-10 sm:w-auto"
           >
             {uploadStatus.uploading ? (
               <IconLoader className="h-4 w-4 animate-spin" />

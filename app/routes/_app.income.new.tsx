@@ -23,12 +23,13 @@ import { Sentry } from "~/integrations/sentry";
 import { TransactionItemType } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
 import { constructOrgMailFrom, constructOrgURL, formatCentsAsDollars, getToday } from "~/lib/utils";
-import { CheckboxSchema, TransactionSchema } from "~/models/schemas";
+import { TransactionSchema } from "~/schemas";
+import { checkbox } from "~/schemas/fields";
 import { getContactTypes } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
 import { generateTransactionItems, getTransactionItemMethods } from "~/services.server/transaction";
 
-const schema = TransactionSchema.extend({ shouldNotifyUser: CheckboxSchema });
+const schema = TransactionSchema.extend({ shouldNotifyUser: checkbox });
 
 export const meta: MetaFunction = () => [{ title: "Add Income" }];
 
@@ -103,7 +104,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         amountInCents: totalInCents,
         contactId: contactId ?? undefined,
         transactionItems: { createMany: { data: trxItems } },
-        receipts: receiptIds.length > 0 ? { connect: receiptIds.map((id) => ({ id })) } : undefined,
+        receipts: receiptIds?.length ? { connect: receiptIds.map((id) => ({ id })) } : undefined,
         ...rest,
       },
       select: {
@@ -188,6 +189,7 @@ export default function AddIncomePage() {
         {
           methodId: "",
           typeId: "",
+          amountInCents: "",
         },
       ],
     },
@@ -319,7 +321,7 @@ export default function AddIncomePage() {
               })}
             </ul>
             <Button
-              onClick={() => form.array("transactionItems").push({ methodId: "", typeId: "" })}
+              onClick={() => form.array("transactionItems").push({ methodId: "", typeId: "", amountInCents: "" })}
               variant="outline"
               className="flex items-center gap-2"
               type="button"
@@ -330,12 +332,7 @@ export default function AddIncomePage() {
             <Separator className="my-4" />
             <ReceiptSelector receipts={receipts} />
 
-            <SubmitButton
-              isSubmitting={form.formState.isSubmitting}
-              disabled={!form.formState.isDirty || form.array("transactionItems").length() === 0}
-            >
-              Submit Income
-            </SubmitButton>
+            <SubmitButton isSubmitting={form.formState.isSubmitting}>Submit Income</SubmitButton>
           </div>
         </form>
       </PageContainer>

@@ -1,7 +1,7 @@
 import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import { IconMinus, IconPlus } from "@tabler/icons-react";
 import { ActionFunctionArgs, LoaderFunctionArgs, useFetcher, useLoaderData } from "react-router";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { Button } from "~/components/ui/button";
 import { FormField } from "~/components/ui/form";
@@ -9,6 +9,7 @@ import { Separator } from "~/components/ui/separator";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
+import { number, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -32,9 +33,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 const schema = z.object({
   categories: z.array(
     z.object({
-      id: z.coerce.number().optional(),
-      name: z.string().max(255).nonempty({ message: "Name is required" }),
-      _count: z.object({ transactions: z.number() }).optional(),
+      id: number.optional(),
+      name: text,
+      _count: z.object({ transactions: number }).optional(),
     }),
   ),
 });
@@ -168,7 +169,7 @@ export default function OrganizationTransactionCategories() {
               <IconPlus className="size-5" />
             </Button>
           </div>
-          <Button className="mt-4" type="submit" disabled={!form.formState.isDirty}>
+          <Button className="mt-4" type="submit">
             Save
           </Button>
         </form>

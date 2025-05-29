@@ -1,7 +1,6 @@
 import { ExcelBuilder, ExcelSchemaBuilder } from "@chronicstone/typed-xlsx";
 import { data, LoaderFunctionArgs } from "react-router";
-import { z } from "zod";
-import { fromZodError } from "zod-validation-error";
+import { z } from "zod/v4";
 
 import { db } from "~/integrations/prisma.server";
 import { Toasts } from "~/lib/toast.server";
@@ -21,7 +20,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const parsedParams = TransactionsReportSchema.safeParse({ trxStartDate, trxEndDate });
   if (!parsedParams.success) {
-    return data({ message: fromZodError(parsedParams.error).toString() }, { status: 400 });
+    const tree = z.treeifyError(parsedParams.error);
+    return data({ message: tree.errors.join(", ") }, { status: 400 });
   }
 
   const transactionItems = await db.transactionItem.findMany({

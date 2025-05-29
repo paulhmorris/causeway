@@ -2,7 +2,7 @@ import { MembershipRole } from "@prisma/client";
 import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData } from "react-router";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
 import { PageContainer } from "~/components/page-container";
@@ -13,20 +13,15 @@ import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { AccountType } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
+import { number, optionalSelect, text } from "~/schemas/fields";
 import { getAccountTypes } from "~/services.server/account";
 import { SessionService } from "~/services.server/session";
 
 const schema = z.object({
-  code: z.string().min(1, { message: "Code is required" }),
-  description: z.string().min(1, { message: "Description is required" }),
-  typeId: z
-    .string()
-    .transform((v) => +v)
-    .pipe(z.nativeEnum(AccountType)),
-  userId: z
-    .string()
-    .transform((v) => (v === "Select user" ? undefined : v))
-    .optional(),
+  code: text,
+  description: text,
+  typeId: number.pipe(z.enum(AccountType)),
+  userId: optionalSelect.transform((v) => (v === "Select user" ? undefined : v)),
 });
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {

@@ -18,7 +18,7 @@ import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
 import { formatCentsAsDollars, getToday } from "~/lib/utils";
-import { TransactionSchema } from "~/models/schemas";
+import { TransactionSchema } from "~/schemas";
 import { getContactTypes } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
 import { generateTransactionItems, getTransactionItemMethods } from "~/services.server/transaction";
@@ -84,7 +84,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         amountInCents: totalInCents,
         contactId: contactId ?? undefined,
         transactionItems: { createMany: { data: trxItems } },
-        receipts: receiptIds.length > 0 ? { connect: receiptIds.map((id) => ({ id })) } : undefined,
+        receipts: receiptIds?.length ? { connect: receiptIds.map((id) => ({ id })) } : undefined,
         ...rest,
       },
       select: {
@@ -125,6 +125,7 @@ export default function AddExpensePage() {
         {
           methodId: "",
           typeId: "",
+          amountInCents: "",
         },
       ],
     },
@@ -244,7 +245,7 @@ export default function AddExpensePage() {
               })}
             </ul>
             <Button
-              onClick={() => form.array("transactionItems").push({ methodId: "", typeId: "" })}
+              onClick={() => form.array("transactionItems").push({ methodId: "", typeId: "", amountInCents: "" })}
               variant="outline"
               className="flex items-center gap-2"
               type="button"

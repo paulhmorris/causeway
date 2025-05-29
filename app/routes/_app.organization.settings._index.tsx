@@ -1,8 +1,7 @@
 import { Prisma } from "@prisma/client";
-import { ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import { ActionFunctionArgs, useRouteLoaderData } from "react-router";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
@@ -14,24 +13,23 @@ import { Sentry } from "~/integrations/sentry";
 import { handlePrismaError, serverError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { loader } from "~/routes/_app.organization";
+import { optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
-const schema = withZod(
-  z.object({
-    name: z.string().nonempty("Organization name is required"),
-    host: z.string().nonempty("Host is required"),
-    subdomain: z.string().optional(),
-    replyToEmail: z.string().nonempty("Reply-to email is required"),
-    administratorEmail: z.string().optional(),
-    inquiriesEmail: z.string().optional(),
-  }),
-);
+const schema = z.object({
+  name: text,
+  host: text,
+  subdomain: optionalText,
+  replyToEmail: text,
+  administratorEmail: optionalText,
+  inquiriesEmail: optionalText,
+});
 
 export async function action({ request }: ActionFunctionArgs) {
   await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await schema.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -89,7 +87,17 @@ export default function OrganizationSettings() {
         ) : null}
       </div>
       <PageContainer>
-        <ValidatedForm validator={schema} defaultValues={{ ...org }} className="space-y-4 sm:max-w-md" method="post">
+        <ValidatedForm
+          schema={schema}
+          defaultValues={{
+            ...org,
+            subdomain: org.subdomain ?? "",
+            administratorEmail: org.administratorEmail ?? "",
+            inquiriesEmail: org.inquiriesEmail ?? "",
+          }}
+          className="space-y-4 sm:max-w-md"
+          method="post"
+        >
           {(form) => (
             <>
               <FormField required label="Organization Name" scope={form.scope("name")} defaultValue={org.name} />
@@ -131,9 +139,7 @@ export default function OrganizationSettings() {
                 </div>
               </fieldset>
               <ButtonGroup>
-                <SubmitButton isSubmitting={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
-                  Save
-                </SubmitButton>
+                <SubmitButton isSubmitting={form.formState.isSubmitting}>Save</SubmitButton>
                 <Button type="reset" variant="outline">
                   Reset
                 </Button>

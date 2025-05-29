@@ -19,7 +19,7 @@ import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
 import { getPrismaErrorText, handlePrismaError, serverError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
-import { NewContactSchema } from "~/models/schemas";
+import { NewContactSchema } from "~/schemas";
 import { SessionService } from "~/services.server/session";
 
 export const meta: MetaFunction = () => [{ title: "New Contact" }];

@@ -12,7 +12,7 @@ import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { forbidden } from "~/lib/responses.server";
 import { cn } from "~/lib/utils";
-import { passwordResetValidator } from "~/routes/resources.reset-password";
+import { passwordResetSchema } from "~/routes/resources.reset-password";
 import { SessionService } from "~/services.server/session";
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
@@ -108,11 +108,6 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       user: userWithoutPassword,
       accountsThatCanBeSubscribedTo,
       hasPassword: !!_password,
-      // ...setFormDefaults("user-form", {
-      //   ...userWithPassword,
-      //   ...userWithPassword.contact,
-      //   accountId: userWithPassword.account?.id,
-      // }),
     };
   } catch (error) {
     console.error(error);
@@ -123,7 +118,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
   {
-    title: `User ${data?.user.contact.firstName}${data?.user.contact.lastName ? " " + data.user.contact.lastName : ""}`,
+    title: `${data?.user.contact.firstName}${data?.user.contact.lastName ? " " + data.user.contact.lastName : ""}`,
   },
 ];
 
@@ -143,9 +138,10 @@ export default function UserDetailsLayout() {
           <ValidatedForm
             id="reset-password-form"
             fetcher={fetcher}
-            validator={passwordResetValidator}
+            schema={passwordResetSchema}
             method="post"
             action="/resources/reset-password"
+            defaultValues={{ username: user.username, _action: hasPassword ? "reset" : "setup" }}
           >
             {(form) => (
               <>

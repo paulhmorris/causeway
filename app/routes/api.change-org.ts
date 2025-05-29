@@ -1,26 +1,24 @@
 import { Prisma } from "@prisma/client";
-import { validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, validationError } from "@rvf/react-router";
 import { ActionFunctionArgs, redirect } from "react-router";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
+import { optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
-const validator = withZod(
-  z.object({
-    orgId: z.string().min(1, { message: "Organization is required" }),
-    pathname: z.string().optional(),
-  }),
-);
+const schema = z.object({
+  orgId: text,
+  pathname: optionalText,
+});
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     switch (request.method.toLowerCase()) {
       case "post": {
         const userId = await SessionService.requireUserId(request);
-        const result = await validator.validate(await request.formData());
+        const result = await parseFormData(request, schema);
 
         if (result.error) {
           return validationError(result.error);

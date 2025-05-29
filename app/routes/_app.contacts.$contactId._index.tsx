@@ -1,11 +1,10 @@
 import { Engagement, Prisma } from "@prisma/client";
-import { withZod } from "@rvf/zod";
 import { IconAddressBook, IconPlus, IconUser } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { Link, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
 import { ContactCard } from "~/components/contacts/contact-card";
@@ -86,8 +85,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
   invariant(params.contactId, "contactId not found");
 
-  const validator = withZod(z.object({ _action: z.enum(["delete"]) }));
-  const result = await validator.validate(await request.formData());
+  const schema = z.object({ _action: z.enum(["delete"]) });
+  const result = schema.safeParse(Object.fromEntries(await request.formData()));
   if (result.error) {
     return Toasts.dataWithError(
       { success: false },

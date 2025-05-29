@@ -1,10 +1,9 @@
-import { ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { ActionFunctionArgs, Link, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
-import { z } from "zod";
+import { z } from "zod/v4";
 dayjs.extend(utc);
 
 import { PageHeader } from "~/components/common/page-header";
@@ -19,16 +18,15 @@ import { Sentry } from "~/integrations/sentry";
 import { notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cn, formatCentsAsDollars } from "~/lib/utils";
+import { cuid, optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
-const schema = withZod(
-  z.object({
-    id: z.string().cuid(),
-    date: z.string(),
-    categoryId: z.string(),
-    description: z.string().optional(),
-  }),
-);
+const schema = z.object({
+  id: cuid,
+  date: text,
+  categoryId: text,
+  description: optionalText,
+});
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   invariant(params.transactionId, "transactionId not found");
@@ -63,7 +61,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await schema.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -120,9 +118,10 @@ export default function TransactionDetailsPage() {
               ) : null}
               <ValidatedForm
                 id="transaction-edit"
-                validator={schema}
+                schema={schema}
                 method="PUT"
                 defaultValues={{
+                  ...transaction,
                   date: dayjs(transaction.date).utc().format("YYYY-MM-DD"),
                   description: transaction.description ?? "",
                   categoryId: String(transaction.categoryId),
@@ -160,11 +159,7 @@ export default function TransactionDetailsPage() {
                         <FormTextarea scope={form.scope("description")} label="Description" hideLabel />
                       </dd>
                     </div>
-                    <SubmitButton
-                      isSubmitting={form.formState.isSubmitting}
-                      disabled={!form.formState.isDirty}
-                      className="ml-auto"
-                    >
+                    <SubmitButton isSubmitting={form.formState.isSubmitting} className="ml-auto">
                       Save
                     </SubmitButton>
                   </>

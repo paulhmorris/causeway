@@ -23,7 +23,7 @@ import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
 import { forbidden, notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
-import { UpdateContactSchema } from "~/models/schemas";
+import { UpdateContactSchema } from "~/schemas";
 import { getContactTypes } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
 
@@ -382,9 +382,7 @@ export default function EditContactPage() {
             </>
           ) : null}
           <div className="flex items-center gap-2">
-            <SubmitButton isSubmitting={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
-              Save
-            </SubmitButton>
+            <SubmitButton isSubmitting={form.formState.isSubmitting}>Save</SubmitButton>
             <Button type="reset" variant="outline">
               Reset
             </Button>

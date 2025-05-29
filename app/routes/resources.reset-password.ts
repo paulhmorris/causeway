@@ -1,28 +1,26 @@
-import { validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
 import { type ActionFunctionArgs } from "react-router";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
+import { email } from "~/schemas/fields";
 import { sendPasswordResetEmail, sendPasswordSetupEmail } from "~/services.server/mail";
 import { deletePasswordReset, generatePasswordReset, getPasswordResetByUserId } from "~/services.server/password";
 
-export const passwordResetValidator = withZod(
-  z.object({
-    username: z.string().email(),
-    _action: z.enum(["reset", "setup"]),
-  }),
-);
+export const passwordResetSchema = z.object({
+  username: email,
+  _action: z.enum(["reset", "setup"]),
+});
 
 export async function action({ request }: ActionFunctionArgs) {
   if (request.method !== "POST") {
     throw new Response("Method not allowed", { status: 405 });
   }
 
-  const result = await passwordResetValidator.validate(await request.formData());
+  const result = await parseFormData(request, passwordResetSchema);
   if (result.error) {
     return validationError(result.error);
   }

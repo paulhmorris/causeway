@@ -1,8 +1,7 @@
-import { ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { redirect, useSearchParams } from "react-router";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { AuthCard } from "~/components/auth/auth-card";
 import { ErrorComponent } from "~/components/error-component";
@@ -10,16 +9,15 @@ import { FormField } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { Toasts } from "~/lib/toast.server";
 import { safeRedirect } from "~/lib/utils";
+import { email, optionalText, password } from "~/schemas/fields";
 import { generateVerificationCode, verifyLogin } from "~/services.server/auth";
 import { SessionService } from "~/services.server/session";
 
-const validator = withZod(
-  z.object({
-    email: z.string().min(1, { message: "Email is required" }).email(),
-    password: z.string().min(8, { message: "Password must be 8 or more characters." }),
-    redirectTo: z.string().optional(),
-  }),
-);
+const schema = z.object({
+  email: email,
+  password: password,
+  redirectTo: optionalText,
+});
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const user = await SessionService.getUser(request);
@@ -33,7 +31,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
 
   if (result.error) {
     return validationError(result.error);
@@ -93,7 +91,7 @@ export default function LoginPage() {
     <AuthCard>
       <h1 className="text-3xl font-extrabold">Login</h1>
       <ValidatedForm
-        validator={validator}
+        schema={schema}
         method="post"
         className="mt-4 space-y-4"
         defaultValues={{
@@ -103,7 +101,7 @@ export default function LoginPage() {
       >
         {(form) => (
           <>
-            <FormField label="Email" scope={form.scope("email")} type="email" autoComplete="email username" required />
+            <FormField label="Email" scope={form.scope("email")} type="email" autoComplete="username" required />
             <FormField
               label="Password"
               scope={form.scope("password")}

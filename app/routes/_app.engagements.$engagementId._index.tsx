@@ -1,9 +1,8 @@
-import { withZod } from "@rvf/zod";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { ActionFunctionArgs, Link, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
-import { z } from "zod";
+import { z } from "zod/v4";
 dayjs.extend(utc);
 
 import { PageHeader } from "~/components/common/page-header";
@@ -46,8 +45,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   invariant(params.engagementId, "engagementId not found");
 
-  const validator = withZod(z.object({ _action: z.literal("delete") }));
-  const result = await validator.validate(await request.formData());
+  const schema = z.object({ _action: z.literal("delete") });
+  const result = schema.safeParse(Object.fromEntries(await request.formData()));
   if (result.error) {
     return Toasts.dataWithError(
       { success: false },

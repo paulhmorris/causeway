@@ -1,13 +1,13 @@
 import { ActionFunctionArgs } from "react-router";
-import { z } from "zod";
-import { fromZodError } from "zod-validation-error";
+import { z } from "zod/v4";
 
 import { Bucket } from "~/integrations/bucket.server";
+import { text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
-const validator = z.object({
-  fileName: z.string(),
-  contentType: z.string(),
+const schema = z.object({
+  fileName: text,
+  contentType: text,
 });
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -18,9 +18,10 @@ export async function action({ request }: ActionFunctionArgs) {
     return new Response("Method not allowed", { status: 405 });
   }
 
-  const result = validator.safeParse(await request.json());
+  const result = schema.safeParse(await request.json());
   if (!result.success) {
-    return new Response(fromZodError(result.error).toString(), { status: 400 });
+    const tree = z.treeifyError(result.error);
+    return new Response(tree.errors.join(", "), { status: 400 });
   }
 
   const { fileName, contentType } = result.data;

@@ -1,8 +1,7 @@
 import { MembershipRole, UserRole } from "@prisma/client";
-import { ValidatedForm, validationError } from "@rvf/react-router";
-import { withZod } from "@rvf/zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs, type MetaFunction } from "react-router";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
 import { ErrorComponent } from "~/components/error-component";
@@ -18,27 +17,22 @@ import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
-import { CheckboxSchema } from "~/models/schemas";
+import { checkbox, email, number, optionalSelect, optionalText, text } from "~/schemas/fields";
 import { getContactTypes } from "~/services.server/contact";
 import { sendPasswordSetupEmail } from "~/services.server/mail";
 import { generatePasswordReset } from "~/services.server/password";
 import { SessionService } from "~/services.server/session";
 
-const validator = withZod(
-  z.object({
-    firstName: z.string().min(1, { message: "First name is required" }),
-    lastName: z.string().optional(),
-    username: z.string().email({ message: "Invalid email address" }),
-    role: z.nativeEnum(MembershipRole),
-    systemRole: z.nativeEnum(UserRole),
-    typeId: z.coerce.number().pipe(z.nativeEnum(ContactType)),
-    sendPasswordSetup: CheckboxSchema,
-    accountId: z
-      .string()
-      .transform((v) => (v === "Select an account" ? undefined : v))
-      .optional(),
-  }),
-);
+const schema = z.object({
+  firstName: text,
+  lastName: optionalText,
+  username: email,
+  role: z.enum(MembershipRole),
+  systemRole: z.enum(UserRole),
+  typeId: number.pipe(z.enum(ContactType)),
+  sendPasswordSetup: checkbox,
+  accountId: optionalSelect.transform((v) => (v === "Select an account" ? undefined : v)),
+});
 
 export const meta: MetaFunction = () => [{ title: "New User" }];
 
@@ -62,7 +56,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const authorizedUser = await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -154,7 +148,7 @@ export default function NewUserPage() {
       />
       <PageContainer>
         <ValidatedForm
-          validator={validator}
+          schema={schema}
           defaultValues={{
             firstName: "",
             lastName: "",
@@ -163,6 +157,7 @@ export default function NewUserPage() {
             typeId: "",
             systemRole: UserRole.USER,
             accountId: "",
+            sendPasswordSetup: "",
           }}
           method="post"
           className="space-y-4 sm:max-w-md"
@@ -219,9 +214,7 @@ export default function NewUserPage() {
                   </Label>
                 </div>
                 <div className="flex items-center gap-2">
-                  <SubmitButton isSubmitting={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
-                    Create
-                  </SubmitButton>
+                  <SubmitButton isSubmitting={form.formState.isSubmitting}>Create</SubmitButton>
                   <Button type="reset" variant="outline">
                     Reset
                   </Button>

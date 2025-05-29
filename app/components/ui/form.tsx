@@ -2,6 +2,7 @@ import { FormScope, useField, ValueOfInputType } from "@rvf/react-router";
 import { IconCurrencyDollar } from "@tabler/icons-react";
 import { ComponentPropsWithRef, forwardRef, JSX, useId, useState } from "react";
 
+import { Checkbox } from "~/components/ui/checkbox";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
@@ -11,9 +12,9 @@ import { cn } from "~/lib/utils";
 function FieldError({ id, error }: { id: string; error?: string | null }) {
   if (!error) return null;
   return (
-    <span aria-live="polite" id={`${id}-error`} className="text-destructive mt-1 ml-1 text-xs font-medium">
+    <p aria-live="polite" id={`${id}-error`} className="text-destructive mt-1 ml-1 text-xs font-medium">
       {error ? <span>{error}</span> : null}
-    </span>
+    </p>
   );
 }
 
@@ -108,8 +109,11 @@ export const FormField = forwardRef<HTMLInputElement, FieldProps<string>>(
             {type === "password" ? "Show" : "Hide"}
           </button>
         ) : null}
-        <FieldDescription id={inputId} description={description} />
-        <FieldError id={inputId} error={error} />
+        {error ? (
+          <FieldError id={inputId} error={error} />
+        ) : (
+          <FieldDescription id={inputId} description={description} />
+        )}
       </div>
     );
   },
@@ -141,7 +145,8 @@ export function FormTextarea({ hideLabel = false, scope, label, className, descr
         <span
           className={cn(
             "ml-1 inline-block font-normal",
-            props.required ? "text-destructive" : "text-muted-foreground text-xs",
+            props.required || error ? "text-destructive" : "text-muted-foreground",
+            !props.required && "text-xs",
           )}
         >
           {props.required ? "*" : "(optional)"}
@@ -157,14 +162,13 @@ export function FormTextarea({ hideLabel = false, scope, label, className, descr
           ...props,
         })}
       />
-      <FieldDescription id={id} description={description} />
-      <FieldError id={id} error={error} />
+      {error ? <FieldError id={id} error={error} /> : <FieldDescription id={id} description={description} />}
     </div>
   );
 }
 
 export interface FormSelectProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  scope: FormScope<string | number | undefined>;
+  scope: FormScope<string | number | null | undefined>;
   label: string;
   placeholder: string;
   description?: string;
@@ -178,8 +182,8 @@ export interface FormSelectProps extends React.ButtonHTMLAttributes<HTMLButtonEl
 export function FormSelect(props: FormSelectProps) {
   const { scope, label, placeholder, options, hideLabel, divProps, ...rest } = props;
   const field = useField(scope);
-  const { onChange, ...input } = field.getControlProps();
   const selectId = useId();
+  const { onChange, ...input } = field.getControlProps();
   const error = field.error();
 
   return (
@@ -196,13 +200,25 @@ export function FormSelect(props: FormSelectProps) {
         <span
           className={cn(
             "ml-1 inline-block font-normal",
-            props.required ? "text-destructive" : "text-muted-foreground text-xs",
+            props.required || error ? "text-destructive" : "text-muted-foreground",
+            !props.required && "text-xs",
           )}
         >
           {props.required ? "*" : "(optional)"}
         </span>
       </Label>
-      <Select {...input} value={String(input.value)} onValueChange={onChange}>
+      <Select
+        {...input}
+        value={String(input.value)}
+        onValueChange={(v) => {
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          if (v === undefined || v === "undefined") {
+            onChange("");
+          } else {
+            onChange(v);
+          }
+        }}
+      >
         <SelectTrigger
           id={selectId}
           {...rest}
@@ -214,13 +230,17 @@ export function FormSelect(props: FormSelectProps) {
         <SelectContent>
           {options && options.length === 0 ? (
             // @ts-expect-error see https://github.com/radix-ui/primitives/issues/1569#issuecomment-1567414323
-            <SelectItem value={null} disabled>
+            <SelectItem value={undefined} disabled>
               No options
             </SelectItem>
           ) : (
             !props.required && (
-              // @ts-expect-error see https://github.com/radix-ui/primitives/issues/1569#issuecomment-1567414323
-              <SelectItem value={null} className="text-muted-foreground/60 focus:text-muted-foreground/60">
+              <SelectItem
+                key={`${selectId}-undefined-option`}
+                // @ts-expect-error see https://github.com/radix-ui/primitives/issues/1569#issuecomment-1567414323
+                value={undefined}
+                className="text-muted-foreground/60 focus:text-muted-foreground/60"
+              >
                 {placeholder}
               </SelectItem>
             )
@@ -230,16 +250,67 @@ export function FormSelect(props: FormSelectProps) {
                 if (o.value === null || o.label === null) return null;
 
                 return (
-                  <SelectItem disabled={o.disabled} key={o.value} value={o.value.toString()}>
+                  <SelectItem
+                    disabled={o.disabled}
+                    key={`${selectId}-${o.value.toString()}`}
+                    value={o.value.toString()}
+                  >
                     {o.label}
                   </SelectItem>
                 );
               })
             : props.children}
         </SelectContent>
-        <FieldDescription id={selectId} description={props.description} />
-        <FieldError id={selectId} error={error} />
+        {error ? (
+          <FieldError id={selectId} error={error} />
+        ) : (
+          <FieldDescription id={selectId} description={props.description} />
+        )}
       </Select>
+    </div>
+  );
+}
+
+export function FormCheckbox({
+  scope,
+  label,
+  description,
+}: {
+  scope: FormScope<boolean | string | null | undefined>;
+  label: string;
+  description?: string;
+}) {
+  const field = useField(scope);
+  const inputId = useId();
+  const error = field.error();
+
+  const { value, onChange, ref } = field.getControlProps();
+
+  return (
+    <div>
+      <Label className="inline-flex cursor-pointer items-center gap-2">
+        <Checkbox ref={ref} checked={!!value} onCheckedChange={onChange} />
+        <span>{label}</span>
+      </Label>
+      <FieldDescription id={inputId} description={description} />
+      <FieldError id={inputId} error={error} />
+    </div>
+  );
+}
+
+export function UncontrolledCheckbox({
+  label,
+  description,
+  ...rest
+}: ComponentPropsWithRef<typeof Checkbox> & { label: string; description?: string }) {
+  const inputId = useId();
+  return (
+    <div>
+      <Label className="inline-flex cursor-pointer items-center gap-x-2">
+        <Checkbox {...rest} />
+        <span>{label}</span>
+      </Label>
+      <FieldDescription id={inputId} description={description} />
     </div>
   );
 }

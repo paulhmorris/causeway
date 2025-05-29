@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 
+import { expectVisibleNotification } from "test/e2e/helpers/notifications";
 import { formatCurrency } from "~/lib/utils";
 
 dayjs.extend(utc);
@@ -38,15 +39,13 @@ test.describe("Add expense", () => {
     await page.getByRole("button", { name: /submit/i }).click();
 
     // Verifiy transaction went through
-    await expect(page).toHaveURL(/accounts/);
+    await page.waitForURL(/accounts/);
+    await expectVisibleNotification(page, { expectedType: "success" });
     await expect(page.getByRole("heading", { name: /9998/i })).toBeVisible();
 
     // Verify transaction amount is correct
     const trx = page.getByRole("row", { name: `-${formatCurrency(amount)}` });
     await expect(trx).toBeVisible();
-
-    // Verify toast message
-    await expect(page.getByRole("status")).toHaveText(/success/i);
 
     // Verify transaction link
     await trx.getByRole("link", { name: /view/i }).click();
