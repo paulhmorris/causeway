@@ -8,7 +8,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 const sentryConfig: SentryReactRouterBuildOptions = {
   telemetry: false,
   org: "cosmic-labs",
-  project: "np-ally",
+  project: "causeway",
   authToken: process.env.SENTRY_AUTH_TOKEN,
   sourceMapsUploadOptions: {
     filesToDeleteAfterUpload: ["**/*.map"],

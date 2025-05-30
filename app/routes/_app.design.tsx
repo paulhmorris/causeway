@@ -1,4 +1,8 @@
+import { redirect } from "react-router";
+
 import { Button } from "~/components/ui/button";
+
+export const loader = () => (import.meta.env.PROD ? redirect("/") : null);
 
 export default function Design() {
   return (
