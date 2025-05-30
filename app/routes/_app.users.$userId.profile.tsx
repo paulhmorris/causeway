@@ -212,7 +212,7 @@ export default function UserDetailsPage() {
             </fieldset>
             <ButtonGroup className="mt-4">
               <SubmitButton isSubmitting={form.formState.isSubmitting}>Save</SubmitButton>
-              <Button type="reset" variant="outline">
+              <Button type="reset" variant="ghost">
                 Reset
               </Button>
             </ButtonGroup>

@@ -13,7 +13,7 @@ export function PageHeader(props: Props) {
   return (
     <>
       <header className={cn("flex w-full flex-wrap items-center justify-between gap-3", className)} {...rest}>
-        <h1 className="text-3xl font-semibold tracking-wider sm:text-4xl">{props.title}</h1>
+        <h1 className="text-3xl font-semibold tracking-wide sm:text-4xl">{props.title}</h1>
         {props.children}
       </header>
       {description ? <p className="text-muted-foreground mt-1 text-sm">{description}</p> : null}

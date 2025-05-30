@@ -6,7 +6,7 @@ import { cn } from "~/lib/utils";
 
 const buttonVariants = cva(
   [
-    "relative isolate inline-flex gap-x-2 items-center select-none justify-center touch-manipulation whitespace-nowrap rounded-lg text-base/6 sm:text-sm font-semibold ring-offset-background transition-colors",
+    "relative isolate inline-flex gap-x-2 items-center select-none justify-center touch-manipulation whitespace-nowrap rounded-lg text-base/6 sm:text-sm font-semibold ring-offset-background transition-colors transition-[box-shadow]",
     "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
     "disabled:pointer-events-none disabled:opacity-60 cursor-pointer",
   ],

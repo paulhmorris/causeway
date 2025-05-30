@@ -51,7 +51,7 @@ export const FormField = forwardRef<HTMLInputElement, FieldProps<string>>(
         <Label
           htmlFor={inputId}
           className={cn(
-            hideLabel ? "sr-only" : "mb-1.5",
+            hideLabel && "sr-only",
             error && "text-destructive",
             props.disabled && "cursor-not-allowed opacity-50",
           )}
@@ -67,7 +67,7 @@ export const FormField = forwardRef<HTMLInputElement, FieldProps<string>>(
             {props.required ? "*" : "(optional)"}
           </span>
         </Label>
-        <div className="relative">
+        <div className="relative mt-0.5">
           <Input
             {...field.getInputProps({
               ref,
@@ -139,7 +139,7 @@ export function FormTextarea({ hideLabel = false, scope, label, className, descr
       <Label
         htmlFor={id}
         className={cn(
-          hideLabel ? "sr-only" : "mb-1.5",
+          hideLabel && "sr-only",
           error && "text-destructive",
           props.disabled && "cursor-not-allowed opacity-50",
         )}
@@ -155,16 +155,18 @@ export function FormTextarea({ hideLabel = false, scope, label, className, descr
           {props.required ? "*" : "(optional)"}
         </span>
       </Label>
-      <Textarea
-        {...field.getInputProps({
-          id: id,
-          "aria-invalid": error ? true : props["aria-invalid"],
-          "aria-errormessage": error ? `${id}-error` : props["aria-errormessage"],
-          "aria-describedby": description ? `${id}-description` : props["aria-describedby"],
-          className: cn(className),
-          ...props,
-        })}
-      />
+      <div className="mt-0.5">
+        <Textarea
+          {...field.getInputProps({
+            id: id,
+            "aria-invalid": error ? true : props["aria-invalid"],
+            "aria-errormessage": error ? `${id}-error` : props["aria-errormessage"],
+            "aria-describedby": description ? `${id}-description` : props["aria-describedby"],
+            className: cn(className),
+            ...props,
+          })}
+        />
+      </div>
       {error ? <FieldError id={id} error={error} /> : <FieldDescription id={id} description={description} />}
     </div>
   );
@@ -194,7 +196,7 @@ export function FormSelect(props: FormSelectProps) {
       <Label
         htmlFor={selectId}
         className={cn(
-          hideLabel ? "sr-only" : "mb-1",
+          hideLabel && "sr-only",
           error && "text-destructive",
           props.disabled && "cursor-not-allowed opacity-50",
         )}
@@ -226,7 +228,11 @@ export function FormSelect(props: FormSelectProps) {
           id={selectId}
           {...rest}
           aria-label={placeholder}
-          className={cn(error && "ring-destructive/20 dark:ring-destructive/40 border-destructive", rest.className)}
+          className={cn(
+            "mt-0.5",
+            error && "ring-destructive/20 dark:ring-destructive/40 border-destructive",
+            rest.className,
+          )}
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>

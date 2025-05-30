@@ -215,7 +215,7 @@ export default function NewUserPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <SubmitButton isSubmitting={form.formState.isSubmitting}>Create</SubmitButton>
-                  <Button type="reset" variant="outline">
+                  <Button type="reset" variant="ghost">
                     Reset
                   </Button>
                 </div>

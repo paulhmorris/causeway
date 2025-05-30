@@ -132,7 +132,7 @@ export default function NewAccountPage() {
 
           <ButtonGroup>
             <Button>Create Account</Button>
-            <Button type="reset" variant="outline">
+            <Button type="reset" variant="ghost">
               Reset
             </Button>
           </ButtonGroup>

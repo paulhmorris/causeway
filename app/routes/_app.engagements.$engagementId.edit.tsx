@@ -138,7 +138,7 @@ export default function EditEngagementPage() {
               <FormTextarea scope={form.scope("description")} label="Description" rows={8} />
               <ButtonGroup>
                 <SubmitButton isSubmitting={form.formState.isSubmitting}>Save</SubmitButton>
-                <Button variant="outline" type="reset">
+                <Button type="reset" variant="ghost">
                   Reset
                 </Button>
               </ButtonGroup>

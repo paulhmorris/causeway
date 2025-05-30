@@ -140,7 +140,7 @@ export default function OrganizationSettings() {
               </fieldset>
               <ButtonGroup>
                 <SubmitButton isSubmitting={form.formState.isSubmitting}>Save</SubmitButton>
-                <Button type="reset" variant="outline">
+                <Button type="reset" variant="ghost">
                   Reset
                 </Button>
               </ButtonGroup>
