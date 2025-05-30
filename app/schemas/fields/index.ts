@@ -28,7 +28,7 @@ export const optionalSelect = select.optional();
 
 export const cuid = z.cuid({ error: (e) => (!e.input ? "Required" : "Invalid ID") });
 export const email = z.email({ error: (e) => (!e.input ? "Required" : "Invalid email address") });
-export const password = _text.min(8, "Password must be 8 or more characters");
+export const password = _text.min(8, "Must be 8 or more characters");
 export const url = z.url({ error: (e) => (!e.input ? "Required" : "Invalid URL") });
 export const currency = z.preprocess(
   (v) => (typeof v === "string" && v.startsWith("$") ? v.slice(1) : v),

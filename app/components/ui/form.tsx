@@ -1,5 +1,5 @@
 import { FormScope, useField, ValueOfInputType } from "@rvf/react-router";
-import { IconCurrencyDollar } from "@tabler/icons-react";
+import { IconCurrencyDollar, IconEye, IconEyeOff } from "@tabler/icons-react";
 import { ComponentPropsWithRef, forwardRef, JSX, useId, useState } from "react";
 
 import { Checkbox } from "~/components/ui/checkbox";
@@ -67,48 +67,51 @@ export const FormField = forwardRef<HTMLInputElement, FieldProps<string>>(
             {props.required ? "*" : "(optional)"}
           </span>
         </Label>
-        <Input
-          {...field.getInputProps({
-            ref,
-            type,
-            id: inputId,
-            inputMode: isCurrency ? "decimal" : props.inputMode,
-            "aria-invalid": error ? true : props["aria-invalid"],
-            "aria-errormessage": error ? `${inputId}-error` : props["aria-errormessage"],
-            "aria-describedby": description ? `${inputId}-description` : props["aria-describedby"],
-            className: cn(
-              error && "border-destructive focus-visible:ring-destructive/50",
-              isCurrency && "pl-7",
-              className,
-            ),
-            onBlur: (e) => {
-              if (isCurrency) {
-                const value = parseFloat(e.currentTarget.value);
-                if (isNaN(value)) {
-                  e.currentTarget.value = "";
-                } else {
-                  e.currentTarget.value = value.toFixed(2);
+        <div className="relative">
+          <Input
+            {...field.getInputProps({
+              ref,
+              type,
+              id: inputId,
+              inputMode: isCurrency ? "decimal" : props.inputMode,
+              "aria-invalid": error ? true : props["aria-invalid"],
+              "aria-errormessage": error ? `${inputId}-error` : props["aria-errormessage"],
+              "aria-describedby": description ? `${inputId}-description` : props["aria-describedby"],
+              className: cn(isCurrency && "pl-7", _type === "password" && "pr-10", className),
+              onBlur: (e) => {
+                if (isCurrency) {
+                  const value = parseFloat(e.currentTarget.value);
+                  if (isNaN(value)) {
+                    e.currentTarget.value = "";
+                  } else {
+                    e.currentTarget.value = value.toFixed(2);
+                  }
                 }
-              }
-              props.onBlur?.(e);
-            },
-            ...props,
-          })}
-        />
-        {isCurrency ? (
-          <span className="text-muted-foreground pointer-events-none absolute top-9 left-2">
-            <IconCurrencyDollar className="text-muted-foreground h-4 w-4" strokeWidth={2.5} />
-          </span>
-        ) : null}
-        {_type === "password" ? (
-          <button
-            type="button"
-            className="text-muted-foreground focus-visible:ring-primary/50 absolute top-0 right-0 rounded p-2 text-xs transition hover:underline focus:outline-hidden focus-visible:ring-3"
-            onClick={() => setType((t) => (t === "password" ? "text" : "password"))}
-          >
-            {type === "password" ? "Show" : "Hide"}
-          </button>
-        ) : null}
+                props.onBlur?.(e);
+              },
+              ...props,
+            })}
+          />
+          {isCurrency ? (
+            <span className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2">
+              <IconCurrencyDollar className="size-4" strokeWidth={2.5} />
+            </span>
+          ) : null}
+          {_type === "password" ? (
+            <button
+              type="button"
+              className="focus-visible:ring-primary/50 absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer rounded p-2 text-xs transition hover:underline focus:outline-hidden focus-visible:ring-3"
+              onClick={() => setType((t) => (t === "password" ? "text" : "password"))}
+            >
+              {type === "password" ? (
+                <IconEyeOff className="size-5.5" aria-hidden="true" />
+              ) : (
+                <IconEye className="size-5.5" aria-hidden="true" />
+              )}
+              <span className="sr-only">{type === "password" ? "Show password" : "Hide password"}</span>
+            </button>
+          ) : null}
+        </div>
         {error ? (
           <FieldError id={inputId} error={error} />
         ) : (
@@ -158,7 +161,7 @@ export function FormTextarea({ hideLabel = false, scope, label, className, descr
           "aria-invalid": error ? true : props["aria-invalid"],
           "aria-errormessage": error ? `${id}-error` : props["aria-errormessage"],
           "aria-describedby": description ? `${id}-description` : props["aria-describedby"],
-          className: cn(error && "border-destructive focus-visible:ring-destructive/50", className),
+          className: cn(className),
           ...props,
         })}
       />
@@ -223,7 +226,7 @@ export function FormSelect(props: FormSelectProps) {
           id={selectId}
           {...rest}
           aria-label={placeholder}
-          className={cn(error && "border-destructive focus-visible:ring-destructive/50", rest.className)}
+          className={cn(error && "ring-destructive/20 dark:ring-destructive/40 border-destructive", rest.className)}
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>

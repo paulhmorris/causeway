@@ -1,5 +1,4 @@
 import "@fontsource-variable/dm-sans/wght.css";
-import "@fontsource-variable/gabarito/wght.css";
 import { Analytics } from "@vercel/analytics/react";
 import { useEffect } from "react";
 import type { LinksFunction, LoaderFunctionArgs } from "react-router";
@@ -18,7 +17,6 @@ import { PreventFlashOnWrongTheme, ThemeProvider, useTheme } from "remix-themes"
 
 import { ErrorComponent } from "~/components/error-component";
 import { Notifications } from "~/components/notifications";
-import { GlobalLoader } from "~/components/ui/global-loader";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
@@ -181,7 +179,6 @@ function App() {
         {import.meta.env.PROD ? <Analytics debug={false} /> : null}
         <Outlet />
         <Notifications />
-        <GlobalLoader />
         <ScrollRestoration />
         <script
           dangerouslySetInnerHTML={{

@@ -34,7 +34,7 @@ export function OrgSelector() {
       <DropdownMenuTrigger asChild>
         <button className="text-primary ring-offset-card hover:bg-muted focus-visible:ring-ring relative flex cursor-pointer items-center gap-x-3 rounded-md px-2.5 py-1 text-sm font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden md:w-full">
           <span className="sr-only">Change Organization</span>
-          <span className="font-display text-4xl font-bold" aria-hidden="true">
+          <span className="text-4xl font-bold" aria-hidden="true">
             C
           </span>
 

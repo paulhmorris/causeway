@@ -89,7 +89,7 @@ export default function LoginPage() {
 
   return (
     <AuthCard>
-      <h1 className="text-3xl font-extrabold">Login</h1>
+      <h1 className="text-3xl font-black sm:text-4xl">Login</h1>
       <ValidatedForm
         schema={schema}
         method="post"
@@ -112,7 +112,7 @@ export default function LoginPage() {
 
             <input type="hidden" name="redirectTo" value={redirectTo} />
             <SubmitButton isSubmitting={form.formState.isSubmitting} className="w-full">
-              Log in
+              Login
             </SubmitButton>
           </>
         )}

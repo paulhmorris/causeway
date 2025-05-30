@@ -1,17 +1,25 @@
+import { useState } from "react";
 import { redirect } from "react-router";
 
 import { Button } from "~/components/ui/button";
+import { SubmitButton } from "~/components/ui/submit-button";
 
 export const loader = () => (import.meta.env.PROD ? redirect("/") : null);
 
 export default function Design() {
+  const [isSubmitting, setIs] = useState(false);
+
   return (
     <div className="flex flex-col items-start gap-y-4">
-      <h1 className="font-display text-4xl font-bold">CAUSEWAY</h1>
+      <h1 className="text-4xl font-bold">CAUSEWAY</h1>
+      <button className="text-sm" onClick={() => setIs((v) => !v)}>
+        Toggle submitting
+      </button>
       <Button variant="default">Default</Button>
       <Button variant="destructive">Destructive</Button>
       <Button variant="ghost">Ghost</Button>
       <Button variant="outline">Outline</Button>
+      <SubmitButton isSubmitting={isSubmitting}>Submit</SubmitButton>
       <div className="bg-background text-foreground border-foreground grid size-20 place-items-center rounded-lg border">
         <span className="text-xs">background</span>
       </div>
@@ -31,10 +39,10 @@ export default function Design() {
         <span className="text-xs">accent</span>
       </div>
       <div className="bg-baby-blue text-foreground border-foreground grid size-20 place-items-center rounded-lg border">
-        <span className="text-xs">accent 2</span>
+        <span className="text-xs">baby blue</span>
       </div>
       <div className="bg-gold text-foreground border-foreground grid size-20 place-items-center rounded-lg border">
-        <span className="text-xs">accent 2</span>
+        <span className="text-xs">gold</span>
       </div>
     </div>
   );

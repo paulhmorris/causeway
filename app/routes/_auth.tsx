@@ -1,4 +1,4 @@
-import { IconPlanet } from "@tabler/icons-react";
+import { IconCopyright } from "@tabler/icons-react";
 import { Outlet } from "react-router";
 
 export default function AuthLayout() {
@@ -8,11 +8,11 @@ export default function AuthLayout() {
         <Outlet />
       </main>
       <footer className="mx-auto mt-auto mb-8 shrink">
-        <p className="text-xs">
-          {new Date().getFullYear()} •{" "}
-          <span>
-            Cosmic Development <IconPlanet className="mb-0.5 inline size-3.5" />
-          </span>
+        <p className="text-muted-foreground flex items-center gap-x-1 text-xs">
+          <IconCopyright className="size-4" />
+          {new Date().getFullYear()}
+          <span>•</span>
+          <span>Cosmic Development</span>
         </p>
       </footer>
     </div>
