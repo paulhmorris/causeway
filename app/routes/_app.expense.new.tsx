@@ -1,16 +1,16 @@
 import { TransactionItemTypeDirection } from "@prisma/client";
-import { FormScope, parseFormData, useForm, validationError } from "@rvf/react-router";
+import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import { IconPlus } from "@tabler/icons-react";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
 import { ReceiptSelector } from "~/components/common/receipt-selector";
+import { TransactionItem } from "~/components/common/transaction-item";
 import { ContactDropdown } from "~/components/contacts/contact-dropdown";
 import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "~/components/ui/card";
 import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
 import { Separator } from "~/components/ui/separator";
 import { SubmitButton } from "~/components/ui/submit-button";
@@ -134,6 +134,9 @@ export default function AddExpensePage() {
     },
   });
 
+  let total = 0;
+  form.value().transactionItems.forEach((i) => (total += Number(i.amountInCents) * 100));
+
   return (
     <>
       <PageHeader title="Add Expense" />
@@ -185,64 +188,14 @@ export default function AddExpensePage() {
                 const prefix = `transactionItems[${index}]`;
                 return (
                   <li key={key}>
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Item {index + 1}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <input type="hidden" name={`${prefix}.id`} />
-                        <fieldset className="space-y-3">
-                          <div className="grid grid-cols-10 items-start gap-2">
-                            <div className="col-span-3 sm:col-span-2">
-                              <FormField
-                                required
-                                label="Amount"
-                                isCurrency
-                                scope={item.scope("amountInCents") as FormScope<string>}
-                              />
-                            </div>
-                            <FormSelect
-                              divProps={{ className: "col-span-3 sm:col-span-4" }}
-                              required
-                              scope={item.scope("methodId")}
-                              label="Method"
-                              placeholder="Select method"
-                              options={transactionItemMethods.map((t) => ({
-                                value: t.id,
-                                label: t.name,
-                              }))}
-                            />
-                            <FormSelect
-                              divProps={{ className: "col-span-4" }}
-                              required
-                              scope={item.scope("typeId")}
-                              label="Type"
-                              placeholder="Select type"
-                              options={transactionItemTypes.map((t) => ({
-                                value: t.id,
-                                label: t.name,
-                              }))}
-                            />
-                          </div>
-                          <FormField
-                            scope={item.scope("description")}
-                            label="Description"
-                            description="Will only be shown in transaction details and reports"
-                          />
-                        </fieldset>
-                      </CardContent>
-                      <CardFooter>
-                        <Button
-                          aria-label={`Remove item ${index + 1}`}
-                          onClick={() => form.array("transactionItems").remove(index)}
-                          variant="destructive"
-                          type="button"
-                          className="ml-auto"
-                        >
-                          Remove
-                        </Button>
-                      </CardFooter>
-                    </Card>
+                    <TransactionItem
+                      title={`Item ${index + 1}`}
+                      itemScope={item.scope()}
+                      fieldPrefix={prefix}
+                      trxItemTypes={transactionItemTypes}
+                      trxItemMethods={transactionItemMethods}
+                      removeItemHandler={() => form.array("transactionItems").remove(index)}
+                    />
                   </li>
                 );
               })}
@@ -256,14 +209,12 @@ export default function AddExpensePage() {
               <IconPlus className="size-4" />
               <span>Add item</span>
             </Button>
-            <Separator />
+            <Separator className="my-4" />
             <ReceiptSelector receipts={receipts} />
-            <SubmitButton
-              isSubmitting={form.formState.isSubmitting}
-              disabled={!form.formState.isDirty || form.array("transactionItems").length() === 0}
-            >
-              Submit Expense
-            </SubmitButton>
+            <div className="space-y-1">
+              <p className="text-primary text-sm font-bold">Total: {formatCentsAsDollars(total)}</p>
+              <SubmitButton isSubmitting={form.formState.isSubmitting}>Submit Expense</SubmitButton>
+            </div>
           </div>
         </form>
       </PageContainer>

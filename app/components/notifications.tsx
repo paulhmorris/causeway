@@ -62,10 +62,11 @@ export function Notifications() {
           expand
           richColors
           closeButton
-          duration={5000}
+          duration={5_000}
           theme={theme ?? undefined}
           toastOptions={{
             classNames: {
+              success: "bg-success/5! text-success-foreground! border-success-foreground/10!",
               closeButton: "bg-background! text-foreground! border-border!",
             },
           }}
