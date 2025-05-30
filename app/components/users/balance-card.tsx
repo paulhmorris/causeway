@@ -21,7 +21,7 @@ export function AccountBalanceCard({
         <CardHeader>
           <CardTitle className="flex items-start gap-2">
             <div>
-              <IconBuildingBank className="h-6 w-6" />
+              <IconBuildingBank className="size-6" />
             </div>
             <span>{title}</span>
           </CardTitle>

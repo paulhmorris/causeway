@@ -30,11 +30,11 @@ export function DataTableColumnHeader<TData, TValue>({
     >
       <span>{title}</span>
       {column.getIsSorted() === "desc" ? (
-        <IconArrowNarrowDown className="ml-2 h-4 w-4" />
+        <IconArrowNarrowDown className="ml-2 size-4" />
       ) : column.getIsSorted() === "asc" ? (
-        <IconArrowNarrowUp className="ml-2 h-4 w-4" />
+        <IconArrowNarrowUp className="ml-2 size-4" />
       ) : (
-        <IconSelector className="ml-2 h-4 w-4" />
+        <IconSelector className="ml-2 size-4" />
       )}
     </Button>
   );

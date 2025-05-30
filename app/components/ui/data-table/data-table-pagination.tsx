@@ -38,39 +38,39 @@ export function DataTablePagination<TData>({ table }: DataTablePaginationProps<T
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
-            className="hidden h-8 w-8 p-0 lg:flex"
+            className="hidden size-8 p-0 lg:flex"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
           >
             <span className="sr-only">Go to first page</span>
-            <IconArrowBarToLeft className="h-4 w-4" />
+            <IconArrowBarToLeft className="size-4" />
           </Button>
           <Button
             variant="outline"
-            className="h-8 w-8 p-0"
+            className="size-8 p-0"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
             <span className="sr-only">Go to previous page</span>
-            <IconChevronLeft className="h-4 w-4" />
+            <IconChevronLeft className="size-4" />
           </Button>
           <Button
             variant="outline"
-            className="h-8 w-8 p-0"
+            className="size-8 p-0"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
             <span className="sr-only">Go to next page</span>
-            <IconChevronRight className="h-4 w-4" />
+            <IconChevronRight className="size-4" />
           </Button>
           <Button
             variant="outline"
-            className="hidden h-8 w-8 p-0 lg:flex"
+            className="hidden size-8 p-0 lg:flex"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
           >
             <span className="sr-only">Go to last page</span>
-            <IconArrowBarToRight className="h-4 w-4" />
+            <IconArrowBarToRight className="size-4" />
           </Button>
         </div>
       </div>

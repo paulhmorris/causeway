@@ -327,7 +327,7 @@ export default function AddIncomePage() {
               className="flex items-center gap-2"
               type="button"
             >
-              <IconPlus className="h-4 w-4" />
+              <IconPlus className="size-4" />
               <span>Add item</span>
             </Button>
             <Separator className="my-4" />

@@ -119,7 +119,7 @@ export function FileUploader() {
         {uploadStatus.success ? (
           <div className="text-success flex h-10 items-center gap-1">
             <span className="text-sm font-medium">{uploadStatus.message}</span>
-            <IconCircleCheckFilled className="h-5 w-5" />
+            <IconCircleCheckFilled className="size-5" />
           </div>
         ) : (
           <Button
@@ -130,11 +130,11 @@ export function FileUploader() {
             className="flex h-10 w-full items-center gap-2 shadow-none sm:h-10 sm:w-auto"
           >
             {uploadStatus.uploading ? (
-              <IconLoader className="h-4 w-4 animate-spin" />
+              <IconLoader className="size-4 animate-spin" />
             ) : (
               <>
                 <span>Upload</span>
-                <IconCloudUpload className="h-4 w-4" />
+                <IconCloudUpload className="size-4" />
               </>
             )}
           </Button>

@@ -70,7 +70,7 @@ export default function ContactIndexPage() {
       <PageHeader title="Contacts">
         <Button asChild>
           <Link to="/contacts/new">
-            <IconPlus className="mr-2 h-5 w-5" />
+            <IconPlus className="mr-2 size-5" />
             <span>New Contact</span>
           </Link>
         </Button>

@@ -42,7 +42,7 @@ function UserCard(user: UserWithContact) {
           <p className="whitespace-nowrap">Created {new Date(user.createdAt).toLocaleDateString()}</p>
         </div>
       </div>
-      <IconChevronRight className="text-muted-foreground h-5 w-5 flex-none" aria-hidden="true" />
+      <IconChevronRight className="text-muted-foreground size-5 flex-none" aria-hidden="true" />
     </Link>
   );
 }

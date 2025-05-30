@@ -60,7 +60,7 @@ export default function AccountsIndexPage() {
       <PageHeader title="Accounts">
         <Button asChild>
           <Link to="/accounts/new">
-            <IconPlus className="mr-2 h-5 w-5" />
+            <IconPlus className="mr-2 size-5" />
             <span>New Account</span>
           </Link>
         </Button>

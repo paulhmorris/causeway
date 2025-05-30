@@ -41,7 +41,7 @@ export function ContactCard({ contact }: { contact: Contact }) {
               <>
                 <dt className="self-start">
                   <span className="sr-only">Address</span>
-                  <IconAddressBook className="text-muted-foreground h-5 w-5" />
+                  <IconAddressBook className="text-muted-foreground size-5" />
                 </dt>
                 <dd>
                   <span className="block">
@@ -59,7 +59,7 @@ export function ContactCard({ contact }: { contact: Contact }) {
             <div className="flex items-center gap-4">
               <dt>
                 <span className="sr-only">Phone</span>
-                <IconPhone className="text-muted-foreground h-5 w-5" />
+                <IconPhone className="text-muted-foreground size-5" />
               </dt>
               <dd>
                 <a href={`tel:${contact.phone}`}>{formatPhoneNumber(contact.phone)}</a>
@@ -70,7 +70,7 @@ export function ContactCard({ contact }: { contact: Contact }) {
             <div className="flex items-center gap-4">
               <dt>
                 <span className="sr-only">Phone</span>
-                <IconPhone className="text-muted-foreground h-5 w-5" />
+                <IconPhone className="text-muted-foreground size-5" />
               </dt>
               <dd>
                 <a href={`tel:${contact.alternatePhone}`}>{formatPhoneNumber(contact.alternatePhone)}</a>
@@ -81,7 +81,7 @@ export function ContactCard({ contact }: { contact: Contact }) {
             <div className="flex items-center gap-4">
               <dt>
                 <span className="sr-only">Email</span>
-                <IconMail className="text-muted-foreground h-5 w-5" />
+                <IconMail className="text-muted-foreground size-5" />
               </dt>
               <dd>
                 <a href={`mailto:${contact.email}`}>{contact.email}</a>
@@ -92,7 +92,7 @@ export function ContactCard({ contact }: { contact: Contact }) {
             <div className="flex items-center gap-4">
               <dt>
                 <span className="sr-only">Email</span>
-                <IconMail className="text-muted-foreground h-5 w-5" />
+                <IconMail className="text-muted-foreground size-5" />
               </dt>
               <dd>
                 <a href={`mailto:${contact.alternateEmail}`}>{contact.alternateEmail}</a>
