@@ -23,7 +23,7 @@ export function DataTableColumnHeader<TData, TValue>({
       variant="ghost"
       size="sm"
       className={cn(
-        "data-[state=open]:bg-accent -ml-3 h-8",
+        "data-[state=open]:bg-secondary -ml-3 h-8",
         column.getIsSorted() && "bg-primary hover:bg-primary/90 text-white hover:text-white",
       )}
       onClick={() => column.toggleSorting()}

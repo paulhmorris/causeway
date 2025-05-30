@@ -1,4 +1,4 @@
-import { IconArrowRight, IconMoon, IconSelector, IconSun } from "@tabler/icons-react";
+import { IconArrowRight, IconChevronUp, IconMoon, IconSun } from "@tabler/icons-react";
 import { useState } from "react";
 import { Form, Link } from "react-router";
 import { Theme, useTheme } from "remix-themes";
@@ -28,15 +28,15 @@ export function UserMenu() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="text-primary ring-offset-background hover:bg-muted focus-visible:ring-ring relative flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-1.5 text-sm font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden md:w-full">
+          <button className="text-primary ring-offset-background hover:bg-muted focus-visible:ring-ring relative flex min-h-10 cursor-pointer items-center gap-2 rounded-md px-2.5 py-1.5 text-sm font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden md:w-full">
             <span className="sr-only">Open User Menu</span>
-            <div className="flex flex-col space-y-2 text-left md:space-y-0">
+            <div className="flex flex-col space-y-1 text-left">
               <p className="text-base leading-none font-medium md:text-sm">
                 {`${user.contact.firstName} ${user.contact.lastName}`}
               </p>
               <p className="text-muted-foreground text-sm leading-none md:text-xs">{user.contact.email}</p>
             </div>
-            <IconSelector className="text-muted-foreground ml-auto size-5" />
+            <IconChevronUp className="text-muted-foreground ml-auto size-4" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="mb-2 w-[215px]" align="start" forceMount>
@@ -76,7 +76,7 @@ export function UserMenu() {
               New Inquiry
             </DropdownMenuItem>
             <button
-              className="hover:bg-secondary focus:bg-accent focus:text-accent-foreground relative flex w-full cursor-pointer items-center rounded-sm px-2 py-1.5 text-base outline-hidden transition-colors select-none disabled:pointer-events-none disabled:opacity-50 sm:text-sm"
+              className="hover:bg-secondary relative flex w-full cursor-pointer items-center rounded-sm px-2 py-1.5 text-base outline-hidden transition-colors select-none disabled:pointer-events-none disabled:opacity-50 sm:text-sm"
               onClick={handleToggleTheme}
             >
               <span>Toggle theme</span>

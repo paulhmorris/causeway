@@ -1,4 +1,5 @@
 import "@fontsource-variable/dm-sans/wght.css";
+import "@fontsource-variable/gabarito/wght.css";
 import { Analytics } from "@vercel/analytics/react";
 import { useEffect } from "react";
 import type { LinksFunction, LoaderFunctionArgs } from "react-router";

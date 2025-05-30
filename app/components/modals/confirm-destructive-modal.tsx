@@ -33,7 +33,7 @@ export function ConfirmDestructiveModal({ description }: { description: string }
         setOpen={setOpen}
         title="Are you absolutely sure?"
         description={description}
-        icon={<IconAlertTriangleFilled className="text-destructive mb-2 h-8 w-8 self-center" />}
+        icon={<IconAlertTriangleFilled className="text-destructive size-8" />}
       >
         <DrawerDialogFooter className="gap-2 sm:space-x-0">
           <Button variant="outline" type="submit" onClick={() => setOpen(false)} disabled={isSubmitting}>

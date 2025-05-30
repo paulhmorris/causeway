@@ -19,7 +19,10 @@ const columns = [
     id: "view",
     header: () => <span className="sr-only">Action</span>,
     cell: ({ row }) => (
-      <Link to={`/accounts/${row.original.id}`} className="text-primary font-medium">
+      <Link
+        to={`/accounts/${row.original.id}`}
+        className="text-primary font-medium decoration-2 underline-offset-2 hover:underline"
+      >
         View
       </Link>
     ),

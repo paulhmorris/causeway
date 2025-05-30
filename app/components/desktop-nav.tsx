@@ -1,67 +1,25 @@
-import { IconHome, IconSelector, IconWorld } from "@tabler/icons-react";
+import { IconHome } from "@tabler/icons-react";
 import { type ComponentPropsWithoutRef } from "react";
-import { Form, Link, NavLink } from "react-router";
+import { NavLink } from "react-router";
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
+import { OrgSelector } from "~/components/org-selector";
 import { Separator } from "~/components/ui/separator";
 import { UserMenu } from "~/components/user-menu";
 import { useUser } from "~/hooks/useUser";
 import { AppNavLink, adminNavLinks, globalNavLinks, superAdminNavLinks, userNavLinks } from "~/lib/constants";
-import { cn, normalizeEnum } from "~/lib/utils";
+import { cn } from "~/lib/utils";
 
 export function DesktopNav(props: ComponentPropsWithoutRef<"nav">) {
   const user = useUser();
-  const hasMultipleOrgs = user.memberships.length > 1;
-  const role = user.memberships.find((m) => m.orgId === user.org?.id)?.role;
 
   return (
     <nav
       className={cn(
-        "border-border bg-card fixed inset-y-0 left-0 z-10 hidden w-64 flex-col overflow-y-scroll border-r px-5 py-10 md:flex",
+        "border-border bg-card fixed inset-y-0 left-0 z-10 hidden w-64 flex-col overflow-y-scroll border-r px-5 pt-4 pb-6 md:flex",
         props.className,
       )}
     >
-      {hasMultipleOrgs ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="text-primary ring-offset-background hover:bg-muted focus-visible:ring-ring relative flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden md:w-full">
-              <span className="sr-only">Change Organization</span>
-              <IconWorld className="size-10 shrink-0" stroke={1.2} />
-              <div className="flex flex-col text-left">
-                <span className="text-pretty">{user.org?.name}</span>
-                {role ? <span className="text-muted-foreground text-xs font-medium">{normalizeEnum(role)}</span> : null}
-              </div>
-              <IconSelector className="text-muted-foreground ml-auto size-5 shrink-0" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="mb-2 w-[215px] space-y-1" align="center" forceMount>
-            <Form action="/api/change-org" method="post">
-              {user.memberships.map((m) => (
-                <DropdownMenuItem asChild key={m.orgId} className="cursor-pointer" disabled={user.org?.id === m.orgId}>
-                  <button type="submit" name="orgId" value={m.orgId} className="w-full">
-                    {m.org.name}
-                  </button>
-                </DropdownMenuItem>
-              ))}
-            </Form>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : (
-        <div className="flex items-center px-2.5">
-          <Link to="/" className="text-primary inline-flex items-center space-x-2 text-sm font-bold">
-            <IconWorld className="size-10" stroke={1.2} />
-            <div className="flex flex-col">
-              <span className="text-pretty">{user.org?.name}</span>
-              {role ? <span className="text-muted-foreground text-xs font-medium">{normalizeEnum(role)}</span> : null}
-            </div>
-          </Link>
-        </div>
-      )}
+      <OrgSelector />
       <ul className="relative mt-8 space-y-1 space-x-0">
         <DesktopNavLink
           to={user.isMember ? "/dashboards/staff" : "/dashboards/admin"}
@@ -97,7 +55,7 @@ export function DesktopNav(props: ComponentPropsWithoutRef<"nav">) {
         </>
       ) : null}
 
-      <Separator className="my-4 mt-auto" />
+      <div className="my-4 mt-auto"></div>
       <UserMenu />
     </nav>
   );

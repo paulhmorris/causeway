@@ -1,4 +1,4 @@
-import { IconCheck, IconCirclePlus } from "@tabler/icons-react";
+import { IconCirclePlus } from "@tabler/icons-react";
 import { Column } from "@tanstack/react-table";
 import * as React from "react";
 
@@ -39,7 +39,7 @@ export function DataTableFacetedFilter<TData, TValue>({
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="h-8 border-dashed">
-          <IconCirclePlus className="mr-2 h-4 w-4" />
+          <IconCirclePlus className="mr-2 size-4" />
           {title}
           {selectedValues.size > 0 ? (
             <>
@@ -89,20 +89,27 @@ export function DataTableFacetedFilter<TData, TValue>({
                   >
                     <div
                       className={cn(
-                        "border-primary mr-2 flex h-4 w-4 items-center justify-center rounded-sm border",
+                        "border-primary mr-2 flex size-4 items-center justify-center rounded-sm border",
                         isSelected ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible",
                       )}
                     >
-                      <IconCheck className={cn("h-4 w-4")} />
+                      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                          d="M11.4669 3.72684C11.7558 3.91574 11.8369 4.30308 11.648 4.59198L7.39799 11.092C7.29783 11.2452 7.13556 11.3467 6.95402 11.3699C6.77247 11.3931 6.58989 11.3355 6.45446 11.2124L3.70446 8.71241C3.44905 8.48022 3.43023 8.08494 3.66242 7.82953C3.89461 7.57412 4.28989 7.55529 4.5453 7.78749L6.75292 9.79441L10.6018 3.90792C10.7907 3.61902 11.178 3.53795 11.4669 3.72684Z"
+                          fill="currentColor"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
+                        ></path>
+                      </svg>
                     </div>
-                    {option.icon ? <option.icon className="text-muted-foreground mr-2 h-4 w-4" /> : null}
+                    {option.icon ? <option.icon className="text-muted-foreground mr-2 size-4" /> : null}
                     {option.label ? (
                       <span>{option.label}</span>
                     ) : (
                       <span className="text-muted-foreground/75">None</span>
                     )}
                     {facets?.get(option.value) ? (
-                      <span className="ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
+                      <span className="ml-auto flex size-4 items-center justify-center font-mono text-xs">
                         {facets.get(option.value)}
                       </span>
                     ) : null}
