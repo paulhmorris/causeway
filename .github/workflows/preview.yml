@@ -66,4 +66,4 @@ jobs:
         run: vercel build --debug --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy Project Artifacts to Vercel
-        run: vercel deploy --archive=tgz --debug --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --archive=split-tgz --debug --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
