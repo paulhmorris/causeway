@@ -35,7 +35,7 @@ const columns: Array<ColumnDef<Transaction>> = [
     id: "view",
     header: () => <span className="sr-only">Action</span>,
     cell: ({ row }) => (
-      <Link to={`/transactions/${row.original.id}`} className="text-primary font-medium">
+      <Link prefetch="intent" to={`/transactions/${row.original.id}`} className="text-primary font-medium">
         View
       </Link>
     ),
@@ -90,6 +90,7 @@ const columns: Array<ColumnDef<Transaction>> = [
       return (
         <div>
           <Link
+            prefetch="intent"
             to={`/contacts/${row.original.contact?.id}`}
             className="text-primary max-w-[500px] truncate font-medium"
           >

@@ -176,7 +176,7 @@ export default function UserDetailsLayout() {
           <span>{user.role.toLowerCase()}</span>
         </Badge>
         <Badge variant="secondary" className="capitalize">
-          <Link to={`/contacts/${user.contact.id}`} className="flex items-center gap-2">
+          <Link to={`/contacts/${user.contact.id}`} prefetch="intent" className="flex items-center gap-2">
             <div>
               <IconUserCircle className="size-3" />
             </div>
@@ -187,7 +187,7 @@ export default function UserDetailsLayout() {
         </Badge>
         {user.account ? (
           <Badge variant="secondary">
-            <Link to={`/accounts/${user.account.id}`} className="flex items-center gap-2">
+            <Link to={`/accounts/${user.account.id}`} prefetch="intent" className="flex items-center gap-2">
               <div>
                 <IconBuildingBank className="size-3" />
               </div>

@@ -17,7 +17,7 @@ export function AccountBalanceCard({
 }) {
   return (
     <Card className="h-full">
-      <Link to={`/accounts/${accountId}`}>
+      <Link to={`/accounts/${accountId}`} prefetch="intent">
         <CardHeader>
           <CardTitle className="flex items-start gap-2">
             <div>

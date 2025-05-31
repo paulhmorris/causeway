@@ -59,7 +59,7 @@ export default function AccountsIndexPage() {
     <>
       <PageHeader title="Accounts">
         <Button asChild>
-          <Link to="/accounts/new">
+          <Link to="/accounts/new" prefetch="intent">
             <IconPlus className="mr-2 size-5" />
             <span>New Account</span>
           </Link>

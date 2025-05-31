@@ -97,7 +97,7 @@ export default function EngagementPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              <Link to={`/contacts/${engagement.contactId}`} className="text-primary">
+              <Link prefetch="intent" to={`/contacts/${engagement.contactId}`} className="text-primary">
                 {engagement.contact.firstName} {engagement.contact.lastName}
               </Link>
             </CardTitle>
@@ -113,7 +113,9 @@ export default function EngagementPage() {
               } will be permanently deleted. If there are no other engagements with this contact, users will no longer receive notifications to follow up.`}
             />
             <Button asChild variant="outline" className="ml-auto">
-              <Link to={`/engagements/${engagement.id}/edit`}>Edit</Link>
+              <Link to={`/engagements/${engagement.id}/edit`} prefetch="intent">
+                Edit
+              </Link>
             </Button>
           </CardFooter>
         </Card>

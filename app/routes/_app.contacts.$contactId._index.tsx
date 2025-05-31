@@ -171,7 +171,7 @@ export default function ContactDetailsPage() {
         </Badge>
         {contact.user ? (
           <Badge variant="secondary">
-            <Link to={`/users/${contact.user.id}`} className="flex items-center gap-1.5">
+            <Link to={`/users/${contact.user.id}`} prefetch="intent" className="flex items-center gap-1.5">
               <div>
                 <IconUser className="size-3" />
               </div>
@@ -191,6 +191,7 @@ export default function ContactDetailsPage() {
                     pathname: "/engagements/new",
                     search: `?contactId=${contact.id}`,
                   }}
+                  prefetch="intent"
                 >
                   <IconPlus className="mr-2 size-5" />
                   <span>New Engagement</span>
@@ -210,7 +211,7 @@ export default function ContactDetailsPage() {
                   <ul>
                     {contact.assignedUsers.map((a) => (
                       <li key={a.id}>
-                        <Link to={`/users/${a.userId}`} className="text-primary text-sm font-medium">
+                        <Link to={`/users/${a.userId}`} prefetch="intent" className="text-primary text-sm font-medium">
                           {a.user.contact.firstName} {a.user.contact.lastName}
                         </Link>
                       </li>

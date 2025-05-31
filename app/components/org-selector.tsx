@@ -18,7 +18,7 @@ export function OrgSelector() {
   if (!hasMultipleOrgs) {
     return (
       <div className="flex items-center px-2.5">
-        <Link to="/" className="text-primary inline-flex items-center space-x-2 text-sm font-bold">
+        <Link to="/" prefetch="intent" className="text-primary inline-flex items-center space-x-2 text-sm font-bold">
           <img src="/logo.svg" aria-hidden="true" className="aspect-square size-10" />
           <div className="flex flex-col">
             <span className="text-pretty">{user.org?.name}</span>

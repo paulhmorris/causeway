@@ -43,7 +43,7 @@ export function ReimbursementRequestsList({ requests }: { requests: Array<Reimbu
                   <TableCell>{formatCentsAsDollars(req.amountInCents)}</TableCell>
                   {!user.isMember ? (
                     <TableCell>
-                      <Link to={`/reimbursements/${req.id}`} className="text-primary font-medium">
+                      <Link prefetch="intent" to={`/reimbursements/${req.id}`} className="text-primary font-medium">
                         View
                       </Link>
                     </TableCell>

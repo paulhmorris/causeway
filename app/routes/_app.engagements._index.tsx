@@ -57,7 +57,7 @@ export default function EngagementIndexPage() {
     <>
       <PageHeader title="Engagements">
         <Button asChild>
-          <Link to="/engagements/new">
+          <Link to="/engagements/new" prefetch="intent">
             <IconPlus className="mr-2 size-5" />
             <span>New Engagement</span>
           </Link>

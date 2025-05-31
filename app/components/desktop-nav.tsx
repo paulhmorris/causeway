@@ -61,12 +61,13 @@ export function DesktopNav(props: ComponentPropsWithoutRef<"nav">) {
   );
 }
 
-function DesktopNavLink({ to, name, end, icon: Icon }: AppNavLink) {
+function DesktopNavLink({ to, name, end, prefetch, icon: Icon }: AppNavLink) {
   return (
     <li>
       <NavLink
         end={end}
         to={to}
+        prefetch={prefetch ? "intent" : "none"}
         className={({ isActive }) =>
           cn(
             "flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm font-medium",

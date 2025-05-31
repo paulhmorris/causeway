@@ -32,13 +32,13 @@ export function RecentTransactionsTable({ transactions }: { transactions: Array<
             {transactions.map((trx) => (
               <TableRow key={trx.id}>
                 <TableCell>
-                  <Link className="text-primary font-medium" to={`/transactions/${trx.id}`}>
+                  <Link prefetch="intent" className="text-primary font-medium" to={`/transactions/${trx.id}`}>
                     View
                   </Link>
                 </TableCell>
                 <TableCell>{dayjs(trx.date).utc().format("MM/DD/YYYY")}</TableCell>
                 <TableCell>
-                  <Link className="hover:text-primary" to={`/accounts/${trx.accountId}`}>
+                  <Link prefetch="intent" className="hover:text-primary" to={`/accounts/${trx.accountId}`}>
                     {trx.account.code}
                   </Link>
                 </TableCell>

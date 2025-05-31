@@ -31,7 +31,7 @@ const columns: Array<ColumnDef<ReimbursementRequest>> = [
     id: "action",
     header: () => <span className="sr-only">Action</span>,
     cell: ({ row }) => (
-      <Link to={`/reimbursements/${row.original.id}`} className="text-primary font-medium">
+      <Link prefetch="intent" to={`/reimbursements/${row.original.id}`} className="text-primary font-medium">
         View
       </Link>
     ),

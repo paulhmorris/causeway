@@ -20,6 +20,7 @@ const columns = [
     header: () => <span className="sr-only">Action</span>,
     cell: ({ row }) => (
       <Link
+        prefetch="intent"
         to={`/accounts/${row.original.id}`}
         className="text-primary font-medium decoration-2 underline-offset-2 hover:underline"
       >

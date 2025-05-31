@@ -104,7 +104,9 @@ export function ContactCard({ contact }: { contact: Contact }) {
       {!user.isMember || user.contactAssignments.some((a) => a.contactId === contact.id) ? (
         <CardFooter>
           <Button variant="outline" className="ml-auto" asChild>
-            <Link to={`/contacts/${contact.id}/edit`}>Edit</Link>
+            <Link prefetch="intent" to={`/contacts/${contact.id}/edit`}>
+              Edit
+            </Link>
           </Button>
         </CardFooter>
       ) : null}

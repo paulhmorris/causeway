@@ -258,7 +258,7 @@ export default function EditContactPage() {
             </Badge>
             {contact.user ? (
               <Badge variant="secondary">
-                <Link to={`/users/${contact.user.id}`} className="flex items-center gap-1.5">
+                <Link to={`/users/${contact.user.id}`} prefetch="intent" className="flex items-center gap-1.5">
                   <div>
                     <IconUser className="size-3" />
                   </div>

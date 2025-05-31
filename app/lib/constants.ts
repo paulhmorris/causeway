@@ -186,27 +186,28 @@ export interface AppNavLink {
   to: string;
   end: boolean;
   icon: typeof IconCreditCard;
+  prefetch?: boolean;
 }
 
 export const globalNavLinks: ReadonlyArray<AppNavLink> = [
-  { name: "Transactions", to: "/transactions", end: false, icon: IconCreditCard },
-  { name: "Contacts", to: "/contacts", end: false, icon: IconUsers },
-  { name: "Engagements", to: "/engagements", end: true, icon: IconUserHeart },
-  { name: "Reimbursement", to: "/reimbursements/new", end: false, icon: IconCoin },
+  { name: "Transactions", to: "/transactions", end: false, prefetch: false, icon: IconCreditCard },
+  { name: "Contacts", to: "/contacts", end: false, prefetch: false, icon: IconUsers },
+  { name: "Engagements", to: "/engagements", end: true, prefetch: false, icon: IconUserHeart },
+  { name: "Reimbursement", to: "/reimbursements/new", end: false, prefetch: true, icon: IconCoin },
 ] as const;
 
 export const userNavLinks: ReadonlyArray<AppNavLink> = [] as const;
 
 export const adminNavLinks: ReadonlyArray<AppNavLink> = [
-  { name: "Income", to: "/income/new", end: false, icon: IconCreditCardRefund },
-  { name: "Expense", to: "/expense/new", end: false, icon: IconCreditCardPay },
-  { name: "Transfer", to: "/transfer/new", end: false, icon: IconTransfer },
-  { name: "Accounts", to: "/accounts", end: false, icon: IconBuildingBank },
-  { name: "Users", to: "/users", end: false, icon: IconUsersGroup },
-  { name: "Reimbursements", to: "/reimbursements", end: true, icon: IconCoin },
-  // { name: "Receipts", to: "/receipts", end: true, icon: IconReceipt },
-  { name: "Organization", to: "/organization", end: false, icon: IconAffiliate },
-  { name: "Reports", to: "/reports", end: true, icon: IconFileSpreadsheet },
+  { name: "Income", to: "/income/new", end: false, prefetch: true, icon: IconCreditCardRefund },
+  { name: "Expense", to: "/expense/new", end: false, prefetch: true, icon: IconCreditCardPay },
+  { name: "Transfer", to: "/transfer/new", end: false, prefetch: true, icon: IconTransfer },
+  { name: "Accounts", to: "/accounts", end: false, prefetch: false, icon: IconBuildingBank },
+  { name: "Users", to: "/users", end: false, prefetch: false, icon: IconUsersGroup },
+  { name: "Reimbursements", to: "/reimbursements", end: true, prefetch: false, icon: IconCoin },
+  // { name: "Receipts", to: "/receipts", end: true, prefetch: false, icon: IconReceipt },
+  { name: "Organization", to: "/organization", end: false, prefetch: true, icon: IconAffiliate },
+  { name: "Reports", to: "/reports", end: true, prefetch: true, icon: IconFileSpreadsheet },
 ] as const;
 
 export const superAdminNavLinks: ReadonlyArray<AppNavLink> = [] as const;

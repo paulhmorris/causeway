@@ -69,7 +69,7 @@ export default function ContactIndexPage() {
     <>
       <PageHeader title="Contacts">
         <Button asChild>
-          <Link to="/contacts/new">
+          <Link to="/contacts/new" prefetch="intent">
             <IconPlus className="mr-2 size-5" />
             <span>New Contact</span>
           </Link>

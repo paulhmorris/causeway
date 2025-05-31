@@ -43,7 +43,7 @@ const columns = [
     id: "view",
     header: () => <span className="sr-only">Action</span>,
     cell: ({ row }) => (
-      <Link to={`/transactions/${row.original.id}`} className="text-primary font-medium">
+      <Link prefetch="intent" to={`/transactions/${row.original.id}`} className="text-primary font-medium">
         View
       </Link>
     ),
@@ -56,7 +56,7 @@ const columns = [
     cell: ({ row }) => {
       return (
         <div className="max-w-[320px] truncate">
-          <Link to={`/accounts/${row.original.account.id}`} className="text-primary font-medium">
+          <Link prefetch="intent" to={`/accounts/${row.original.account.id}`} className="text-primary font-medium">
             {row.getValue("account")}
           </Link>
         </div>
@@ -115,6 +115,7 @@ const columns = [
       return (
         <div>
           <Link
+            prefetch="intent"
             to={`/contacts/${row.original.contact?.id}`}
             className="text-primary max-w-[500px] truncate font-medium"
           >

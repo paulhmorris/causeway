@@ -25,6 +25,7 @@ function UserCard(user: UserWithContact) {
   return (
     <Link
       to={`/users/${user.id}`}
+      prefetch="intent"
       className="hover:bg-muted relative flex items-center space-x-4 rounded-xl border p-4 transition-colors"
     >
       <div className="min-w-0 flex-auto">

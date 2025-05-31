@@ -47,7 +47,11 @@ export function UserMenu() {
             {user.memberships.length > 1 ? (
               <>
                 <DropdownMenuItem asChild className="py-0.5">
-                  <Link className="flex cursor-pointer items-center justify-between gap-2" to="/choose-org">
+                  <Link
+                    prefetch="intent"
+                    className="flex cursor-pointer items-center justify-between gap-2"
+                    to="/choose-org"
+                  >
                     <span>Change Org</span>
                     <IconArrowRight className="size-4" />
                   </Link>
@@ -68,7 +72,7 @@ export function UserMenu() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link className="cursor-pointer" to="/feature-request">
+              <Link prefetch="intent" className="cursor-pointer" to="/feature-request">
                 Feature Request
               </Link>
             </DropdownMenuItem>

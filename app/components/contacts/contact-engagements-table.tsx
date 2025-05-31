@@ -18,7 +18,7 @@ const columns: Array<ColumnDef<Engagement>> = [
   {
     id: "action",
     cell: ({ row }) => (
-      <Link to={`/engagements/${row.original.id}`} className="text-primary font-medium">
+      <Link prefetch="intent" to={`/engagements/${row.original.id}`} className="text-primary font-medium">
         View
       </Link>
     ),

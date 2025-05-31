@@ -34,7 +34,7 @@ export default function UserIndexPage() {
     <>
       <PageHeader title="Users">
         <Button asChild>
-          <Link to="/users/new">
+          <Link to="/users/new" prefetch="intent">
             <IconPlus className="mr-2 size-5" />
             <span>New User</span>
           </Link>

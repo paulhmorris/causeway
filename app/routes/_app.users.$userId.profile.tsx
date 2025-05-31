@@ -232,7 +232,11 @@ export default function UserDetailsPage() {
               <ul>
                 {user.contactAssignments.map((a) => (
                   <li key={a.id}>
-                    <Link to={`/contacts/${a.contactId}`} className="text-primary text-sm font-medium">
+                    <Link
+                      to={`/contacts/${a.contactId}`}
+                      prefetch="intent"
+                      className="text-primary text-sm font-medium"
+                    >
                       {a.contact.firstName} {a.contact.lastName}
                     </Link>
                   </li>

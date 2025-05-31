@@ -105,7 +105,9 @@ export default function AccountDetailsPage() {
     <>
       <PageHeader title={account.code}>
         <Button variant="outline" asChild>
-          <Link to={`/accounts/${account.id}/edit`}>Edit</Link>
+          <Link to={`/accounts/${account.id}/edit`} prefetch="intent">
+            Edit
+          </Link>
         </Button>
       </PageHeader>
       <div className="mt-4 flex flex-wrap items-center gap-2 sm:mt-1">
@@ -116,7 +118,7 @@ export default function AccountDetailsPage() {
           <span>{account.type.name}</span>
         </Badge>
         {account.user ? (
-          <Link to={`/users/${account.user.id}`}>
+          <Link to={`/users/${account.user.id}`} prefetch="intent">
             <Badge variant="secondary">
               <div>
                 <IconUser className="size-3" />
@@ -125,7 +127,7 @@ export default function AccountDetailsPage() {
             </Badge>
           </Link>
         ) : account.type.id === AccountType.Ministry ? (
-          <Link to={`/accounts/${account.id}/edit`}>
+          <Link to={`/accounts/${account.id}/edit`} prefetch="intent">
             <Badge variant="warning">
               <div>
                 <IconExclamationCircle className="size-3" />

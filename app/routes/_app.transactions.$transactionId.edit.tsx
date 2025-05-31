@@ -104,7 +104,7 @@ export default function TransactionDetailsPage() {
             <dl className="divide-muted divide-y">
               <DetailItem label="Id" value={transaction.id} />
               <DetailItem label="Account">
-                <Link to={`/accounts/${transaction.accountId}`} className="text-primary font-medium">
+                <Link to={`/accounts/${transaction.accountId}`} prefetch="intent" className="text-primary font-medium">
                   {`${transaction.account.code}`} - {transaction.account.description}
                 </Link>
               </DetailItem>
@@ -112,6 +112,7 @@ export default function TransactionDetailsPage() {
                 <DetailItem label="Contact">
                   <Link
                     to={`/contacts/${transaction.contactId}`}
+                    prefetch="intent"
                     className="text-primary font-medium"
                   >{`${transaction.contact.firstName} ${transaction.contact.lastName}`}</Link>
                 </DetailItem>
