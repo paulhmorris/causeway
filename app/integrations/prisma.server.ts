@@ -16,7 +16,7 @@ function getPrismaClient() {
   const { DATABASE_URL } = process.env;
   invariant(typeof DATABASE_URL === "string", "DATABASE_URL env var not set");
 
-  if (import.meta.env.DEV) {
+  if (process.env.NODE_ENV === "development") {
     const databaseUrl = new URL(DATABASE_URL);
     const client = new PrismaClient({
       datasources: {

@@ -71,4 +71,4 @@ jobs:
           npx trigger.dev@3.3.17 deploy
 
       - name: Deploy Project Artifacts to Vercel
-        run: vercel deploy --archive=split-tgz --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --archive=tgz --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
