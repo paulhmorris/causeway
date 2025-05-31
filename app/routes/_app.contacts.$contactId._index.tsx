@@ -1,4 +1,4 @@
-import { Engagement, Prisma } from "@prisma/client";
+import { Engagement } from "@prisma/client";
 import { IconAddressBook, IconPlus, IconUser } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
@@ -20,7 +20,7 @@ import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
-import { forbidden, getPrismaErrorText } from "~/lib/responses.server";
+import { forbidden } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cn } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
@@ -133,11 +133,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     } catch (error) {
       console.error(error);
       Sentry.captureException(error);
-      let message = error instanceof Error ? error.message : "An error occurred while deleting the contact.";
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        message = getPrismaErrorText(error);
-      }
-      return Toasts.dataWithError({ success: false }, { message: "Error deleting contact", description: message });
+      return Toasts.dataWithError({ success: false }, { message: "Error", description: "An unknown error occurred" });
     }
   }
 }

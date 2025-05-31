@@ -1,4 +1,4 @@
-import { MembershipRole, Prisma } from "@prisma/client";
+import { MembershipRole } from "@prisma/client";
 import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import { useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
@@ -17,7 +17,7 @@ import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
-import { getPrismaErrorText, handlePrismaError, serverError } from "~/lib/responses.server";
+import { serverError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { NewContactSchema } from "~/schemas";
 import { SessionService } from "~/services.server/session";
@@ -66,9 +66,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      throw handlePrismaError(error);
-    }
     throw serverError("An error occurred while loading the page. Please try again.");
   }
 };
@@ -123,14 +120,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      const message = getPrismaErrorText(error);
-      return Toasts.dataWithError(
-        { message: `An error occurred: ${message}` },
-        { description: message, message: "Error creating contact" },
-      );
-    }
-    throw serverError("An error occurred while creating the contact. Please try again.");
+    return Toasts.dataWithError(null, { message: "Error", description: "An unknown error occurred." });
   }
 };
 

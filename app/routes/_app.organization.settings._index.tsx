@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import { ActionFunctionArgs, useRouteLoaderData } from "react-router";
 import { z } from "zod/v4";
@@ -10,7 +9,6 @@ import { FormField } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
-import { handlePrismaError, serverError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { loader } from "~/routes/_app.organization";
 import { optionalText, text } from "~/schemas/fields";
@@ -40,10 +38,7 @@ export async function action({ request }: ActionFunctionArgs) {
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      throw handlePrismaError(error);
-    }
-    throw serverError("Unknown error occurred");
+    return Toasts.dataWithError({ success: false }, { message: "Error", description: "An unknown error occurred" });
   }
 }
 
