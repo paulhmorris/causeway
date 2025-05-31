@@ -1,5 +1,5 @@
 import { ExcelBuilder, ExcelSchemaBuilder } from "@chronicstone/typed-xlsx";
-import { LoaderFunctionArgs } from "@remix-run/node";
+import { LoaderFunctionArgs } from "react-router";
 
 import { db } from "~/integrations/prisma.server";
 import { ContactType } from "~/lib/constants";
@@ -49,7 +49,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   if (!_contacts.length) {
     return Toasts.redirectWithError("/reports", {
-      title: "No contacts found",
+      message: "No contacts found",
       description: `No contacts found for report.`,
     });
   }

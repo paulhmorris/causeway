@@ -54,7 +54,7 @@ export function DataTableToolbar<TData>({ table, facets }: DataTableToolbarProps
             className="h-8 px-2 py-1 sm:h-8 sm:py-1 lg:px-3"
           >
             Reset
-            <IconX className="ml-2 h-4 w-4" />
+            <IconX className="ml-2 size-4" />
           </Button>
         ) : null}
       </div>

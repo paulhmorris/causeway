@@ -1,10 +1,8 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import type { MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
-import { ValidatedForm, validationError } from "remix-validated-form";
-import { z } from "zod";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import { useLoaderData } from "react-router";
+import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
 import { ErrorComponent } from "~/components/error-component";
@@ -12,22 +10,21 @@ import { PageContainer } from "~/components/page-container";
 import { FormField, FormSelect } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { db } from "~/integrations/prisma.server";
+import { Sentry } from "~/integrations/sentry";
 import { TransactionCategory, TransactionItemType } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
 import { getToday } from "~/lib/utils";
-import { CurrencySchema } from "~/models/schemas";
+import { cuid, currency, date, optionalLongText } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 import { getTransactionItemMethods } from "~/services.server/transaction";
 
-const validator = withZod(
-  z.object({
-    date: z.coerce.date().transform((d) => dayjs(d).startOf("day").toDate()),
-    description: z.string().optional(),
-    fromAccountId: z.string().cuid({ message: "From Account required" }),
-    toAccountId: z.string().cuid({ message: "To Account required" }),
-    amountInCents: CurrencySchema.pipe(z.number().positive({ message: "Amount must be greater than $0.00" })),
-  }),
-);
+const schema = z.object({
+  date: date.transform((d) => dayjs(d).startOf("day").toDate()),
+  description: optionalLongText,
+  fromAccountId: cuid,
+  toAccountId: cuid,
+  amountInCents: currency.pipe(z.number().positive({ error: "Amount must be greater than $0.00" })),
+});
 
 export const meta: MetaFunction = () => [{ title: "Add Transfer" }];
 
@@ -40,124 +37,141 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     getTransactionItemMethods(orgId),
   ]);
 
-  return typedjson({
+  return {
     accounts,
     transactionItemMethods,
-  });
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
   const { fromAccountId, toAccountId, amountInCents, description, ...rest } = result.data;
 
   if (fromAccountId === toAccountId) {
-    return Toasts.jsonWithWarning(
-      { message: "From and To accounts must be different." },
-      { title: "Warning", description: "From and To accounts must be different." },
-    );
+    return Toasts.dataWithWarning(null, { message: "Warning", description: "From and To accounts must be different." });
   }
 
-  const fromAccountBalance = await db.transaction.aggregate({
-    where: { accountId: result.data.fromAccountId, orgId },
-    _sum: { amountInCents: true },
-  });
+  try {
+    const fromAccountBalance = await db.transaction.aggregate({
+      where: { accountId: result.data.fromAccountId, orgId },
+      _sum: { amountInCents: true },
+    });
 
-  const fromAccountBalanceInCents = fromAccountBalance._sum.amountInCents ?? 0;
+    const fromAccountBalanceInCents = fromAccountBalance._sum.amountInCents ?? 0;
 
-  if (amountInCents > fromAccountBalanceInCents) {
-    return Toasts.jsonWithWarning(
-      { message: "Insufficient funds in from account." },
-      { title: "Warning", description: "Insufficient funds in from account." },
-    );
+    if (amountInCents > fromAccountBalanceInCents) {
+      return Toasts.dataWithError(null, { message: "Warning", description: "Insufficient funds in from account." });
+    }
+
+    await db.$transaction([
+      // Transfer out
+      db.transaction.create({
+        data: {
+          ...rest,
+          orgId,
+          categoryId: TransactionCategory.Internal_Transfer_Loss,
+          description: description ?? `Transfer to ${toAccountId}`,
+          accountId: fromAccountId,
+          amountInCents: -1 * amountInCents,
+          transactionItems: {
+            create: {
+              orgId,
+              amountInCents: -1 * amountInCents,
+              typeId: TransactionItemType.Transfer_Out,
+            },
+          },
+        },
+      }),
+      // Transfer in
+      db.transaction.create({
+        data: {
+          ...rest,
+          orgId,
+          categoryId: TransactionCategory.Internal_Transfer_Gain,
+          description: description ?? `Transfer from ${toAccountId}`,
+          accountId: toAccountId,
+          amountInCents: amountInCents,
+          transactionItems: {
+            create: {
+              orgId,
+              amountInCents: amountInCents,
+              typeId: TransactionItemType.Transfer_In,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return Toasts.redirectWithSuccess(`/accounts/${toAccountId}`, {
+      message: "Success",
+      description: `Transfer completed successfully.`,
+    });
+  } catch (error) {
+    console.error(error);
+    Sentry.captureException(error);
+    return Toasts.dataWithError(null, { message: "An unknown error occurred" });
   }
-
-  await db.$transaction([
-    // Transfer out
-    db.transaction.create({
-      data: {
-        ...rest,
-        orgId,
-        categoryId: TransactionCategory.Internal_Transfer_Loss,
-        description: description ? description : `Transfer to ${toAccountId}`,
-        accountId: fromAccountId,
-        amountInCents: -1 * amountInCents,
-        transactionItems: {
-          create: {
-            orgId,
-            amountInCents: -1 * amountInCents,
-            typeId: TransactionItemType.Transfer_Out,
-          },
-        },
-      },
-    }),
-    // Transfer in
-    db.transaction.create({
-      data: {
-        ...rest,
-        orgId,
-        categoryId: TransactionCategory.Internal_Transfer_Gain,
-        description: description ? description : `Transfer from ${toAccountId}`,
-        accountId: toAccountId,
-        amountInCents: amountInCents,
-        transactionItems: {
-          create: {
-            orgId,
-            amountInCents: amountInCents,
-            typeId: TransactionItemType.Transfer_In,
-          },
-        },
-      },
-    }),
-  ]);
-
-  return Toasts.redirectWithSuccess(`/accounts/${toAccountId}`, {
-    title: "Success",
-    description: `Transfer completed successfully.`,
-  });
 };
 
 export default function AddTransferPage() {
-  const { accounts } = useTypedLoaderData<typeof loader>();
+  const { accounts } = useLoaderData<typeof loader>();
 
   return (
     <>
       <PageHeader title="Add Transfer" />
       <PageContainer>
-        <ValidatedForm id="transfer-form" method="post" validator={validator} className="space-y-2 sm:max-w-md">
-          <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
-            <div className="w-auto">
-              <FormField required name="date" label="Date" type="date" defaultValue={getToday()} />
-            </div>
-            <FormField name="description" label="Description" />
-          </div>
-          <FormSelect
-            required
-            name="fromAccountId"
-            label="From"
-            placeholder="Select from account"
-            options={accounts.map((a) => ({
-              value: a.id,
-              label: `${a.code} - ${a.description}`,
-            }))}
-          />
-          <FormSelect
-            required
-            name="toAccountId"
-            label="To"
-            placeholder="Select to account"
-            options={accounts.map((a) => ({
-              value: a.id,
-              label: `${a.code} - ${a.description}`,
-            }))}
-          />
-          <FormField isCurrency required name="amountInCents" label="Amount" className="w-36" />
-          <SubmitButton>Submit Transfer</SubmitButton>
+        <ValidatedForm
+          method="post"
+          schema={schema}
+          defaultValues={{
+            date: dayjs().format("YYYY-MM-DD"),
+            description: "",
+            fromAccountId: "",
+            toAccountId: "",
+            amountInCents: "",
+          }}
+          className="space-y-2 sm:max-w-md"
+        >
+          {(form) => (
+            <>
+              <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
+                <div className="w-auto">
+                  <FormField required scope={form.scope("date")} label="Date" type="date" defaultValue={getToday()} />
+                </div>
+                <FormField scope={form.scope("description")} label="Description" />
+              </div>
+              <FormSelect
+                required
+                scope={form.scope("fromAccountId")}
+                label="From"
+                placeholder="Select from account"
+                options={accounts.map((a) => ({
+                  value: a.id,
+                  label: `${a.code} - ${a.description}`,
+                  disabled: a.id === form.field("toAccountId").value(),
+                }))}
+              />
+              <FormSelect
+                required
+                scope={form.scope("toAccountId")}
+                label="To"
+                placeholder="Select to account"
+                options={accounts.map((a) => ({
+                  value: a.id,
+                  label: `${a.code} - ${a.description}`,
+                  disabled: a.id === form.field("fromAccountId").value(),
+                }))}
+              />
+              <FormField isCurrency required scope={form.scope("amountInCents")} label="Amount" className="w-36" />
+              <SubmitButton isSubmitting={form.formState.isSubmitting}>Submit Transfer</SubmitButton>
+            </>
+          )}
         </ValidatedForm>
       </PageContainer>
     </>

@@ -1,7 +1,7 @@
-import { type LoaderFunctionArgs, type MetaFunction } from "@remix-run/node";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
+import { type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { useLoaderData } from "react-router";
 dayjs.extend(utc);
 
 import { AnnouncementCard } from "~/components/admin/announcement-card";
@@ -69,12 +69,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }),
   ]);
 
-  return typedjson({ total: total._sum.amountInCents, reimbursementRequests, announcement, accountSubscriptions });
+  return { total: total._sum.amountInCents, reimbursementRequests, announcement, accountSubscriptions };
 }
 
 export default function Index() {
   const user = useUser();
-  const { total, reimbursementRequests, announcement, accountSubscriptions } = useTypedLoaderData<typeof loader>();
+  const { total, reimbursementRequests, announcement, accountSubscriptions } = useLoaderData<typeof loader>();
 
   return (
     <>

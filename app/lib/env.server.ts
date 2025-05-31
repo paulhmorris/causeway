@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-empty-interface */
 /* eslint-disable @typescript-eslint/no-namespace */
 import { loadEnv } from "vite";
-import { TypeOf, z } from "zod";
+import { TypeOf, z } from "zod/v4";
 
 const serverEnvValidation = z.object({
   // CI
@@ -23,9 +22,6 @@ const serverEnvValidation = z.object({
   // Database
   DATABASE_URL: z.string().min(1),
 
-  // Linear
-  LINEAR_API_KEY: z.string().min(1).startsWith("lin_api_"),
-
   // Trigger.dev
   TRIGGER_SECRET_KEY: z.string().startsWith("tr_"),
 
@@ -33,7 +29,7 @@ const serverEnvValidation = z.object({
   PLAYWRIGHT_TEST_BASE_URL: z.string().url().optional(),
 });
 
-const deploymentPublicEnvValidation = z.object({
+const _deploymentPublicEnvValidation = z.object({
   // Vercel
   VERCEL_URL: z.string(),
   VERCEL_ENV: z.enum(["production", "preview", "development"]),
@@ -42,12 +38,13 @@ const deploymentPublicEnvValidation = z.object({
 declare global {
   // Server side
   namespace NodeJS {
-    interface ProcessEnv extends TypeOf<typeof serverEnvValidation & typeof deploymentPublicEnvValidation> {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+    interface ProcessEnv extends TypeOf<typeof serverEnvValidation & typeof _deploymentPublicEnvValidation> {}
   }
 
   // Client side
   interface Window {
-    ENV: TypeOf<typeof deploymentPublicEnvValidation>;
+    ENV: TypeOf<typeof _deploymentPublicEnvValidation>;
   }
 }
 
@@ -58,11 +55,9 @@ export function validateEnv(): void {
     serverEnvValidation.parse(env);
   } catch (err) {
     if (err instanceof z.ZodError) {
-      const { fieldErrors } = err.flatten();
-      const errorMessage = Object.entries(fieldErrors)
-        .map(([field, errors]) => (errors ? `${field}: ${errors.join(", ")}` : field))
-        .join("\n  ");
-      throw new Error(`Missing environment variables:\n  ${errorMessage}`);
+      const tree = z.treeifyError(err);
+      const message = tree.errors.join("\n  ");
+      throw new Error(`Missing environment variables:\n  ${message}`);
     }
   }
 }

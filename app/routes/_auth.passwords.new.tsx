@@ -1,9 +1,7 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useSearchParams } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { typedjson } from "remix-typedjson";
-import { ValidatedForm, validationError } from "remix-validated-form";
-import { z } from "zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { data, useSearchParams } from "react-router";
+import { z } from "zod/v4";
 
 import { AuthCard } from "~/components/auth/auth-card";
 import { ErrorComponent } from "~/components/error-component";
@@ -13,27 +11,26 @@ import { db } from "~/integrations/prisma.server";
 import { unauthorized } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { getSearchParam } from "~/lib/utils";
+import { password, text } from "~/schemas/fields";
 import { hashPassword } from "~/services.server/auth";
 import { expirePasswordReset, getPasswordResetByToken } from "~/services.server/password";
 import { SessionService, sessionStorage } from "~/services.server/session";
 
-const validator = withZod(
-  z
-    .object({
-      token: z.string(),
-      newPassword: z.string().min(8, "Password must be at least 8 characters"),
-      confirmation: z.string().min(8, "Password must be at least 8 characters"),
-    })
-    .superRefine(({ newPassword, confirmation }, ctx) => {
-      if (newPassword !== confirmation) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Passwords must match",
-          path: ["confirmation"],
-        });
-      }
-    }),
-);
+const schema = z
+  .object({
+    token: text,
+    newPassword: password,
+    confirmation: password,
+  })
+  .check((ctx) => {
+    if (ctx.value.newPassword !== ctx.value.confirmation) {
+      ctx.issues.push({
+        code: "custom",
+        message: "Passwords must match",
+        input: ctx.value.confirmation,
+      });
+    }
+  });
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const session = await SessionService.getSession(request);
@@ -47,7 +44,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     throw unauthorized("Invalid token");
   }
 
-  return typedjson(null, {
+  return data(null, {
     headers: {
       "Set-Cookie": await sessionStorage.destroySession(session),
     },
@@ -59,7 +56,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const isReset = getSearchParam("isReset", request) === "true";
 
   // Validate form
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -68,17 +65,26 @@ export async function action({ request }: ActionFunctionArgs) {
   const { newPassword, token } = result.data;
   const reset = await getPasswordResetByToken(token);
   if (!reset) {
-    return Toasts.jsonWithError({ success: false }, { title: "Token not found", description: "Please try again." });
+    return Toasts.dataWithError(
+      { success: false },
+      { message: "Invalid or expired token", description: "Please try again." },
+    );
   }
 
   // Check expiration
   if (reset.expiresAt < new Date()) {
-    return Toasts.jsonWithError({ success: false }, { title: "Token expired", description: "Please try again." });
+    return Toasts.dataWithError(
+      { success: false },
+      { message: "Invalid or expired token", description: "Please try again." },
+    );
   }
 
   // Check token against param
   if (token !== tokenParam) {
-    return Toasts.jsonWithError({ success: false }, { title: "Invalid token", description: "Please try again." });
+    return Toasts.dataWithError(
+      { success: false },
+      { message: "Invalid or expired tokenn", description: "Please try again." },
+    );
   }
 
   // Check user
@@ -87,7 +93,10 @@ export async function action({ request }: ActionFunctionArgs) {
     include: { contact: true },
   });
   if (!userFromToken) {
-    return Toasts.jsonWithError({ success: false }, { title: "User not found", description: "Please try again." });
+    return Toasts.dataWithError(
+      { success: false },
+      { message: "Invalid or expired token", description: "Please try again." },
+    );
   }
 
   const hashedPassword = await hashPassword(newPassword);
@@ -107,7 +116,7 @@ export async function action({ request }: ActionFunctionArgs) {
   await expirePasswordReset(token);
 
   return Toasts.redirectWithSuccess("/login", {
-    title: `Password ${isReset ? "reset" : "set up"}`,
+    message: `Password ${isReset ? "reset" : "set up"}`,
     description: `Your password has been ${isReset ? "reset" : "set up"}. Login with your new password.`,
   });
 }
@@ -119,17 +128,38 @@ export default function NewPassword() {
   return (
     <AuthCard>
       <h1 className="text-3xl font-extrabold">Set a new password.</h1>
-      <ValidatedForm id="password-form" validator={validator} method="post" className="mt-4 space-y-4">
-        <input type="hidden" name="token" value={searchParams.get("token") ?? ""} />
-        <FormField label="New Password" name="newPassword" type="password" autoComplete="new-password" required />
-        <FormField
-          label="Confirm New Password"
-          name="confirmation"
-          type="password"
-          autoComplete="new-password"
-          required
-        />
-        <SubmitButton>{isReset ? "Reset" : "Create"} Password</SubmitButton>
+      <ValidatedForm
+        schema={schema}
+        method="post"
+        className="mt-4 space-y-4"
+        defaultValues={{
+          token: searchParams.get("token") ?? "",
+          newPassword: "",
+          confirmation: "",
+        }}
+      >
+        {(form) => (
+          <>
+            <input type="hidden" name="token" value={searchParams.get("token") ?? ""} />
+            <FormField
+              required
+              label="New Password"
+              scope={form.scope("newPassword")}
+              type="password"
+              autoComplete="new-password"
+            />
+            <FormField
+              required
+              label="Confirm New Password"
+              scope={form.scope("confirmation")}
+              type="password"
+              autoComplete="new-password"
+            />
+            <SubmitButton isSubmitting={form.formState.isSubmitting}>
+              {isReset ? "Reset" : "Create"} Password
+            </SubmitButton>
+          </>
+        )}
       </ValidatedForm>
     </AuthCard>
   );

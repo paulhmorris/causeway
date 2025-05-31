@@ -1,23 +1,18 @@
-import { Outlet } from "@remix-run/react";
-import { IconPlanet } from "@tabler/icons-react";
+import { IconCopyright } from "@tabler/icons-react";
+import { Outlet } from "react-router";
 
 export default function AuthLayout() {
   return (
-    <div className="flex min-h-full flex-col items-center dark:bg-background sm:bg-secondary">
+    <div className="dark:bg-background sm:bg-secondary flex min-h-full flex-col items-center">
       <main className="grid w-full grow place-items-center">
         <Outlet />
       </main>
-      <footer className="mx-auto mb-8 mt-auto shrink">
-        <p className="text-xs">
-          {new Date().getFullYear()} •{" "}
-          <a
-            href="https://getcosmic.dev"
-            target="_blank"
-            rel="noreferrer"
-            className="decoration-2 underline-offset-2 hover:underline"
-          >
-            Cosmic Development <IconPlanet className="mb-0.5 inline size-3.5" />
-          </a>
+      <footer className="mx-auto mt-auto mb-8 shrink">
+        <p className="text-muted-foreground flex items-center gap-x-1 text-xs">
+          <IconCopyright className="size-4" />
+          {new Date().getFullYear()}
+          <span>•</span>
+          <span>Cosmic Development</span>
         </p>
       </footer>
     </div>

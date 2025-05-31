@@ -1,37 +1,34 @@
-import { Prisma } from "@prisma/client";
-import { ActionFunctionArgs, json, LoaderFunctionArgs } from "@remix-run/node";
-import { withZod } from "@remix-validated-form/with-zod";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
+import { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import invariant from "tiny-invariant";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { FormField } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
-import { getPrismaErrorText, unauthorized } from "~/lib/responses.server";
+import { unauthorized } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
+import { password } from "~/schemas/fields";
 import { hashPassword, verifyLogin } from "~/services.server/auth";
 import { SessionService } from "~/services.server/session";
 
-const validator = withZod(
-  z
-    .object({
-      oldPassword: z.string().min(8, "Password must be at least 8 characters").or(z.literal("")),
-      newPassword: z.string().min(8, "Password must be at least 8 characters"),
-      confirmation: z.string().min(8, "Password must be at least 8 characters"),
-    })
-    .superRefine(({ newPassword, confirmation }, ctx) => {
-      if (newPassword !== confirmation) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Passwords must match",
-          path: ["confirmation"],
-        });
-      }
-    }),
-);
+const schema = z
+  .object({
+    oldPassword: password,
+    newPassword: password,
+    confirmation: password,
+  })
+  .check((ctx) => {
+    if (ctx.value.newPassword !== ctx.value.confirmation) {
+      ctx.issues.push({
+        code: "custom",
+        message: "Passwords must match",
+        input: ctx.value.confirmation,
+      });
+    }
+  });
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const userId = await SessionService.requireUserId(request);
@@ -41,7 +38,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     throw unauthorized("You do not have permission to view this page");
   }
 
-  return json({});
+  return null;
 };
 
 export async function action({ params, request }: ActionFunctionArgs) {
@@ -52,7 +49,7 @@ export async function action({ params, request }: ActionFunctionArgs) {
     throw unauthorized("You do not have permission to change this user's password");
   }
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -82,15 +79,11 @@ export async function action({ params, request }: ActionFunctionArgs) {
       },
     });
 
-    return Toasts.redirectWithSuccess(`/users/${params.userId}/password`, { title: "Password updated!" });
+    return Toasts.redirectWithSuccess(`/users/${params.userId}/password`, { message: "Password updated!" });
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    let message = error instanceof Error ? error.message : "An error occurred. Please try again.";
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      message = getPrismaErrorText(error);
-    }
-    return Toasts.jsonWithError({ success: false }, { title: "An error occurred", description: message });
+    return Toasts.dataWithError({ success: false }, { message: "Error", description: "An unknown error occurred" });
   }
 }
 
@@ -100,23 +93,43 @@ export default function UserPassword() {
     <>
       <h2 className="sr-only">Change Password</h2>
       <ValidatedForm
-        id="password-form"
-        validator={validator}
+        schema={schema}
         method="post"
         className="mt-4 max-w-md space-y-4"
         resetAfterSubmit
+        defaultValues={{
+          oldPassword: "",
+          newPassword: "",
+          confirmation: "",
+        }}
       >
-        <input type="hidden" name="username" value={user.username} />
-        <FormField label="Old password" name="oldPassword" type="password" autoComplete="current-password" required />
-        <FormField label="New Password" name="newPassword" type="password" autoComplete="new-password" required />
-        <FormField
-          label="Confirm New Password"
-          name="confirmation"
-          type="password"
-          autoComplete="new-password"
-          required
-        />
-        <SubmitButton>Save Changes</SubmitButton>
+        {(form) => (
+          <>
+            <input type="hidden" name="username" value={user.username} />
+            <FormField
+              label="Old password"
+              scope={form.scope("oldPassword")}
+              type="password"
+              autoComplete="current-password"
+              required
+            />
+            <FormField
+              label="New Password"
+              scope={form.scope("newPassword")}
+              type="password"
+              autoComplete="new-password"
+              required
+            />
+            <FormField
+              label="Confirm New Password"
+              scope={form.scope("confirmation")}
+              type="password"
+              autoComplete="new-password"
+              required
+            />
+            <SubmitButton isSubmitting={form.formState.isSubmitting}>Save Changes</SubmitButton>
+          </>
+        )}
       </ValidatedForm>
     </>
   );

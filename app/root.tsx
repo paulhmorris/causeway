@@ -1,34 +1,33 @@
 import "@fontsource-variable/dm-sans/wght.css";
-import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
+import { Analytics } from "@vercel/analytics/react";
+import { useEffect } from "react";
+import type { LinksFunction, LoaderFunctionArgs } from "react-router";
 import {
+  data,
   Links,
   Meta,
   Outlet,
+  redirect,
   Scripts,
   ScrollRestoration,
   ShouldRevalidateFunctionArgs,
-  useRouteError,
-} from "@remix-run/react";
-import { captureRemixErrorBoundaryError, withSentry } from "@sentry/remix";
-import { Analytics } from "@vercel/analytics/react";
-import { useEffect } from "react";
+  useLoaderData,
+} from "react-router";
 import { PreventFlashOnWrongTheme, ThemeProvider, useTheme } from "remix-themes";
-import { redirect, typedjson, useTypedLoaderData } from "remix-typedjson";
 
 import { ErrorComponent } from "~/components/error-component";
 import { Notifications } from "~/components/notifications";
-import { GlobalLoader } from "~/components/ui/global-loader";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
-import { getToast } from "~/lib/toast.server";
+import { Toasts } from "~/lib/toast.server";
 import { cn } from "~/lib/utils";
 import { SessionService, themeSessionResolver } from "~/services.server/session";
-import stylesheet from "~/tailwind.css?url";
+import tailwindUrl from "~/tailwind.css?url";
 
-// prettier-ignore
-export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: stylesheet, as: "style" },
-];
+// eslint-disable-next-line import/no-unresolved
+import { Route } from "./+types/root";
+
+export const links: LinksFunction = () => [{ rel: "stylesheet", href: tailwindUrl, as: "style" }];
 
 export const shouldRevalidate = ({ currentUrl, nextUrl, defaultShouldRevalidate }: ShouldRevalidateFunctionArgs) => {
   // Don't revalidate on searches and pagination
@@ -54,7 +53,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   const org = await SessionService.getOrg(request);
-  const { toast, headers } = await getToast(request);
+  const { toast, headers } = await Toasts.getToast(request);
   const userId = await SessionService.getUserId(request);
   const { getTheme } = await themeSessionResolver(request);
 
@@ -121,7 +120,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     };
   }
 
-  return typedjson(
+  return data(
     {
       user,
       toast,
@@ -136,7 +135,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 function AppWithProviders() {
-  const { theme } = useTypedLoaderData<typeof loader>();
+  const { theme } = useLoaderData<typeof loader>();
   return (
     <ThemeProvider specifiedTheme={theme} themeAction="/resources/set-theme">
       <App />
@@ -144,10 +143,10 @@ function AppWithProviders() {
   );
 }
 
-export default withSentry(AppWithProviders);
+export default AppWithProviders;
 
 function App() {
-  const data = useTypedLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
   const [theme] = useTheme();
   const user = data.user;
 
@@ -161,7 +160,7 @@ function App() {
   }, [user]);
 
   return (
-    <html lang="en" className={cn("h-full", theme || "light")}>
+    <html lang="en" className={cn("h-full", theme)}>
       <head>
         <meta charSet="utf-8" />
         <meta name="robots" content="noindex" />
@@ -176,11 +175,10 @@ function App() {
         <PreventFlashOnWrongTheme ssrTheme={Boolean(data.theme)} />
         <Links />
       </head>
-      <body className="h-full min-h-full bg-background font-sans">
-        <Analytics debug={false} />
+      <body className="bg-background h-full min-h-full font-sans">
+        {import.meta.env.PROD ? <Analytics debug={false} /> : null}
         <Outlet />
         <Notifications />
-        <GlobalLoader />
         <ScrollRestoration />
         <script
           dangerouslySetInnerHTML={{
@@ -193,28 +191,12 @@ function App() {
   );
 }
 
-export function ErrorBoundary() {
-  const error = useRouteError();
-  captureRemixErrorBoundaryError(error);
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   return (
-    <html lang="en" className="h-full">
-      <head>
-        <title>Oh no!</title>
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="manifest" href="/site.webmanifest" />
-        <Meta />
-        <Links />
-      </head>
-      <body>
-        <div className="grid min-h-full place-items-center px-6 py-24 sm:py-32 lg:px-8">
-          <div className="-mb-10">
-            <ErrorComponent />
-          </div>
-        </div>
-        <Scripts />
-      </body>
-    </html>
+    <main className="grid min-h-full place-items-center px-6 py-24 sm:py-32 lg:px-8">
+      <div className="-mb-10">
+        <ErrorComponent error={error} />
+      </div>
+    </main>
   );
 }

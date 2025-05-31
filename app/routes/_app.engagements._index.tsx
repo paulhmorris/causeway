@@ -1,7 +1,6 @@
-import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { Link } from "@remix-run/react";
 import { IconPlus } from "@tabler/icons-react";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
+import type { LoaderFunctionArgs, MetaFunction } from "react-router";
+import { Link, useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
 import { EngagementsTable } from "~/components/contacts/engagements-table";
@@ -48,18 +47,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
     },
     orderBy: { date: "desc" },
   });
-  return typedjson({ engagements });
+  return { engagements };
 }
 
 export default function EngagementIndexPage() {
-  const { engagements } = useTypedLoaderData<typeof loader>();
+  const { engagements } = useLoaderData<typeof loader>();
 
   return (
     <>
       <PageHeader title="Engagements">
         <Button asChild>
-          <Link to="/engagements/new">
-            <IconPlus className="mr-2 h-5 w-5" />
+          <Link to="/engagements/new" prefetch="intent">
+            <IconPlus className="mr-2 size-5" />
             <span>New Engagement</span>
           </Link>
         </Button>

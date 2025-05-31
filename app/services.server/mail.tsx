@@ -26,7 +26,7 @@ export async function sendPasswordResetEmail({
   url.searchParams.set("token", token);
   url.searchParams.set("isReset", "true");
 
-  const html = render(<PasswordResetEmail url={url.toString()} />);
+  const html = await render(<PasswordResetEmail url={url.toString()} />);
 
   try {
     const data = await sendEmail({
@@ -59,7 +59,9 @@ export async function sendPasswordSetupEmail({
   const url = constructOrgURL("/passwords/new", org);
   url.searchParams.set("token", token);
 
-  const html = render(<WelcomeEmail userFirstname={user.contact.firstName} orgName={org.name} url={url.toString()} />);
+  const html = await render(
+    <WelcomeEmail userFirstname={user.contact.firstName} orgName={org.name} url={url.toString()} />,
+  );
 
   try {
     const data = await sendEmail({
@@ -88,7 +90,7 @@ export async function sendReimbursementRequestUpdateEmail({
   try {
     const org = await db.organization.findUniqueOrThrow({ where: { id: orgId } });
     const url = constructOrgURL("/", org).toString();
-    const html = render(<ReimbursementRequestUpdateEmail status={status} url={url} />);
+    const html = await render(<ReimbursementRequestUpdateEmail status={status} url={url} />);
 
     const data = await sendEmail({
       from: constructOrgMailFrom(org),

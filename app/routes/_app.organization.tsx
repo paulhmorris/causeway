@@ -1,6 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { json, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { NavLink, Outlet, useLoaderData } from "@remix-run/react";
+import { LoaderFunctionArgs, MetaFunction, NavLink, Outlet, useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
 import { Separator } from "~/components/ui/separator";
@@ -16,7 +15,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   try {
     const org = await db.organization.findUniqueOrThrow({ where: { id: orgId } });
-    return json({ org });
+    return { org };
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
@@ -43,15 +42,15 @@ export default function OrganizationSettingsLayout() {
     <>
       <PageHeader title={`${org.name} Settings`} />
       <nav className="mt-4">
-        <ul className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-muted p-1 text-muted-foreground">
+        <ul className="bg-muted text-muted-foreground inline-flex h-10 items-center justify-center gap-2 rounded-md p-1">
           {links.map((link) => (
             <li key={link.to}>
               <NavLink
                 prefetch="intent"
                 className={({ isActive }) =>
                   cn(
-                    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-                    isActive ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50",
+                    "ring-offset-background focus-visible:ring-ring inline-flex items-center justify-center gap-2 rounded px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50",
+                    isActive ? "bg-background text-foreground shadow-xs" : "hover:bg-background/50",
                   )
                 }
                 to={link.to}

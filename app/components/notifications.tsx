@@ -5,67 +5,73 @@ import {
   IconInfoCircleFilled,
 } from "@tabler/icons-react";
 import { useEffect } from "react";
+import { useRouteLoaderData } from "react-router";
 import { useTheme } from "remix-themes";
-import { useTypedRouteLoaderData } from "remix-typedjson";
+import { ClientOnly } from "remix-utils/client-only";
 import { Toaster, toast } from "sonner";
 
 import { loader } from "~/root";
 
 export function Notifications() {
   const [theme] = useTheme();
-  const data = useTypedRouteLoaderData<typeof loader>("root");
+  const data = useRouteLoaderData<typeof loader>("root");
   useEffect(() => {
     if (!data?.toast) return;
-    const { title, type, ...rest } = data.toast;
+    const { message, type, ...rest } = data.toast;
     switch (type) {
       case "success": {
-        toast.success(title, {
+        toast.success(message, {
           ...rest,
-          icon: <IconCircleCheckFilled className="h-5 w-5" />,
+          icon: <IconCircleCheckFilled className="size-5" />,
         });
         break;
       }
       case "error": {
-        toast.error(title, {
+        toast.error(message, {
           ...rest,
-          icon: <IconAlertCircleFilled className="h-5 w-5" />,
+          icon: <IconAlertCircleFilled className="size-5" />,
           duration: Infinity,
         });
         break;
       }
       case "warning": {
-        toast.warning(title, {
+        toast.warning(message, {
           ...rest,
-          icon: <IconAlertTriangleFilled className="h-5 w-5" />,
+          icon: <IconAlertTriangleFilled className="size-5" />,
         });
         break;
       }
       case "info": {
-        toast.info(title, {
+        toast.info(message, {
           ...rest,
-          icon: <IconInfoCircleFilled className="h-5 w-5" />,
+          icon: <IconInfoCircleFilled className="size-5" />,
         });
         break;
       }
       default: {
-        toast(title, rest);
+        toast(message, rest);
         break;
       }
     }
   }, [data]);
 
   return (
-    <Toaster
-      expand
-      richColors
-      closeButton
-      duration={5000}
-      theme={theme ?? undefined}
-      toastOptions={{
-        classNames: {
-          closeButton: "!bg-background !text-foreground !border-border",
-        },
-      }}
-    />
+    <ClientOnly fallback={null}>
+      {() => (
+        <Toaster
+          expand
+          richColors
+          closeButton
+          duration={5_000}
+          theme={theme ?? undefined}
+          toastOptions={{
+            classNames: {
+              success: "bg-success/5! text-success-foreground! border-success-foreground/10!",
+              closeButton: "bg-background! text-foreground! border-border!",
+            },
+          }}
+        />
+      )}
+    </ClientOnly>
   );
 }

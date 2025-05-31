@@ -1,9 +1,9 @@
 import { Announcement } from "@prisma/client";
-import { useFetcher } from "@remix-run/react";
+import { ValidatedForm } from "@rvf/react-router";
 import { IconBellFilled, IconClock, IconSelector } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { ValidatedForm } from "remix-validated-form";
+import { useFetcher } from "react-router";
 dayjs.extend(utc);
 
 import { AnnouncementModal } from "~/components/modals/announcement-modal";
@@ -11,7 +11,7 @@ import { Button } from "~/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "~/components/ui/collapsible";
 import { Separator } from "~/components/ui/separator";
 import { useUser } from "~/hooks/useUser";
-import { validator } from "~/routes/api.announcements";
+import { schema } from "~/routes/api.announcements";
 
 export function AnnouncementCard({ announcement }: { announcement: Announcement }) {
   const user = useUser();
@@ -22,12 +22,12 @@ export function AnnouncementCard({ announcement }: { announcement: Announcement 
     <>
       <Collapsible
         defaultOpen={true}
-        className="flex flex-col items-start rounded-md border border-primary/50 bg-primary/5 p-3 text-sm text-foreground"
+        className="border-primary/50 bg-primary/5 text-foreground flex flex-col items-start rounded-md border p-3 text-sm"
       >
         <div className="mb-3 flex w-full items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="sr-only">An announcement from your administration.</span>
-            <IconBellFilled className="size-6 text-primary" />
+            <IconBellFilled className="text-primary size-6" />
           </div>
           <CollapsibleTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -38,7 +38,7 @@ export function AnnouncementCard({ announcement }: { announcement: Announcement 
         </div>
         {!user.isMember ? (
           <>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               {announcement.expiresAt
                 ? `Expires ${dayjs(announcement.expiresAt).utc().format("MM/DD/YY h:mm a")}`
                 : "Never expires"}
@@ -47,8 +47,15 @@ export function AnnouncementCard({ announcement }: { announcement: Announcement 
               method="post"
               action="/api/announcements"
               fetcher={fetcher}
-              validator={validator}
+              schema={schema}
               className="my-2 flex items-center gap-2"
+              defaultValues={{
+                intent: "update",
+                id: announcement.id,
+                title: announcement.title,
+                content: announcement.content,
+                expiresAt: announcement.expiresAt ? dayjs(announcement.expiresAt).format("YYYY-MM-DD") : "",
+              }}
             >
               <input type="hidden" name="id" value={announcement.id} />
               <AnnouncementModal intent="update" announcement={announcement} />

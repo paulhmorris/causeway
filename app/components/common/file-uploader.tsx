@@ -1,6 +1,6 @@
-import { useNavigate } from "@remix-run/react";
 import { IconCircleCheckFilled, IconCloudUpload, IconLoader } from "@tabler/icons-react";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -69,7 +69,7 @@ export function FileUploader() {
         uploadedFilesCount++;
       }
 
-      navigate(".", { replace: true });
+      await navigate(".", { replace: true, preventScrollReset: true });
       setUploadStatus((s) => ({
         ...s,
         success: true,
@@ -105,7 +105,7 @@ export function FileUploader() {
             name="file"
             type="file"
             accept="image/*,application/pdf,image/heic"
-            className="cursor-pointer hover:bg-muted"
+            className="hover:bg-muted cursor-pointer"
             disabled={uploadStatus.uploading || uploadStatus.success}
             onChange={(e) => {
               const files = e.target.files;
@@ -117,9 +117,9 @@ export function FileUploader() {
           />
         </div>
         {uploadStatus.success ? (
-          <div className="flex h-10 items-center gap-1 text-success">
+          <div className="text-success flex h-10 items-center gap-1">
             <span className="text-sm font-medium">{uploadStatus.message}</span>
-            <IconCircleCheckFilled className="h-5 w-5" />
+            <IconCircleCheckFilled className="size-5" />
           </div>
         ) : (
           <Button
@@ -127,21 +127,21 @@ export function FileUploader() {
             disabled={uploadStatus.uploading || !files}
             variant="outline"
             type="button"
-            className="flex w-full items-center gap-2 shadow-none sm:w-auto"
+            className="flex h-10 w-full items-center gap-2 shadow-none sm:h-10 sm:w-auto"
           >
             {uploadStatus.uploading ? (
-              <IconLoader className="h-4 w-4 animate-spin" />
+              <IconLoader className="size-4 animate-spin" />
             ) : (
               <>
                 <span>Upload</span>
-                <IconCloudUpload className="h-4 w-4" />
+                <IconCloudUpload className="size-4" />
               </>
             )}
           </Button>
         )}
       </div>
       {uploadStatus.message && !uploadStatus.success ? (
-        <p className={"mt-0.5 text-xs font-medium text-destructive"} role="alert" id="upload-error">
+        <p className={"text-destructive mt-0.5 text-xs font-medium"} role="alert" id="upload-error">
           {uploadStatus.message}
         </p>
       ) : null}

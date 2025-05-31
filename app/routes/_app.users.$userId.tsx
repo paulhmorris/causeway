@@ -1,8 +1,6 @@
-import { LoaderFunctionArgs } from "@remix-run/node";
-import { Link, MetaFunction, NavLink, Outlet, useFetcher } from "@remix-run/react";
+import { ValidatedForm } from "@rvf/react-router";
 import { IconAddressBook, IconBuildingBank, IconKey, IconLockPlus, IconUserCircle } from "@tabler/icons-react";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
-import { ValidatedForm, setFormDefaults } from "remix-validated-form";
+import { Link, LoaderFunctionArgs, MetaFunction, NavLink, Outlet, useFetcher, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 
 import { PageHeader } from "~/components/common/page-header";
@@ -14,7 +12,7 @@ import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { forbidden } from "~/lib/responses.server";
 import { cn } from "~/lib/utils";
-import { passwordResetValidator } from "~/routes/resources.reset-password";
+import { passwordResetSchema } from "~/routes/resources.reset-password";
 import { SessionService } from "~/services.server/session";
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
@@ -105,17 +103,12 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
     const { password: _password, ...userWithoutPassword } = userWithPassword;
 
-    return typedjson({
+    return {
       accounts,
       user: userWithoutPassword,
       accountsThatCanBeSubscribedTo,
       hasPassword: !!_password,
-      ...setFormDefaults("user-form", {
-        ...userWithPassword,
-        ...userWithPassword.contact,
-        accountId: userWithPassword.account?.id,
-      }),
-    });
+    };
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
@@ -125,11 +118,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
   {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    title: `User ${data?.user.contact.firstName}${
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      data?.user.contact.lastName ? " " + data?.user.contact.lastName : ""
-    }`,
+    title: `${data?.user.contact.firstName}${data?.user.contact.lastName ? " " + data.user.contact.lastName : ""}`,
   },
 ];
 
@@ -137,7 +126,7 @@ const links = [{ label: "Profile", to: "profile" }];
 
 export default function UserDetailsLayout() {
   const authorizedUser = useUser();
-  const { user, hasPassword } = useTypedLoaderData<typeof loader>();
+  const { user, hasPassword } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
 
   const isYou = authorizedUser.id === user.id;
@@ -149,21 +138,26 @@ export default function UserDetailsLayout() {
           <ValidatedForm
             id="reset-password-form"
             fetcher={fetcher}
-            validator={passwordResetValidator}
+            schema={passwordResetSchema}
             method="post"
             action="/resources/reset-password"
+            defaultValues={{ username: user.username, _action: hasPassword ? "reset" : "setup" }}
           >
-            <input type="hidden" name="username" value={user.username} />
-            <SubmitButton
-              variant="outline"
-              type="submit"
-              formId="reset-password-form"
-              name="_action"
-              value={hasPassword ? "reset" : "setup"}
-            >
-              <span>Send Password {hasPassword ? "Reset" : "Setup"}</span>
-              {!hasPassword ? <IconLockPlus className="size-4" /> : null}
-            </SubmitButton>
+            {(form) => (
+              <>
+                <input type="hidden" name="username" value={user.username} />
+                <SubmitButton
+                  isSubmitting={form.formState.isSubmitting}
+                  variant="outline"
+                  type="submit"
+                  name="_action"
+                  value={hasPassword ? "reset" : "setup"}
+                >
+                  <span>Send Password {hasPassword ? "Reset" : "Setup"}</span>
+                  {!hasPassword ? <IconLockPlus className="size-4" /> : null}
+                </SubmitButton>
+              </>
+            )}
           </ValidatedForm>
         </div>
       </PageHeader>
@@ -182,7 +176,7 @@ export default function UserDetailsLayout() {
           <span>{user.role.toLowerCase()}</span>
         </Badge>
         <Badge variant="secondary" className="capitalize">
-          <Link to={`/contacts/${user.contact.id}`} className="flex items-center gap-2">
+          <Link to={`/contacts/${user.contact.id}`} prefetch="intent" className="flex items-center gap-2">
             <div>
               <IconUserCircle className="size-3" />
             </div>
@@ -193,7 +187,7 @@ export default function UserDetailsLayout() {
         </Badge>
         {user.account ? (
           <Badge variant="secondary">
-            <Link to={`/accounts/${user.account.id}`} className="flex items-center gap-2">
+            <Link to={`/accounts/${user.account.id}`} prefetch="intent" className="flex items-center gap-2">
               <div>
                 <IconBuildingBank className="size-3" />
               </div>
@@ -204,14 +198,14 @@ export default function UserDetailsLayout() {
       </div>
 
       <PageContainer>
-        <ul className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-muted p-1 text-muted-foreground">
+        <ul className="bg-muted text-muted-foreground inline-flex h-10 items-center justify-center gap-2 rounded-md p-1">
           {links.map((link) => (
             <li key={link.to}>
               <NavLink
                 className={({ isActive }) =>
                   cn(
-                    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-                    isActive ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50",
+                    "ring-offset-background focus-visible:ring-ring inline-flex items-center justify-center gap-2 rounded px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50",
+                    isActive ? "bg-background text-foreground shadow-xs" : "hover:bg-background/50",
                   )
                 }
                 to={link.to}
@@ -224,8 +218,8 @@ export default function UserDetailsLayout() {
             <NavLink
               className={({ isActive }) =>
                 cn(
-                  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-                  isActive ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50",
+                  "ring-offset-background focus-visible:ring-ring inline-flex items-center justify-center gap-2 rounded px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50",
+                  isActive ? "bg-background text-foreground shadow-xs" : "hover:bg-background/50",
                 )
               }
               to="password"

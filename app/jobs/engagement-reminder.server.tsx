@@ -1,5 +1,4 @@
 // TODO: This needs to be updated for multi-tenancy, in the case that a user has multiple orgs they should probably receive multiple emails per org.
-/* eslint-disable @typescript-eslint/require-await */
 import { render } from "@react-email/render";
 import { logger, schedules } from "@trigger.dev/sdk/v3";
 
@@ -106,17 +105,18 @@ export const reminderTask = schedules.task({
     }, {});
 
     // Convert the map into an array of emails.
-    const mappedEmails: Array<SendEmailInput & { to: string }> = Object.values(temp).map(({ user, contacts }) => {
+    const mappedEmails = [];
+    for (const { user, contacts } of Object.values(temp)) {
       const org = contacts[0].org;
-      return {
+      const email: SendEmailInput = {
         from: constructOrgMailFrom(org),
         to: user.email,
         subject: "Contact Reminder",
-        html: render(<EngagementReminderEmail contacts={contacts} userFirstName={user.firstName} />),
+        html: await render(<EngagementReminderEmail contacts={contacts} userFirstName={user.firstName} />),
       };
-    });
+      mappedEmails.push(email);
+    }
 
-    // send all emails in promise.allsettled with try/catch
     const emails = await Promise.allSettled(mappedEmails.map((email) => sendEmail(email)));
 
     emails.forEach((result) => {

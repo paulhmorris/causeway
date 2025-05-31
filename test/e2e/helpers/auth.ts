@@ -13,14 +13,12 @@ export async function createAdmin() {
     password: faker.internet.password(),
   };
   let org = await prisma.organization.findUnique({ where: { host: "E2E-Test.org" } });
-  if (!org) {
-    org = await prisma.organization.create({
-      data: {
-        host: "E2E-Test.org",
-        name: "E2E Test Organization",
-      },
-    });
-  }
+  org ??= await prisma.organization.create({
+    data: {
+      host: "E2E-Test.org",
+      name: "E2E Test Organization",
+    },
+  });
   const createdUser = await prisma.user.create({
     data: {
       role: UserRole.USER,

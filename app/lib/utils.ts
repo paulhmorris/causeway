@@ -8,7 +8,6 @@ const DEFAULT_REDIRECT = "/";
 
 export type Prettify<T> = {
   [K in keyof T]: T[K];
-  // eslint-disable-next-line @typescript-eslint/ban-types
 } & {};
 
 /**
@@ -61,7 +60,7 @@ export function getAllSearchParams(param: string, request: Request) {
 }
 
 export function formatCurrency(value: number, decimals?: 0 | 2) {
-  const decimalPlaces = decimals ? decimals : value % 1 !== 0 ? 2 : 0;
+  const decimalPlaces = (decimals ?? value % 1 !== 0) ? 2 : 0;
   const formattedValue = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -81,7 +80,7 @@ export function formatCentsAsDollars(value: number | null | undefined, decimals:
 
 export function formatPhoneNumber(value: string) {
   const cleaned = `${value}`.replace(/\D/g, "");
-  const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+  const match = /^(\d{3})(\d{3})(\d{4})$/.exec(cleaned);
   if (match) {
     return `(${match[1]}) ${match[2]}-${match[3]}`;
   }

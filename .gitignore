@@ -8,9 +8,11 @@ node_modules
 
 /postgres-data
 
+.eslintcache
 .sentryclirc
 .vercel
 .trigger
+.react-router
 /test-results/
 /playwright-report/
 /playwright

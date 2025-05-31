@@ -1,14 +1,10 @@
-import { Prisma } from "@prisma/client";
-import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { Link } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { parseFormData, validationError } from "@rvf/react-router";
 import { IconExternalLink } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
-import { validationError } from "remix-validated-form";
+import { ActionFunctionArgs, Link, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
-import { z } from "zod";
+import { z } from "zod/v4";
 dayjs.extend(utc);
 
 import { PageHeader } from "~/components/common/page-header";
@@ -26,7 +22,7 @@ import { cn, formatCentsAsDollars } from "~/lib/utils";
 import { generateS3Urls } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
 
-const validator = withZod(z.object({ _action: z.literal("delete") }));
+const schema = z.object({ _action: z.literal("delete") });
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   invariant(params.transactionId, "transactionId not found");
@@ -34,7 +30,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const orgId = await SessionService.requireOrgId(request);
 
   try {
-    const trx = await db.transaction.findUniqueOrThrow({
+    const transaction = await db.transaction.findUniqueOrThrow({
       where: { id: params.transactionId, orgId },
       select: {
         id: true,
@@ -96,12 +92,12 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       },
     });
 
-    if (user.isMember && trx.account.user?.id !== user.id) {
+    if (user.isMember && transaction.account.user?.id !== user.id) {
       throw forbidden({ message: "You do not have permission to view this transaction" });
     }
 
-    trx.receipts = await generateS3Urls(trx.receipts);
-    return typedjson({ transaction: trx });
+    transaction.receipts = await generateS3Urls(transaction.receipts);
+    return { transaction };
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
@@ -115,7 +111,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
   await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -124,7 +120,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
   const trx = await db.transaction.delete({ where: { id: transactionId, orgId }, include: { account: true } });
   return Toasts.redirectWithSuccess("/transactions", {
-    title: "Transaction deleted",
+    message: "Transaction deleted",
     description: `The transaction of ${formatCentsAsDollars(trx.amountInCents, 2)} on account ${
       trx.account.code
     } has been deleted.`,
@@ -133,7 +129,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
 export default function TransactionDetailsPage() {
   const authorizedUser = useUser();
-  const { transaction } = useTypedLoaderData<typeof loader>();
+  const { transaction } = useLoaderData<typeof loader>();
 
   return (
     <>
@@ -141,7 +137,9 @@ export default function TransactionDetailsPage() {
         <div className="flex items-center gap-2">
           {!authorizedUser.isMember ? (
             <Button variant="outline" asChild>
-              <Link to={`/transactions/${transaction.id}/edit`}>Edit</Link>
+              <Link to={`/transactions/${transaction.id}/edit`} prefetch="intent">
+                Edit
+              </Link>
             </Button>
           ) : null}
           {["SUPERADMIN", "ADMIN"].includes(authorizedUser.role) ? (
@@ -157,10 +155,10 @@ export default function TransactionDetailsPage() {
         <div className="space-y-8">
           <div>
             <h2 className="sr-only">Details</h2>
-            <dl className="divide-y divide-muted">
+            <dl className="divide-muted divide-y">
               <DetailItem label="Id" value={transaction.id} />
               <DetailItem label="Account">
-                <Link to={`/accounts/${transaction.account.id}`} className="font-medium text-primary">
+                <Link to={`/accounts/${transaction.account.id}`} prefetch="intent" className="text-primary font-medium">
                   {`${transaction.account.code}`} - {transaction.account.description}
                 </Link>
               </DetailItem>
@@ -169,7 +167,8 @@ export default function TransactionDetailsPage() {
                 <DetailItem label="Contact">
                   <Link
                     to={`/contacts/${transaction.contactId}`}
-                    className="font-medium text-primary"
+                    prefetch="intent"
+                    className="text-primary font-medium"
                   >{`${transaction.contact.firstName} ${transaction.contact.lastName}`}</Link>
                 </DetailItem>
               ) : null}
@@ -178,7 +177,7 @@ export default function TransactionDetailsPage() {
               {transaction.receipts.length > 0 ? (
                 <div className="items-center py-1.5 text-sm sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
                   <dt className="self-start font-semibold capitalize">Receipts</dt>
-                  <dd className="col-span-2 text-muted-foreground">
+                  <dd className="text-muted-foreground col-span-2">
                     {transaction.receipts.length > 0 ? (
                       transaction.receipts.map((receipt) => {
                         if (!receipt.s3Url) {
@@ -193,7 +192,7 @@ export default function TransactionDetailsPage() {
                           <a
                             key={receipt.id}
                             href={receipt.s3Url}
-                            className="flex items-center gap-1.5 font-medium text-primary"
+                            className="text-primary flex items-center gap-1.5 font-medium"
                             target="_blank"
                             rel="noreferrer"
                           >
@@ -231,7 +230,8 @@ export default function TransactionDetailsPage() {
                       {item.description?.includes("Reimbursement ID:") && !authorizedUser.isMember ? (
                         <Link
                           to={`/reimbursements/${item.description.split(": ")[1]}`}
-                          className="font-medium text-primary"
+                          prefetch="intent"
+                          className="text-primary font-medium"
                         >
                           Reimbursement
                         </Link>
@@ -244,7 +244,7 @@ export default function TransactionDetailsPage() {
                 ))}
               </TableBody>
             </Table>
-            <div className="flex items-center justify-end gap-2 border-t pr-4 pt-4 text-sm font-bold">
+            <div className="flex items-center justify-end gap-2 border-t pt-4 pr-4 text-sm font-bold">
               <p>Total</p>
               <p>{formatCentsAsDollars(transaction.amountInCents, 2)}</p>
             </div>
@@ -255,19 +255,11 @@ export default function TransactionDetailsPage() {
   );
 }
 
-function DetailItem({
-  label,
-  value,
-  children,
-}: {
-  label: string;
-  value?: Prisma.JsonValue;
-  children?: React.ReactNode;
-}) {
+function DetailItem({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) {
   return (
     <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
       <dt className="text-sm font-semibold capitalize">{label}</dt>
-      <dd className={cn("mt-1 text-sm text-muted-foreground sm:col-span-2 sm:mt-0")}>
+      <dd className={cn("text-muted-foreground mt-1 text-sm sm:col-span-2 sm:mt-0")}>
         {value ? String(value) : undefined}
         {children}
       </dd>

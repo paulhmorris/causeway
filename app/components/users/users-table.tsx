@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { Link } from "@remix-run/react";
+import { Link } from "react-router";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { normalizeEnum } from "~/lib/utils";
@@ -23,7 +23,7 @@ export function UsersTable({ users }: { users: Array<Prisma.UserGetPayload<{ inc
           return (
             <TableRow key={user.id}>
               <TableCell>
-                <Link to={`/users/${user.id}/profile`} className="font-medium text-primary">
+                <Link to={`/users/${user.id}/profile`} prefetch="intent" className="text-primary font-medium">
                   View
                 </Link>
               </TableCell>

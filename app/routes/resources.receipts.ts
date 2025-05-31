@@ -1,7 +1,5 @@
-import { ActionFunctionArgs } from "@remix-run/node";
-import { typedjson } from "remix-typedjson";
-import { z } from "zod";
-import { fromZodError } from "zod-validation-error";
+import { ActionFunctionArgs } from "react-router";
+import { z } from "zod/v4";
 
 import { db } from "~/integrations/prisma.server";
 import { SessionService } from "~/services.server/session";
@@ -12,10 +10,11 @@ export async function action({ request }: ActionFunctionArgs) {
 
   switch (request.method) {
     case "POST": {
-      const validator = z.object({ s3Key: z.string(), title: z.string() });
-      const result = validator.safeParse(await request.json());
+      const schema = z.object({ s3Key: z.string(), title: z.string() });
+      const result = schema.safeParse(await request.json());
       if (!result.success) {
-        return new Response(fromZodError(result.error).toString(), { status: 400 });
+        const tree = z.treeifyError(result.error);
+        return new Response(tree.errors.join(", "), { status: 400 });
       }
 
       const receipt = await db.receipt.create({
@@ -26,7 +25,7 @@ export async function action({ request }: ActionFunctionArgs) {
         },
       });
 
-      return typedjson({ receipt });
+      return { receipt };
     }
     default: {
       return new Response("Method not allowed", { status: 405 });

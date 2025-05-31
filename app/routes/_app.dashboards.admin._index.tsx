@@ -1,8 +1,8 @@
 import { ReimbursementRequestStatus } from "@prisma/client";
-import { type LoaderFunctionArgs, type MetaFunction } from "@remix-run/node";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { redirect, typedjson, useTypedLoaderData } from "remix-typedjson";
+import { redirect, type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { useLoaderData } from "react-router";
 dayjs.extend(utc);
 
 import { AnnouncementCard } from "~/components/admin/announcement-card";
@@ -69,11 +69,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }),
   ]);
 
-  return typedjson({ accounts, reimbursementRequests, announcement });
+  return { accounts, reimbursementRequests, announcement };
 }
 
 export default function Index() {
-  const { accounts, reimbursementRequests, announcement } = useTypedLoaderData<typeof loader>();
+  const { accounts, reimbursementRequests, announcement } = useLoaderData<typeof loader>();
 
   return (
     <>

@@ -2,29 +2,37 @@ import { faker } from "@faker-js/faker";
 import { expect, test } from "@playwright/test"; // unauthenticated test
 
 test.describe("Login Page", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/login");
+  });
+
   test("should not login with invalid credentials", async ({ page }) => {
     const randomUser = {
       email: faker.internet.email().toLowerCase(),
       password: faker.internet.password().toLowerCase(),
     };
-    await page.goto("/login");
     const email = page.getByRole("textbox", { name: "Email" });
     const password = page.getByRole("textbox", { name: "Password" });
     await email.fill(randomUser.email);
     await password.fill(randomUser.password);
-    await page.getByRole("button", { name: /log in/i }).click();
+    await page.getByRole("button", { name: /log/i }).click();
 
     await expect(email).toBeFocused();
     await expect(password).not.toBeFocused();
     await expect(email).toHaveAttribute("aria-invalid", "true");
   });
 
-  test.skip("should not login with empty credentials", async ({ page }) => {
-    await page.goto("/login");
+  test("should show error on empty fields", async ({ page }) => {
     const email = page.getByRole("textbox", { name: "Email" });
-    await page.getByRole("button", { name: /log in/i }).click();
+    await email.clear();
+    await page.getByRole("button", { name: /log/i }).click();
+    await expect(email).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByText(/required/i)).toBeVisible();
 
-    await expect(page).toHaveURL("/login");
-    await expect(email).toBeFocused();
+    const password = page.getByRole("textbox", { name: "Password" });
+    await password.clear();
+    await page.getByRole("button", { name: /log/i }).click();
+    await expect(password).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByText(/must be 8 or more characters/i)).toBeVisible();
   });
 });

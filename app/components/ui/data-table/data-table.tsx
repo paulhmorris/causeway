@@ -1,4 +1,3 @@
-import { useLocation, useSearchParams } from "@remix-run/react";
 import { RankingInfo } from "@tanstack/match-sorter-utils";
 import {
   ColumnDef,
@@ -18,6 +17,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useState } from "react";
+import { useLocation, useSearchParams } from "react-router";
 import { ClientOnly } from "remix-utils/client-only";
 import { useLocalStorage } from "usehooks-ts";
 
@@ -58,8 +58,8 @@ export function DataTable<TData>({ data, columns, facets, serverPagination, rowC
   const [search, setSearch] = useSearchParams();
 
   const defaultPaginationState: PaginationState = {
-    pageIndex: Number(search.get("page") || 0),
-    pageSize: Number(search.get("pageSize") || DEFAULT_PAGE_SIZE),
+    pageIndex: Number(search.get("page") ?? 0),
+    pageSize: Number(search.get("pageSize") ?? DEFAULT_PAGE_SIZE),
   };
   const [pagination, setPagination] = useState<PaginationState>(defaultPaginationState);
 

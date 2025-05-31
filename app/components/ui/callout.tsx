@@ -23,15 +23,15 @@ const calloutVariants = cva("rounded-md border p-3 text-sm flex items-start gap-
 
 export function Callout({ children, className, variant = "info", ...props }: Props) {
   const iconMap = {
-    info: <IconInfoCircleFilled className="size-4 text-primary" />,
-    warning: <IconAlertTriangleFilled className="size-4 text-warning" />,
-    destructive: <IconExclamationCircle className="size-4 text-destructive" />,
-    outline: <IconNotes className="size-4 text-muted-foreground" />,
+    info: <IconInfoCircleFilled className="text-primary size-4" />,
+    warning: <IconAlertTriangleFilled className="text-warning size-4" />,
+    destructive: <IconExclamationCircle className="text-destructive size-4" />,
+    outline: <IconNotes className="text-muted-foreground size-4" />,
   };
 
   return (
     <div className={cn(calloutVariants({ variant, className }))} {...props}>
-      <div className="pt-[1px]">{iconMap[variant ?? "info"]}</div>
+      <div className="pt-px">{iconMap[variant ?? "info"]}</div>
       <div>{children}</div>
     </div>
   );

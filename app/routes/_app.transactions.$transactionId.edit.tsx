@@ -1,13 +1,9 @@
-import { Prisma } from "@prisma/client";
-import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { Link } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import { ActionFunctionArgs, Link, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
-import { z } from "zod";
+import { z } from "zod/v4";
 dayjs.extend(utc);
 
 import { PageHeader } from "~/components/common/page-header";
@@ -19,19 +15,18 @@ import { SubmitButton } from "~/components/ui/submit-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
-import { getPrismaErrorText, notFound } from "~/lib/responses.server";
+import { notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cn, formatCentsAsDollars } from "~/lib/utils";
+import { cuid, optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
-const schema = withZod(
-  z.object({
-    id: z.string().cuid(),
-    date: z.string(),
-    categoryId: z.string(),
-    description: z.string().optional(),
-  }),
-);
+const schema = z.object({
+  id: cuid,
+  date: text,
+  categoryId: text,
+  description: optionalText,
+});
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   invariant(params.transactionId, "transactionId not found");
@@ -57,7 +52,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
   if (!transaction) throw notFound({ message: "Transaction not found" });
 
-  return typedjson({ transaction, categories });
+  return { transaction, categories };
 };
 
 export const meta: MetaFunction = () => [{ title: "Transaction Edit" }];
@@ -66,7 +61,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await schema.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -78,28 +73,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       where: { id, orgId },
       data: {
         date: new Date(date),
-        description: description || undefined,
+        description: description ?? undefined,
         categoryId: +categoryId,
       },
     });
 
     return Toasts.redirectWithSuccess(`/transactions/${id}`, {
-      title: "Transaction updated",
+      message: "Transaction updated",
       description: `Transaction has been updated.`,
     });
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    let message = error instanceof Error ? error.message : "";
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      message = getPrismaErrorText(error);
-    }
-    return Toasts.jsonWithError({ success: false }, { title: "Error saving transaction", description: message });
+    return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
   }
 };
 
 export default function TransactionDetailsPage() {
-  const { transaction, categories } = useTypedLoaderData<typeof loader>();
+  const { transaction, categories } = useLoaderData<typeof loader>();
 
   return (
     <>
@@ -110,10 +101,10 @@ export default function TransactionDetailsPage() {
         <div className="space-y-8">
           <div>
             <h2 className="sr-only">Details</h2>
-            <dl className="divide-y divide-muted">
+            <dl className="divide-muted divide-y">
               <DetailItem label="Id" value={transaction.id} />
               <DetailItem label="Account">
-                <Link to={`/accounts/${transaction.accountId}`} className="font-medium text-primary">
+                <Link to={`/accounts/${transaction.accountId}`} prefetch="intent" className="text-primary font-medium">
                   {`${transaction.account.code}`} - {transaction.account.description}
                 </Link>
               </DetailItem>
@@ -121,51 +112,59 @@ export default function TransactionDetailsPage() {
                 <DetailItem label="Contact">
                   <Link
                     to={`/contacts/${transaction.contactId}`}
-                    className="font-medium text-primary"
+                    prefetch="intent"
+                    className="text-primary font-medium"
                   >{`${transaction.contact.firstName} ${transaction.contact.lastName}`}</Link>
                 </DetailItem>
               ) : null}
               <ValidatedForm
                 id="transaction-edit"
-                validator={schema}
+                schema={schema}
                 method="PUT"
                 defaultValues={{
+                  ...transaction,
                   date: dayjs(transaction.date).utc().format("YYYY-MM-DD"),
                   description: transaction.description ?? "",
                   categoryId: String(transaction.categoryId),
                 }}
                 className="flex flex-col"
               >
-                <input type="hidden" name="id" value={transaction.id} />
-                <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                  <dt className="text-sm font-semibold capitalize">Date</dt>
-                  <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
-                    <FormField name="date" label="Date" hideLabel type="date" />
-                  </dd>
-                </div>
-                <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                  <dt className="text-sm font-semibold capitalize">Category</dt>
-                  <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
-                    <FormSelect
-                      hideLabel
-                      required
-                      name="categoryId"
-                      label="Category"
-                      placeholder="Select category"
-                      options={categories.map((c) => ({
-                        value: c.id,
-                        label: c.name,
-                      }))}
-                    />
-                  </dd>
-                </div>
-                <div className="items-start py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                  <dt className="text-sm font-semibold capitalize">Description</dt>
-                  <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
-                    <FormTextarea name="description" label="Description" hideLabel />
-                  </dd>
-                </div>
-                <SubmitButton className="ml-auto">Save</SubmitButton>
+                {(form) => (
+                  <>
+                    <input type="hidden" name="id" value={transaction.id} />
+                    <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                      <dt className="text-sm font-semibold capitalize">Date</dt>
+                      <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
+                        <FormField scope={form.scope("date")} label="Date" hideLabel type="date" />
+                      </dd>
+                    </div>
+                    <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                      <dt className="text-sm font-semibold capitalize">Category</dt>
+                      <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
+                        <FormSelect
+                          hideLabel
+                          required
+                          scope={form.scope("categoryId")}
+                          label="Category"
+                          placeholder="Select category"
+                          options={categories.map((c) => ({
+                            value: c.id,
+                            label: c.name,
+                          }))}
+                        />
+                      </dd>
+                    </div>
+                    <div className="items-start py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                      <dt className="text-sm font-semibold capitalize">Description</dt>
+                      <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
+                        <FormTextarea scope={form.scope("description")} label="Description" hideLabel />
+                      </dd>
+                    </div>
+                    <SubmitButton isSubmitting={form.formState.isSubmitting} className="ml-auto">
+                      Save
+                    </SubmitButton>
+                  </>
+                )}
               </ValidatedForm>
             </dl>
           </div>
@@ -192,7 +191,7 @@ export default function TransactionDetailsPage() {
                 ))}
               </TableBody>
             </Table>
-            <div className="flex items-center justify-end gap-2 border-t pr-4 pt-4 text-sm font-bold">
+            <div className="flex items-center justify-end gap-2 border-t pt-4 pr-4 text-sm font-bold">
               <p>Total</p>
               <p>{formatCentsAsDollars(transaction.amountInCents, 2)}</p>
             </div>
@@ -203,20 +202,12 @@ export default function TransactionDetailsPage() {
   );
 }
 
-function DetailItem({
-  label,
-  value,
-  children,
-}: {
-  label: string;
-  value?: Prisma.JsonValue;
-  children?: React.ReactNode;
-}) {
+function DetailItem({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) {
   return (
     <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
       <dt className="text-sm font-semibold capitalize">{label}</dt>
-      <dd className={cn("mt-1 text-sm text-muted-foreground sm:col-span-2 sm:mt-0")}>
-        {value ? String(value) : undefined}
+      <dd className={cn("text-muted-foreground mt-1 text-sm sm:col-span-2 sm:mt-0")}>
+        {value ?? null}
         {children}
       </dd>
     </div>

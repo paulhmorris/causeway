@@ -1,21 +1,17 @@
-import { Prisma, TransactionItemTypeDirection } from "@prisma/client";
+import { TransactionItemTypeDirection } from "@prisma/client";
 import { render } from "@react-email/render";
-import { type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import type { MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import { IconPlus } from "@tabler/icons-react";
-import { nanoid } from "nanoid";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
-import { setFormDefaults, useFieldArray, ValidatedForm, validationError } from "remix-validated-form";
+import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs, type MetaFunction } from "react-router";
 
 import { IncomeNotificationEmail } from "emails/income-notification";
 import { PageHeader } from "~/components/common/page-header";
 import { ReceiptSelector } from "~/components/common/receipt-selector";
+import { TransactionItem } from "~/components/common/transaction-item";
 import { ContactDropdown } from "~/components/contacts/contact-dropdown";
 import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "~/components/ui/card";
 import { Checkbox } from "~/components/ui/checkbox";
 import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
 import { Label } from "~/components/ui/label";
@@ -25,15 +21,15 @@ import { sendEmail } from "~/integrations/email.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionItemType } from "~/lib/constants";
-import { getPrismaErrorText } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { constructOrgMailFrom, constructOrgURL, formatCentsAsDollars, getToday } from "~/lib/utils";
-import { CheckboxSchema, TransactionSchema } from "~/models/schemas";
+import { TransactionSchema } from "~/schemas";
+import { checkbox } from "~/schemas/fields";
 import { getContactTypes } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
 import { generateTransactionItems, getTransactionItemMethods } from "~/services.server/transaction";
 
-const validator = withZod(TransactionSchema.extend({ shouldNotifyUser: CheckboxSchema }));
+const schema = TransactionSchema.extend({ shouldNotifyUser: checkbox });
 
 export const meta: MetaFunction = () => [{ title: "Add Income" }];
 
@@ -45,7 +41,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     await db.$transaction([
       db.contact.findMany({ where: { orgId }, include: { type: true } }),
       getContactTypes(orgId),
-      db.account.findMany({ where: { orgId }, orderBy: { code: "asc" } }),
+      db.account.findMany({
+        where: { orgId },
+        select: {
+          id: true,
+          code: true,
+          description: true,
+          user: { select: { id: true } },
+          _count: { select: { subscribers: true } },
+        },
+        orderBy: { code: "asc" },
+      }),
       getTransactionItemMethods(orgId),
       db.transactionItemType.findMany({
         where: {
@@ -69,7 +75,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }),
     ]);
 
-  return typedjson({
+  return {
     contacts,
     contactTypes,
     accounts,
@@ -77,31 +83,29 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     transactionItemTypes,
     categories,
     receipts,
-    ...setFormDefaults("income-form", {
-      transactionItems: [{ id: nanoid() }],
-    }),
-  });
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
   const { transactionItems, shouldNotifyUser, contactId, receiptIds, ...rest } = result.data;
   try {
     const { transactionItems: trxItems, totalInCents } = await generateTransactionItems(transactionItems, orgId);
+    const receiptIdArr = typeof receiptIds === "string" ? [receiptIds] : receiptIds?.length ? receiptIds : [];
 
     const transaction = await db.transaction.create({
       data: {
         orgId,
         amountInCents: totalInCents,
-        contactId: contactId || undefined,
+        contactId: contactId ?? undefined,
         transactionItems: { createMany: { data: trxItems } },
-        receipts: receiptIds.length > 0 ? { connect: receiptIds.map((id) => ({ id })) } : undefined,
+        receipts: receiptIdArr.length ? { connect: receiptIdArr.map((id) => ({ id })) } : undefined,
         ...rest,
       },
       select: {
@@ -136,13 +140,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (shouldNotifyUser) {
       const email = transaction.account.user?.contact.email;
       if (!email) {
-        return Toasts.jsonWithError(
-          { message: "Error notifying subscribers" },
-          {
-            title: "Error notifying subscribers",
-            description: "We couldn't find the account for this transaction. Please contact support.",
-          },
-        );
+        return Toasts.redirectWithError(`/accounts/${transaction.account.id}`, {
+          message: "Error notifying subscribers",
+          description: "We couldn't find any subscribers to this account. Your transaction was created.",
+        });
       }
 
       const org = transaction.org;
@@ -150,7 +151,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         from: constructOrgMailFrom(org),
         to: email,
         subject: "You have new income!",
-        html: render(
+        html: await render(
           <IncomeNotificationEmail
             url={constructOrgURL("/", org).toString()}
             accountName={transaction.account.code}
@@ -162,39 +163,60 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
 
     return Toasts.redirectWithSuccess(`/accounts/${transaction.account.id}`, {
-      title: "Success",
+      message: "Success",
       description: `Income of ${formatCentsAsDollars(totalInCents)} added to account ${transaction.account.code}`,
     });
   } catch (error) {
     console.error(error);
     Sentry.captureException(error);
-    let description = "An error occurred while creating the income";
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      description = getPrismaErrorText(error);
-    }
-    return Toasts.jsonWithError({ success: false }, { title: "Error creating income", description });
+    return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
   }
 };
 
 export default function AddIncomePage() {
   const { contacts, contactTypes, accounts, transactionItemMethods, transactionItemTypes, receipts, categories } =
-    useTypedLoaderData<typeof loader>();
-  const [items, { push, remove }] = useFieldArray("transactionItems", { formId: "income-form" });
+    useLoaderData<typeof loader>();
+  const form = useForm({
+    schema: TransactionSchema,
+    method: "post",
+    defaultValues: {
+      accountId: "",
+      contactId: "",
+      categoryId: "",
+      description: "",
+      date: getToday(),
+      receiptIds: [],
+      transactionItems: [
+        {
+          methodId: "",
+          typeId: "",
+          amountInCents: "",
+        },
+      ],
+    },
+  });
+
+  const selectedAccountId = form.field("accountId").value();
+  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+  const accountHasUserOrSubscribers = Boolean(selectedAccount?.user) || Boolean(selectedAccount?._count.subscribers);
+
+  let total = 0;
+  form.value().transactionItems.forEach((i) => (total += Number(i.amountInCents) * 100));
 
   return (
     <>
       <PageHeader title="Add Income" />
       <PageContainer>
-        <ValidatedForm id="income-form" method="post" validator={validator} className="sm:max-w-xl">
+        <form {...form.getFormProps()} className="sm:max-w-xl">
           <div className="mt-8 space-y-8">
             <div className="space-y-2">
               <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
                 <div className="w-auto">
-                  <FormField required name="date" label="Date" type="date" defaultValue={getToday()} />
+                  <FormField required scope={form.scope("date")} label="Date" type="date" defaultValue={getToday()} />
                 </div>
                 <FormSelect
                   required
-                  name="categoryId"
+                  scope={form.scope("categoryId")}
                   label="Category"
                   placeholder="Select category"
                   options={categories.map((c) => ({
@@ -205,107 +227,70 @@ export default function AddIncomePage() {
               </div>
               <FormTextarea
                 required
-                name="description"
+                scope={form.scope("description")}
                 label="Note"
                 description="Shown on transaction tables and reports"
                 placeholder="Select description"
               />
-              <FormSelect
-                required
-                name="accountId"
-                label="Account"
-                placeholder="Select account"
-                options={accounts.map((a) => ({
-                  value: a.id,
-                  label: `${a.code} - ${a.description}`,
-                }))}
+              <div>
+                <FormSelect
+                  required
+                  scope={form.scope("accountId")}
+                  label="Account"
+                  placeholder="Select account"
+                  options={accounts.map((a) => ({
+                    value: a.id,
+                    label: `${a.code} - ${a.description}`,
+                  }))}
+                />
+                {accountHasUserOrSubscribers ? (
+                  <Label className="my-2 inline-flex cursor-pointer items-center gap-2">
+                    <Checkbox name="shouldNotifyUser" aria-label="Notify User" />
+                    <span>Notify User</span>
+                  </Label>
+                ) : null}
+              </div>
+              <ContactDropdown
+                types={contactTypes}
+                contacts={contacts}
+                scope={form.scope("contactId")}
+                label="Contact"
               />
-              <ContactDropdown types={contactTypes} contacts={contacts} name="contactId" label="Contact" />
             </div>
             <ul className="flex flex-col gap-4">
-              {items.map(({ key }, index) => {
-                const fieldPrefix = `transactionItems[${index}]`;
+              {form.array("transactionItems").map((key, item, index) => {
+                const prefix = `transactionItems[${index}]`;
                 return (
                   <li key={key}>
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Item {index + 1}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <input type="hidden" name={`${fieldPrefix}.id`} />
-                        <fieldset className="space-y-3">
-                          <div className="grid grid-cols-10 gap-2">
-                            <div className="col-span-3 sm:col-span-2">
-                              <FormField required name={`${fieldPrefix}.amountInCents`} label="Amount" isCurrency />
-                            </div>
-                            <FormSelect
-                              divProps={{ className: "col-span-3 sm:col-span-4" }}
-                              required
-                              name={`${fieldPrefix}.methodId`}
-                              label="Method"
-                              placeholder="Select method"
-                              options={transactionItemMethods.map((t) => ({
-                                value: t.id,
-                                label: t.name,
-                              }))}
-                            />
-                            <FormSelect
-                              divProps={{ className: "col-span-4" }}
-                              required
-                              name={`${fieldPrefix}.typeId`}
-                              label="Type"
-                              placeholder="Select type"
-                              options={transactionItemTypes.map((t) => ({
-                                value: t.id,
-                                label: t.name,
-                              }))}
-                            />
-                          </div>
-                          <FormField
-                            name={`${fieldPrefix}.description`}
-                            label="Description"
-                            description="Only shown in transaction details and reports"
-                          />
-                        </fieldset>
-                      </CardContent>
-                      <CardFooter>
-                        <Button
-                          aria-label={`Remove item ${index + 1}`}
-                          onClick={() => remove(index)}
-                          variant="destructive"
-                          type="button"
-                          className="ml-auto"
-                        >
-                          Remove
-                        </Button>
-                      </CardFooter>
-                    </Card>
+                    <TransactionItem
+                      title={`Item ${index + 1}`}
+                      itemScope={item.scope()}
+                      fieldPrefix={prefix}
+                      trxItemTypes={transactionItemTypes}
+                      trxItemMethods={transactionItemMethods}
+                      removeItemHandler={() => form.array("transactionItems").remove(index)}
+                    />
                   </li>
                 );
               })}
             </ul>
             <Button
-              onClick={() => push({ id: nanoid() })}
+              onClick={() => form.array("transactionItems").push({ methodId: "", typeId: "", amountInCents: "" })}
               variant="outline"
               className="flex items-center gap-2"
               type="button"
             >
-              <IconPlus className="h-4 w-4" />
+              <IconPlus className="size-4" />
               <span>Add item</span>
             </Button>
             <Separator className="my-4" />
             <ReceiptSelector receipts={receipts} />
-            <div>
-              <div>
-                <Label className="mb-2 inline-flex cursor-pointer items-center gap-2">
-                  <Checkbox name="shouldNotifyUser" aria-label="Notify User" />
-                  <span>Notify User</span>
-                </Label>
-              </div>
-              <SubmitButton disabled={items.length === 0}>Submit Income</SubmitButton>
+            <div className="space-y-1">
+              <p className="text-primary text-sm font-bold">Total: {formatCentsAsDollars(total)}</p>
+              <SubmitButton isSubmitting={form.formState.isSubmitting}>Submit Income</SubmitButton>
             </div>
           </div>
-        </ValidatedForm>
+        </form>
       </PageContainer>
     </>
   );

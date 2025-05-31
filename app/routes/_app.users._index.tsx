@@ -1,7 +1,6 @@
-import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { Link } from "@remix-run/react";
 import { IconPlus } from "@tabler/icons-react";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
+import type { LoaderFunctionArgs, MetaFunction } from "react-router";
+import { Link, useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
 import { ErrorComponent } from "~/components/error-component";
@@ -26,16 +25,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
     include: { contact: true },
     orderBy: { createdAt: "desc" },
   });
-  return typedjson({ users });
+  return { users };
 }
 
 export default function UserIndexPage() {
-  const { users } = useTypedLoaderData<typeof loader>();
+  const { users } = useLoaderData<typeof loader>();
   return (
     <>
       <PageHeader title="Users">
         <Button asChild>
-          <Link to="/users/new">
+          <Link to="/users/new" prefetch="intent">
             <IconPlus className="mr-2 size-5" />
             <span>New User</span>
           </Link>
