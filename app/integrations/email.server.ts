@@ -40,7 +40,7 @@ export async function sendEmail(props: SendEmailInput) {
     },
   };
 
-  if (import.meta.env.PROD) {
+  if (process.env.NODE_ENV === "production") {
     const command = new SendEmailCommand(input);
     const response = await client.send(command);
     if (!response.MessageId) {
