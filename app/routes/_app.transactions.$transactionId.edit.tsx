@@ -13,6 +13,7 @@ import { BackButton } from "~/components/ui/back-button";
 import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { logger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { notFound } from "~/lib/responses.server";
@@ -83,7 +84,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       description: `Transaction has been updated.`,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
     return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
   }

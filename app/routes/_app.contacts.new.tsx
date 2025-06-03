@@ -14,10 +14,11 @@ import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useUser } from "~/hooks/useUser";
+import { logger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
-import { serverError } from "~/lib/responses.server";
+import { handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { NewContactSchema } from "~/schemas";
 import { SessionService } from "~/services.server/session";
@@ -63,10 +64,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       contactTypes,
       usersWhoCanBeAssigned,
     };
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    throw serverError("An error occurred while loading the page. Please try again.");
+  } catch (e) {
+    handleLoaderError(e);
   }
 };
 
@@ -118,7 +117,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       description: `${contact.firstName} ${contact.lastName} was created successfully.`,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
     return Toasts.dataWithError(null, { message: "Error", description: "An unknown error occurred." });
   }

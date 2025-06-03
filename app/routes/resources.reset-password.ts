@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import { type ActionFunctionArgs } from "react-router";
 import { z } from "zod/v4";
 
+import { logger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
@@ -73,20 +74,11 @@ export async function action({ request }: ActionFunctionArgs) {
     // Success
     return Toasts.dataWithSuccess(
       { data },
-      {
-        message: "Email sent",
-        description: "Check the email for a link to set the password.",
-      },
+      { message: "Email sent", description: "Check the email for a link to set the password." },
     );
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    return Toasts.dataWithError(
-      { error },
-      {
-        message: "Something went wrong",
-        description: error instanceof Error ? error.message : "There was an error sending the password reset email.",
-      },
-    );
+  } catch (e) {
+    logger.error(e);
+    Sentry.captureException(e);
+    return Toasts.dataWithError({ error: e }, { message: "Error", description: "An unknown error occurred" });
   }
 }

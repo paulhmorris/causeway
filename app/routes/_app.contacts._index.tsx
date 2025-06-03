@@ -10,7 +10,7 @@ import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Label } from "~/components/ui/label";
 import { db } from "~/integrations/prisma.server";
-import { Sentry } from "~/integrations/sentry";
+import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -51,10 +51,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
       orderBy: { createdAt: "desc" },
     });
     return { contacts };
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    throw error;
+  } catch (e) {
+    handleLoaderError(e);
   }
 }
 

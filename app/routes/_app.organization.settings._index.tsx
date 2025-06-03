@@ -7,6 +7,7 @@ import { Button } from "~/components/ui/button";
 import { ButtonGroup } from "~/components/ui/button-group";
 import { FormField } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
+import { logger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
@@ -36,7 +37,7 @@ export async function action({ request }: ActionFunctionArgs) {
     await db.organization.update({ where: { id: orgId }, data: result.data });
     return Toasts.redirectWithSuccess("/organization/settings", { message: "Organization settings updated" });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
     return Toasts.dataWithError({ success: false }, { message: "Error", description: "An unknown error occurred" });
   }

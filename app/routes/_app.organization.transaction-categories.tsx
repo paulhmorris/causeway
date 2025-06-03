@@ -6,6 +6,7 @@ import { z } from "zod/v4";
 import { Button } from "~/components/ui/button";
 import { FormField } from "~/components/ui/form";
 import { Separator } from "~/components/ui/separator";
+import { logger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
@@ -84,7 +85,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     return Toasts.dataWithSuccess(null, { message: "Transaction categories updated" });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
     return Toasts.dataWithError(null, {
       message: "Unknown error",

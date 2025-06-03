@@ -2,6 +2,7 @@ import { MembershipRole, Organization, User, UserRole } from "@prisma/client";
 import { Session as RemixSession, SessionData, createCookieSessionStorage, redirect } from "react-router";
 import { createThemeSessionResolver } from "remix-themes";
 
+import { logger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { unauthorized } from "~/lib/responses.server";
 
@@ -37,6 +38,7 @@ class Session implements ISessionService {
 
   async logout(request: Request) {
     const session = await this.getSession(request);
+    logger.info("Logging out session");
     return redirect("/login", {
       headers: {
         "Set-Cookie": await sessionStorage.destroySession(session),
@@ -62,12 +64,13 @@ class Session implements ISessionService {
   async getUser(request: Request) {
     const userId = await this.getUserId(request);
     const org = await SessionService.getOrg(request);
-    if (userId === undefined) return null;
+    if (userId === undefined) {
+      logger.info("[getUser()]: no userId found in session");
+      return null;
+    }
 
     const user = await db.user.findUnique({
-      where: {
-        id: userId,
-      },
+      where: { id: userId },
       include: {
         contact: true,
         contactAssignments: true,
@@ -76,13 +79,14 @@ class Session implements ISessionService {
     });
 
     if (!user) {
+      logger.info(`[getUser()]: no user found for userId ${userId}`);
       throw await this.logout(request);
     }
 
     const currentMembership = user.memberships.find((m) => m.orgId === org?.id);
     if (!currentMembership) {
       if (org) {
-        console.warn("No membership in the current org - logging out...");
+        logger.warn("[getUser()]: No membership in the current org - logging out");
         throw await this.logout(request);
       }
     }
@@ -104,6 +108,7 @@ class Session implements ISessionService {
   async getOrg(request: Request) {
     const orgId = await this.getOrgId(request);
     if (!orgId) {
+      logger.info(`[getOrg()]: no orgId found in session`);
       return null;
     }
     return db.organization.findUnique({ where: { id: orgId } });
@@ -112,12 +117,14 @@ class Session implements ISessionService {
   async requireOrgId(request: Request) {
     const orgId = await this.getOrgId(request);
     if (!orgId) {
+      logger.info(`[requireOrgId()]: no orgId found in session`);
       const originURL = new URL(request.url);
       if (originURL.pathname === "/") {
         throw redirect("/login");
       }
       const returnUrl = new URL("/choose-org", originURL.origin);
       returnUrl.searchParams.set("redirectTo", originURL.pathname);
+      logger.info(`[requireOrgId()]: redirecting to ${returnUrl.toString()}`);
       throw redirect(returnUrl.toString());
     }
     return orgId;
@@ -127,6 +134,7 @@ class Session implements ISessionService {
     const userId = await this.getUserId(request);
     if (!userId) {
       const searchParams = new URLSearchParams([["redirectTo", redirectTo]]);
+      logger.info(`[requireOrgId()]: no userId found in session, redirecting to /login?${searchParams.toString()}`);
       throw redirect(`/login?${searchParams.toString()}`);
     }
     return userId;
@@ -173,6 +181,7 @@ class Session implements ISessionService {
     // User is not a member of the current organization
     const currentMembership = user.memberships.find((m) => m.orgId === orgId);
     if (!currentMembership) {
+      logger.warn("[requireUser()]: No membership in the current org - throwing unauthorized");
       throw unauthorized({ user });
     }
 
@@ -204,6 +213,9 @@ class Session implements ISessionService {
           org: currentMembership.org,
         };
       }
+      logger.warn(
+        `[requireUser()]: user ${user.username} with role ${user.role} did not have required role ${allowedRoles.join(", ")}`,
+      );
       throw unauthorized({ user });
     }
 
@@ -219,6 +231,9 @@ class Session implements ISessionService {
     }
 
     // Some other scenario
+    logger.error(
+      `[requireUser()]: Unhandled authentication scenario with user ${user.username} with role ${user.role} and allowed roles ${allowedRoles?.join(", ")}`,
+    );
     throw unauthorized({ user });
   }
 
@@ -241,7 +256,9 @@ class Session implements ISessionService {
   }) {
     const session = await this.getSession(request);
     session.set(this.USER_SESSION_KEY, userId);
+    logger.info(`[createUserSession()]: Creating session for userId ${userId}`);
     if (orgId) {
+      logger.info(`[createUserSession()]: Adding orgId ${orgId} to session for userId ${userId}`);
       session.set(this.ORGANIZATION_SESSION_KEY, orgId);
     }
     return redirect(redirectTo, {

@@ -14,6 +14,7 @@ import { Button } from "~/components/ui/button";
 import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
 import { Separator } from "~/components/ui/separator";
 import { SubmitButton } from "~/components/ui/submit-button";
+import { logger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
@@ -105,7 +106,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       description: `Expense of ${formatCentsAsDollars(totalInCents)} charged to account ${transaction.account.code}`,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
     return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
   }

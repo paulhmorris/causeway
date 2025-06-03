@@ -12,31 +12,31 @@ import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "~/components/ui/card";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
-import { notFound } from "~/lib/responses.server";
+import { handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { SessionService } from "~/services.server/session";
 
 export const meta: MetaFunction = () => [{ title: "View Engagement" }];
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+  try {
+    await SessionService.requireUser(request);
+    const orgId = await SessionService.requireOrgId(request);
 
-  invariant(params.engagementId, "engagementId not found");
+    invariant(params.engagementId, "engagementId not found");
 
-  const engagement = await db.engagement.findUnique({
-    where: { id: Number(params.engagementId), orgId },
-    include: {
-      contact: true,
-      type: true,
-    },
-  });
+    const engagement = await db.engagement.findUniqueOrThrow({
+      where: { id: Number(params.engagementId), orgId },
+      include: {
+        contact: true,
+        type: true,
+      },
+    });
 
-  if (!engagement) {
-    throw notFound("Engagement not found");
+    return { engagement };
+  } catch (e) {
+    handleLoaderError(e);
   }
-
-  return { engagement };
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
@@ -80,10 +80,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     });
   } catch (error) {
     Sentry.captureException(error);
-    return Toasts.dataWithError(
-      { success: false },
-      { message: "Error deleting engagement", description: "An error occurred" },
-    );
+    return Toasts.dataWithError(null, { message: "Error", description: "An unknown error occurred." });
   }
 };
 

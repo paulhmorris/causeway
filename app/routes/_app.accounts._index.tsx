@@ -9,7 +9,7 @@ import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
 import { db } from "~/integrations/prisma.server";
-import { Sentry } from "~/integrations/sentry";
+import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
 
 export const meta: MetaFunction = () => [{ title: "Accounts" }];
@@ -46,10 +46,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
 
     return { accounts: accountsWithBalance };
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    throw error;
+  } catch (e) {
+    handleLoaderError(e);
   }
 }
 

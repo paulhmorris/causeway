@@ -6,6 +6,7 @@ import { z } from "zod/v4";
 import { FormField } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useUser } from "~/hooks/useUser";
+import { logger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { unauthorized } from "~/lib/responses.server";
@@ -81,7 +82,7 @@ export async function action({ params, request }: ActionFunctionArgs) {
 
     return Toasts.redirectWithSuccess(`/users/${params.userId}/password`, { message: "Password updated!" });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
     return Toasts.dataWithError({ success: false }, { message: "Error", description: "An unknown error occurred" });
   }

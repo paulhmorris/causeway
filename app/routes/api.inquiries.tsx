@@ -5,6 +5,7 @@ import { z } from "zod/v4";
 
 import { NewInquiryEmail } from "emails/new-inquiry";
 import { sendEmail } from "~/integrations/email.server";
+import { logger } from "~/integrations/logger.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
 import { email, longText, optionalText, phoneNumber, text } from "~/schemas/fields";
@@ -63,13 +64,13 @@ export async function action({ request }: ActionFunctionArgs) {
       { message: "Inquiry sent", description: "We'll be in touch soon!" },
     );
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
     return Toasts.dataWithSuccess(
       { success: false, message: JSON.stringify(error) },
       {
-        message: "Error sending email",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
+        message: "Error",
+        description: "An unknown error occurred",
       },
     );
   }

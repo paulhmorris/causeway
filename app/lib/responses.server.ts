@@ -1,5 +1,9 @@
 /* eslint-disable prefer-const */
+import { Prisma } from "@prisma/client";
 import { data, redirect } from "react-router";
+
+import { logger } from "~/integrations/logger.server";
+import { Sentry } from "~/integrations/sentry";
 
 /**
  * Create a response receiving a JSON object with the status code 201.
@@ -9,7 +13,7 @@ import { data, redirect } from "react-router";
  *   return created(result);
  * }
  */
-export function created<Data = unknown>(_data: Data, init?: Omit<ResponseInit, "status">) {
+export function created<Data>(_data: Data | null = null, init?: Omit<ResponseInit, "status">) {
   return data(_data, { ...init, status: 201 });
 }
 
@@ -39,8 +43,8 @@ export function redirectBack(request: Request, { fallback, ...init }: ResponseIn
  *   throw badRequest<BoundaryData>({ user });
  * }
  */
-export function badRequest<Data = unknown>(_data: Data, init?: Omit<ResponseInit, "status">) {
-  return data<Data>(_data, { ...init, status: 400 });
+export function badRequest<Data>(_data: Data | null = null, init?: Omit<ResponseInit, "status">) {
+  return data(_data, { ...init, status: 400 });
 }
 
 /**
@@ -51,8 +55,8 @@ export function badRequest<Data = unknown>(_data: Data, init?: Omit<ResponseInit
  *   throw unauthorized<BoundaryData>({ user });
  * }
  */
-export function unauthorized<Data = unknown>(_data: Data, init?: Omit<ResponseInit, "status">) {
-  return data<Data>(_data, { ...init, status: 401 });
+export function unauthorized<Data>(_data: Data | null = null, init?: Omit<ResponseInit, "status">) {
+  return data(_data, { ...init, status: 401 });
 }
 
 /**
@@ -63,8 +67,8 @@ export function unauthorized<Data = unknown>(_data: Data, init?: Omit<ResponseIn
  *   if (!user.idAdmin) throw forbidden<BoundaryData>({ user });
  * }
  */
-export function forbidden<Data = unknown>(_data: Data, init?: Omit<ResponseInit, "status">) {
-  return data<Data>(_data, { ...init, status: 403 });
+export function forbidden<Data>(_data: Data | null = null, init?: Omit<ResponseInit, "status">) {
+  return data(_data, { ...init, status: 403 });
 }
 
 /**
@@ -75,8 +79,8 @@ export function forbidden<Data = unknown>(_data: Data, init?: Omit<ResponseInit,
  *   if (!db.exists(params.id)) throw notFound<BoundaryData>({ user });
  * }
  */
-export function notFound<Data = unknown>(_data: Data, init?: Omit<ResponseInit, "status">) {
-  return data<Data>(_data, { ...init, status: 404 });
+export function notFound<Data>(_data: Data | null = null, init?: Omit<ResponseInit, "status">) {
+  return data(_data, { ...init, status: 404 });
 }
 
 /**
@@ -87,8 +91,8 @@ export function notFound<Data = unknown>(_data: Data, init?: Omit<ResponseInit, 
  *   throw unprocessableEntity<BoundaryData>({ user });
  * }
  */
-export function unprocessableEntity<Data = unknown>(_data: Data, init?: Omit<ResponseInit, "status">) {
-  return data<Data>(_data, { ...init, status: 422 });
+export function unprocessableEntity<Data>(_data: Data | null = null, init?: Omit<ResponseInit, "status">) {
+  return data(_data, { ...init, status: 422 });
 }
 
 /**
@@ -99,8 +103,8 @@ export function unprocessableEntity<Data = unknown>(_data: Data, init?: Omit<Res
  *   throw conflict<BoundaryData>({ user });
  * }
  */
-export function conflict<Data = unknown>(_data: Data, init?: Omit<ResponseInit, "status">) {
-  return data<Data>(_data, { ...init, status: 409 });
+export function conflict<Data>(_data: Data | null = null, init?: Omit<ResponseInit, "status">) {
+  return data(_data, { ...init, status: 409 });
 }
 
 /**
@@ -111,8 +115,8 @@ export function conflict<Data = unknown>(_data: Data, init?: Omit<ResponseInit, 
  *   throw serverError<BoundaryData>({ user });
  * }
  */
-export function serverError<Data = unknown>(_data: Data, init?: Omit<ResponseInit, "status">) {
-  return data<Data>(_data, { ...init, status: 500 });
+export function serverError<Data>(_data: Data | null = null, init?: Omit<ResponseInit, "status">) {
+  return data(_data, { ...init, status: 500 });
 }
 
 /**
@@ -314,4 +318,26 @@ export function image(
     ...init,
     headers,
   });
+}
+
+export function handleLoaderError(e: unknown): never {
+  logger.error(e);
+  Sentry.captureException(e);
+
+  // Handle Prisma Errors
+  if (e instanceof Prisma.PrismaClientKnownRequestError) {
+    switch (e.code) {
+      case "P2001": // No record found for where condition
+      case "P2015": // Related record not found
+      case "P2025": // No record found
+        throw notFound();
+
+      default: {
+        throw serverError();
+      }
+    }
+  }
+
+  // Unknown error
+  throw serverError();
 }

@@ -1,6 +1,6 @@
 import "@fontsource-variable/dm-sans/wght.css";
 import { Analytics } from "@vercel/analytics/react";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import type { LinksFunction, LoaderFunctionArgs } from "react-router";
 import {
   data,
@@ -11,12 +11,13 @@ import {
   Scripts,
   ScrollRestoration,
   ShouldRevalidateFunctionArgs,
-  useLoaderData,
+  useRouteLoaderData,
 } from "react-router";
 import { PreventFlashOnWrongTheme, ThemeProvider, useTheme } from "remix-themes";
 
 import { ErrorComponent } from "~/components/error-component";
 import { Notifications } from "~/components/notifications";
+import { logger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
@@ -98,12 +99,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
 
     if (!dbUser) {
+      logger.error(`No user found for ${userId}`);
       throw await SessionService.logout(request);
     }
 
     const currentMembership = dbUser.memberships.find((m) => m.orgId === org?.id);
     if (org && !currentMembership) {
-      console.warn("No membership in the current org - logging out...");
+      logger.warn(`User ${dbUser.username} has no memberships for the current org. Logging out.`);
       throw await SessionService.logout(request);
     }
 
@@ -134,30 +136,30 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   );
 };
 
-function AppWithProviders() {
-  const { theme } = useLoaderData<typeof loader>();
+export default function App() {
+  return <Outlet />;
+}
+
+export function Layout({ children }: { children: React.ReactNode }) {
+  const data = useRouteLoaderData<typeof loader>("root");
   return (
-    <ThemeProvider specifiedTheme={theme} themeAction="/resources/set-theme">
-      <App />
+    <ThemeProvider specifiedTheme={data?.theme ?? null} themeAction="/resources/set-theme">
+      <InnerLayout ssrTheme={Boolean(data?.theme)}>{children}</InnerLayout>
     </ThemeProvider>
   );
 }
 
-export default AppWithProviders;
-
-function App() {
-  const data = useLoaderData<typeof loader>();
+function InnerLayout({ ssrTheme, children }: { ssrTheme: boolean; children: React.ReactNode }) {
+  const data = useRouteLoaderData<typeof loader>("root");
   const [theme] = useTheme();
-  const user = data.user;
 
-  // Set the Sentry user context
   useEffect(() => {
-    if (!user) {
+    if (!data?.user) {
       Sentry.setUser(null);
       return;
     }
-    Sentry.setUser({ id: user.id, username: user.username });
-  }, [user]);
+    Sentry.setUser({ id: data.user.id, username: data.user.username });
+  }, [data?.user]);
 
   return (
     <html lang="en" className={cn("h-full", theme)}>
@@ -172,17 +174,17 @@ function App() {
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="manifest" href="/site.webmanifest" />
         <Meta />
-        <PreventFlashOnWrongTheme ssrTheme={Boolean(data.theme)} />
+        <PreventFlashOnWrongTheme ssrTheme={Boolean(ssrTheme)} />
         <Links />
       </head>
       <body className="bg-background h-full min-h-full font-sans">
-        {import.meta.env.PROD ? <Analytics debug={false} /> : null}
-        <Outlet />
+        {import.meta.env.PROD && data ? <Analytics debug={false} /> : null}
+        {children}
         <Notifications />
         <ScrollRestoration />
         <script
           dangerouslySetInnerHTML={{
-            __html: `window.ENV = ${JSON.stringify(data.ENV)}`,
+            __html: `window.ENV = ${JSON.stringify(data?.ENV)}`,
           }}
         />
         <Scripts />

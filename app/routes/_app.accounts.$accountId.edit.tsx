@@ -12,10 +12,11 @@ import { Button } from "~/components/ui/button";
 import { ButtonGroup } from "~/components/ui/button-group";
 import { FormField, FormSelect } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
+import { logger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { AccountType } from "~/lib/constants";
-import { notFound } from "~/lib/responses.server";
+import { handleLoaderError, notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cuid, number, optionalSelect, text } from "~/schemas/fields";
 import { getAccountTypes } from "~/services.server/account";
@@ -30,37 +31,41 @@ const schema = z.object({
 });
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+  try {
+    await SessionService.requireAdmin(request);
+    const orgId = await SessionService.requireOrgId(request);
 
-  invariant(params.accountId, "accountId not found");
+    invariant(params.accountId, "accountId not found");
 
-  const [account, accountTypes, users] = await Promise.all([
-    db.account.findUnique({ where: { id: params.accountId, orgId }, include: { user: true } }),
-    getAccountTypes(orgId),
-    db.user.findMany({
-      where: {
-        memberships: {
-          some: {
-            orgId,
-            role: { in: [MembershipRole.MEMBER, MembershipRole.ADMIN] },
+    const [account, accountTypes, users] = await Promise.all([
+      db.account.findUnique({ where: { id: params.accountId, orgId }, include: { user: true } }),
+      getAccountTypes(orgId),
+      db.user.findMany({
+        where: {
+          memberships: {
+            some: {
+              orgId,
+              role: { in: [MembershipRole.MEMBER, MembershipRole.ADMIN] },
+            },
           },
+          OR: [{ accountId: null }, { accountId: params.accountId }],
         },
-        OR: [{ accountId: null }, { accountId: params.accountId }],
-      },
-      include: {
-        contact: true,
-      },
-    }),
-  ]);
+        include: {
+          contact: true,
+        },
+      }),
+    ]);
 
-  if (!account || !accountTypes.length) throw notFound({ message: "Account or Account Types not found" });
+    if (!account || !accountTypes.length) throw notFound({ message: "Account or Account Types not found" });
 
-  return {
-    account,
-    accountTypes,
-    users,
-  };
+    return {
+      account,
+      accountTypes,
+      users,
+    };
+  } catch (e) {
+    handleLoaderError(e);
+  }
 };
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [{ title: `Edit Account ${data?.account.code}` }];
@@ -96,7 +101,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       description: "Great job.",
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
     return Toasts.dataWithError(null, { message: "An unknown error occurred" }, { status: 500 });
   }

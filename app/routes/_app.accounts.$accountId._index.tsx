@@ -12,9 +12,8 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { AccountBalanceCard } from "~/components/users/balance-card";
 import { db } from "~/integrations/prisma.server";
-import { Sentry } from "~/integrations/sentry";
 import { AccountType } from "~/lib/constants";
-import { unauthorized } from "~/lib/responses.server";
+import { handleLoaderError, unauthorized } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [{ title: `Account ${data?.account.code}` }];
@@ -89,12 +88,9 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     return {
       total: total._sum.amountInCents,
       account,
-      // ...setFormDefaults("account-form", { ...account }),
     };
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    throw error;
+  } catch (e) {
+    handleLoaderError(e);
   }
 };
 

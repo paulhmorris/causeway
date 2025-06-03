@@ -17,10 +17,11 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { useUser } from "~/hooks/useUser";
+import { logger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
-import { forbidden } from "~/lib/responses.server";
+import { forbidden, handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cn } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
@@ -72,10 +73,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     }
 
     return { contact };
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    throw error;
+  } catch (e) {
+    handleLoaderError(e);
   }
 };
 
@@ -131,7 +130,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
         description: `${contact.firstName} ${contact.lastName} was deleted successfully.`,
       });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       Sentry.captureException(error);
       return Toasts.dataWithError({ success: false }, { message: "Error", description: "An unknown error occurred" });
     }

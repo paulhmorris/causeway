@@ -2,6 +2,7 @@ import type { SendEmailCommandInput, SendEmailCommandOutput } from "@aws-sdk/cli
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import { nanoid } from "nanoid";
 
+import { logger } from "~/integrations/logger.server";
 import { Prettify } from "~/lib/utils";
 
 const client = new SESv2Client({ region: "us-east-1" });
@@ -54,7 +55,7 @@ export async function sendEmail(props: SendEmailInput) {
     >;
   }
 
-  console.debug("Email sent", {
+  logger.debug("Email sent", {
     From: props.from,
     To: props.to,
     Subject: props.subject,

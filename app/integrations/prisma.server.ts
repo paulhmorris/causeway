@@ -4,6 +4,8 @@ import { PrismaClient } from "@prisma/client";
 import invariant from "tiny-invariant";
 import ws from "ws";
 
+import { logger } from "~/integrations/logger.server";
+
 export const singleton = <Value>(name: string, valueFactory: () => Value): Value => {
   const g = global as unknown as { __singletons: Record<string, unknown> };
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -24,6 +26,17 @@ function getPrismaClient() {
           url: databaseUrl.toString(),
         },
       },
+      log: [
+        { emit: "event", level: "query" },
+        { emit: "stdout", level: "error" },
+        { emit: "stdout", level: "info" },
+        { emit: "stdout", level: "warn" },
+      ],
+    });
+    client.$on("query", (e) => {
+      logger.debug("Query: " + e.query);
+      logger.debug("Params: " + e.params);
+      logger.debug("Duration: " + e.duration + "ms");
     });
     // connect eagerly
     void client.$connect();
@@ -33,7 +46,9 @@ function getPrismaClient() {
 
   neonConfig.webSocketConstructor = ws;
   const adapter = new PrismaNeon({ connectionString: `${DATABASE_URL}` });
-  const client = new PrismaClient({ adapter });
+  const client = new PrismaClient({
+    adapter,
+  });
   return client;
 }
 

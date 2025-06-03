@@ -15,7 +15,7 @@ import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { db } from "~/integrations/prisma.server";
 import { ContactType, EngagementType } from "~/lib/constants";
-import { notFound } from "~/lib/responses.server";
+import { handleLoaderError, notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cuid, date, number, optionalLongText } from "~/schemas/fields";
 import { getContactTypes } from "~/services.server/contact";
@@ -31,43 +31,46 @@ const schema = z.object({
 });
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  const user = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+  try {
+    const user = await SessionService.requireUser(request);
+    const orgId = await SessionService.requireOrgId(request);
 
-  invariant(params.engagementId, "engagementId not found");
+    invariant(params.engagementId, "engagementId not found");
 
-  const [contacts, contactTypes, engagement, engagementTypes] = await Promise.all([
-    db.contact.findMany({
-      where: {
-        orgId,
-        assignedUsers: user.isMember
-          ? {
-              some: {
-                userId: user.id,
-              },
-            }
-          : undefined,
-        typeId: { notIn: [ContactType.Staff] },
-      },
-    }),
-    getContactTypes(orgId),
-    db.engagement.findUnique({
-      where: { id: Number(params.engagementId), orgId },
-    }),
-    getEngagementTypes(orgId),
-  ]);
+    const [contacts, contactTypes, engagement, engagementTypes] = await Promise.all([
+      db.contact.findMany({
+        where: {
+          orgId,
+          assignedUsers: user.isMember
+            ? {
+                some: {
+                  userId: user.id,
+                },
+              }
+            : undefined,
+          typeId: { notIn: [ContactType.Staff] },
+        },
+      }),
+      getContactTypes(orgId),
+      db.engagement.findUnique({
+        where: { id: Number(params.engagementId), orgId },
+      }),
+      getEngagementTypes(orgId),
+    ]);
 
-  if (!engagement) {
-    throw notFound("Engagement not found");
+    if (!engagement) {
+      throw notFound("Engagement not found");
+    }
+
+    return {
+      engagement,
+      engagementTypes,
+      contacts,
+      contactTypes,
+    };
+  } catch (e) {
+    handleLoaderError(e);
   }
-
-  return {
-    engagement,
-    engagementTypes,
-    contacts,
-    contactTypes,
-    // ...setFormDefaults("engagement-form", { ...engagement, typeId: engagement.typeId.toString() }),
-  };
 };
 
 export const meta: MetaFunction = () => [{ title: "Edit Account" }];

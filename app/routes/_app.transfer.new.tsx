@@ -9,6 +9,7 @@ import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
 import { FormField, FormSelect } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
+import { logger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionCategory, TransactionItemType } from "~/lib/constants";
@@ -113,7 +114,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       description: `Transfer completed successfully.`,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
     return Toasts.dataWithError(null, { message: "An unknown error occurred" });
   }

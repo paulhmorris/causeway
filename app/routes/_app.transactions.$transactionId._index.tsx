@@ -15,8 +15,7 @@ import { Button } from "~/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
-import { Sentry } from "~/integrations/sentry";
-import { forbidden } from "~/lib/responses.server";
+import { forbidden, handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cn, formatCentsAsDollars } from "~/lib/utils";
 import { generateS3Urls } from "~/services.server/receipt";
@@ -98,10 +97,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
     transaction.receipts = await generateS3Urls(transaction.receipts);
     return { transaction };
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    throw error;
+  } catch (e) {
+    handleLoaderError(e);
   }
 };
 

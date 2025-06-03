@@ -1,10 +1,11 @@
-import { Prisma } from "@prisma/client";
 import { parseFormData, validationError } from "@rvf/react-router";
 import { ActionFunctionArgs, redirect } from "react-router";
 import { z } from "zod/v4";
 
+import { logger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
+import { serverError } from "~/lib/responses.server";
 import { optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
@@ -46,12 +47,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return new Response("Method Not Allowed", { status: 405, statusText: "Method Not Allowed" });
       }
     }
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      return new Response(error.message, { status: 400, statusText: error.message });
-    }
-    throw new Response("Unknown error", { status: 500, statusText: "Unknown error" });
+  } catch (e) {
+    logger.error(e);
+    Sentry.captureException(e);
+    throw serverError("An unknown error occurred");
   }
 };

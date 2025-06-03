@@ -13,6 +13,7 @@ import { Label } from "~/components/ui/label";
 import { SelectItem } from "~/components/ui/select";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useUser } from "~/hooks/useUser";
+import { logger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
@@ -128,7 +129,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         : "You can use the password setup button to send them an email to set their password.",
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
     return Toasts.dataWithError(null, {
       message: "Unexpected error",

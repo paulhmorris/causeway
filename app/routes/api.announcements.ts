@@ -5,6 +5,7 @@ import { ActionFunctionArgs } from "react-router";
 import { z } from "zod/v4";
 dayjs.extend(utc);
 
+import { logger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
@@ -120,7 +121,7 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
     return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred." });
   }

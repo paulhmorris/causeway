@@ -16,6 +16,7 @@ import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
 import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { Textarea } from "~/components/ui/textarea";
+import { logger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod, TransactionItemType } from "~/lib/constants";
@@ -283,7 +284,7 @@ export async function action({ request }: ActionFunctionArgs) {
         },
       );
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       Sentry.captureException(error);
       return Toasts.dataWithError(
         { message: "An unknown error occurred" },
