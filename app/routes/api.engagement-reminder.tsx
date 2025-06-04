@@ -1,21 +1,28 @@
 // TODO: This needs to be updated for multi-tenancy, in the case that a user has multiple orgs they should probably receive multiple emails per org.
 import { render } from "@react-email/render";
-import { logger, schedules } from "@trigger.dev/sdk/v3";
+import { LoaderFunctionArgs } from "react-router";
 
 import { EngagementReminderEmail } from "emails/engagement-reminder";
 import { SendEmailInput, sendEmail } from "~/integrations/email.server";
+import { logger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
 import { constructOrgMailFrom } from "~/lib/utils";
 
-const DAYS_CUTOFF = 30;
+export async function loader({ request }: LoaderFunctionArgs) {
+  const authHeader = request.headers.get("authorization");
+  if (import.meta.env.PROD && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return new Response("Unauthorized", {
+      status: 401,
+    });
+  }
 
-export const reminderTask = schedules.task({
-  id: "engagement-reminder",
-  retry: {},
-  run: async () => {
-    const thirtyDaysAgo = new Date(Date.now() - DAYS_CUTOFF * 24 * 60 * 60 * 1000);
+  const DAYS_CUTOFF = 30;
+  const thirtyDaysAgo = new Date(Date.now() - DAYS_CUTOFF * 24 * 60 * 60 * 1000);
+  logger.info(`Initiating engagement reminder with cutoff date ${thirtyDaysAgo.toDateString()}`);
+
+  try {
     const assignments = await db.contactAssigment.findMany({
       where: {
         contact: {
@@ -61,14 +68,9 @@ export const reminderTask = schedules.task({
     });
 
     if (assignments.length === 0) {
-      logger.info("No contacts to remind. Exiting.");
-      return {
-        success: true,
-        count: 0,
-      };
+      logger.info("No contacts assignments found. Exiting.");
+      return Response.json({ success: true, emailsSent: 0 });
     }
-
-    logger.info(`Found ${assignments.length} contacts to remind.`);
 
     type Accumulator = Record<
       string,
@@ -107,6 +109,7 @@ export const reminderTask = schedules.task({
     // Convert the map into an array of emails.
     const mappedEmails = [];
     for (const { user, contacts } of Object.values(temp)) {
+      logger.info(`Emailing ${user.email} reminder for ${contacts.length} contact(s).`);
       const org = contacts[0].org;
       const email: SendEmailInput = {
         from: constructOrgMailFrom(org),
@@ -126,16 +129,10 @@ export const reminderTask = schedules.task({
       }
     });
 
-    return {
-      success: true,
-      count: mappedEmails.length,
-    };
-  },
-});
-
-export const engagementReminder = schedules.create({
-  task: reminderTask.id,
-  // At 9a CST on Monday.
-  cron: "0 15 * * 1",
-  deduplicationKey: "engagement-reminder",
-});
+    return Response.json({ success: true, emailsSent: emails.length }, { status: 200 });
+  } catch (e) {
+    logger.error(e);
+    Sentry.captureException(e);
+    return new Response("Servor error", { status: 500 });
+  }
+}
