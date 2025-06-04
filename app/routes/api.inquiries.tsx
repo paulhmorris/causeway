@@ -8,15 +8,15 @@ import { sendEmail } from "~/integrations/email.server";
 import { logger } from "~/integrations/logger.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
-import { email, longText, optionalText, phoneNumber, text } from "~/schemas/fields";
+import { longText, optionalEmail, optionalPhoneNumber, optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
 export const schema = z.object({
   name: text,
   method: text,
   otherMethod: optionalText,
-  email: email.optional(),
-  phone: phoneNumber.optional(),
+  email: optionalEmail,
+  phone: optionalPhoneNumber,
   message: longText,
 });
 

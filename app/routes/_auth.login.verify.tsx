@@ -22,10 +22,10 @@ const schema = z.object({
 });
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const user = await SessionService.getUser(request);
+  const userId = await SessionService.getUserId(request);
   const orgId = await SessionService.getOrgId(request);
 
-  if (user && orgId) {
+  if (userId && orgId) {
     return redirect("/");
   }
 

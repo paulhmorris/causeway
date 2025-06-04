@@ -55,11 +55,13 @@ export async function sendEmail(props: SendEmailInput) {
     >;
   }
 
-  logger.debug("Email sent", {
-    From: props.from,
-    To: props.to,
-    Subject: props.subject,
-    Body: props.html,
-  });
+  logger.debug(
+    {
+      From: props.from,
+      To: props.to,
+      Subject: props.subject,
+    },
+    "Email sent",
+  );
   return { messageId: "test", $metadata: {} };
 }

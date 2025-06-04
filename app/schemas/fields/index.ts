@@ -28,6 +28,7 @@ export const optionalSelect = select.optional();
 
 export const cuid = z.cuid({ error: (e) => (!e.input ? "Required" : "Invalid ID") });
 export const email = z.email({ error: (e) => (!e.input ? "Required" : "Invalid email address") });
+export const optionalEmail = z.union([email, z.literal("")]).optional();
 export const password = _text.min(8, "Must be 8 or more characters");
 export const url = z.url({ error: (e) => (!e.input ? "Required" : "Invalid URL") });
 export const currency = z.preprocess(
@@ -40,3 +41,4 @@ export const currency = z.preprocess(
 export const phoneNumber = _text
   .transform((val) => val.replace(/\D/g, ""))
   .pipe(z.string().length(10, { error: "Invalid phone number" }));
+export const optionalPhoneNumber = z.union([phoneNumber, z.literal("")]).optional();
