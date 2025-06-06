@@ -2,9 +2,10 @@ import type { SendEmailCommandInput, SendEmailCommandOutput } from "@aws-sdk/cli
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import { nanoid } from "nanoid";
 
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { Prettify } from "~/lib/utils";
 
+const logger = createLogger("EmailService");
 const client = new SESv2Client({ region: "us-east-1" });
 
 export type SendEmailInput = {

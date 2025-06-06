@@ -16,7 +16,7 @@ import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
 import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { Textarea } from "~/components/ui/textarea";
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod, TransactionItemType } from "~/lib/constants";
@@ -26,6 +26,8 @@ import { cuid, currency, number, optionalLongText, optionalText } from "~/schema
 import { sendReimbursementRequestUpdateEmail } from "~/services.server/mail";
 import { generateS3Urls } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Routes.ReimbursementShow");
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
   {

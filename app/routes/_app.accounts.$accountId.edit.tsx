@@ -12,7 +12,7 @@ import { Button } from "~/components/ui/button";
 import { ButtonGroup } from "~/components/ui/button-group";
 import { FormField, FormSelect } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { AccountType } from "~/lib/constants";
@@ -21,6 +21,8 @@ import { Toasts } from "~/lib/toast.server";
 import { cuid, number, optionalSelect, text } from "~/schemas/fields";
 import { getAccountTypes } from "~/services.server/account";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Routes.AccountEdit");
 
 const schema = z.object({
   id: cuid,

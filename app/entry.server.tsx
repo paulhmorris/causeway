@@ -8,10 +8,11 @@ import { renderToPipeableStream } from "react-dom/server";
 import type { EntryContext, HandleErrorFunction } from "react-router";
 import { ServerRouter } from "react-router";
 
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { Sentry } from "~/integrations/sentry";
 
 export const streamTimeout = 5_000;
+const logger = createLogger("ServerEntry");
 
 export const handleError: HandleErrorFunction = (error, { request }) => {
   if (request.url.includes(".well-known")) {

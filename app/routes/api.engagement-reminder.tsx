@@ -4,11 +4,13 @@ import { LoaderFunctionArgs } from "react-router";
 
 import { EngagementReminderEmail } from "emails/engagement-reminder";
 import { SendEmailInput, sendEmail } from "~/integrations/email.server";
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
 import { constructOrgMailFrom } from "~/lib/utils";
+
+const logger = createLogger("Api.EngagementReminder");
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const authHeader = request.headers.get("authorization");

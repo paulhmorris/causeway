@@ -5,11 +5,13 @@ import { z } from "zod/v4";
 
 import { NewInquiryEmail } from "emails/new-inquiry";
 import { sendEmail } from "~/integrations/email.server";
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
 import { longText, optionalEmail, optionalPhoneNumber, optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Api.Inquiries");
 
 export const schema = z.object({
   name: text,

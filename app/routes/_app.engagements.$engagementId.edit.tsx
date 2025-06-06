@@ -13,7 +13,9 @@ import { Button } from "~/components/ui/button";
 import { ButtonGroup } from "~/components/ui/button-group";
 import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
+import { Sentry } from "~/integrations/sentry";
 import { ContactType, EngagementType } from "~/lib/constants";
 import { handleLoaderError, notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
@@ -21,6 +23,8 @@ import { cuid, date, number, optionalLongText } from "~/schemas/fields";
 import { getContactTypes } from "~/services.server/contact";
 import { getEngagementTypes } from "~/services.server/engagement";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Routes.EngagementEdit");
 
 const schema = z.object({
   id: number,
@@ -84,12 +88,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return validationError(result.error);
   }
 
-  const engagement = await db.engagement.update({
-    where: { id: result.data.id, orgId },
-    data: result.data,
-  });
+  try {
+    const engagement = await db.engagement.update({
+      where: { id: result.data.id, orgId },
+      data: result.data,
+    });
 
-  return Toasts.redirectWithSuccess(`/engagements/${engagement.id}`, { message: "Engagement updated" });
+    return Toasts.redirectWithSuccess(`/engagements/${engagement.id}`, { message: "Engagement updated" });
+  } catch (e) {
+    logger.error(e);
+    Sentry.captureException(e);
+    return Toasts.dataWithError(null, { message: "An unknown error occurred" }, { status: 500 });
+  }
 };
 
 export default function EditEngagementPage() {

@@ -1,14 +1,25 @@
 import pino from "pino";
 
-export const logger = pino({
+const isDev = process.env.NODE_ENV !== "production";
+
+const transport: pino.LoggerOptions["transport"] = isDev
+  ? {
+      target: "pino-pretty",
+      options: {
+        colorize: true,
+        ignore: "pid,hostname",
+      },
+    }
+  : undefined;
+
+const baseLogger = pino({
+  transport,
   level: process.env.LOG_LEVEL ?? "debug",
-  transport:
-    process.env.NODE_ENV === "development"
-      ? {
-          target: "pino-pretty",
-          options: {
-            colorize: true,
-          },
-        }
-      : undefined,
+  name: "Global",
 });
+
+export function createLogger(name?: string) {
+  return name ? baseLogger.child({ name }) : baseLogger;
+}
+
+export const logger = createLogger();

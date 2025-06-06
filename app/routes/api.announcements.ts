@@ -5,12 +5,14 @@ import { ActionFunctionArgs } from "react-router";
 import { z } from "zod/v4";
 dayjs.extend(utc);
 
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
 import { number, optionalDate, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Api.Announcements");
 
 export const schema = z.discriminatedUnion("intent", [
   z.object({

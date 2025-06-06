@@ -3,13 +3,15 @@ import dayjs from "dayjs";
 import { type ActionFunctionArgs } from "react-router";
 import { z } from "zod/v4";
 
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
 import { email } from "~/schemas/fields";
 import { sendPasswordResetEmail, sendPasswordSetupEmail } from "~/services.server/mail";
 import { deletePasswordReset, generatePasswordReset, getPasswordResetByUserId } from "~/services.server/password";
+
+const logger = createLogger("Routes.ResetPassword");
 
 export const passwordResetSchema = z.object({
   username: email,

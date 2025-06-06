@@ -18,7 +18,7 @@ import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { sendEmail } from "~/integrations/email.server";
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionItemType } from "~/lib/constants";
@@ -29,6 +29,8 @@ import { checkbox } from "~/schemas/fields";
 import { getContactTypes } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
 import { generateTransactionItems, getTransactionItemMethods } from "~/services.server/transaction";
+
+const logger = createLogger("Routes.IncomeNew");
 
 const schema = TransactionSchema.extend({ shouldNotifyUser: checkbox });
 

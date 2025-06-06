@@ -9,7 +9,7 @@ import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
 import { FormField, FormSelect } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionCategory, TransactionItemType } from "~/lib/constants";
@@ -18,6 +18,8 @@ import { getToday } from "~/lib/utils";
 import { cuid, currency, date, optionalLongText } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 import { getTransactionItemMethods } from "~/services.server/transaction";
+
+const logger = createLogger("Routes.TransferNew");
 
 const schema = z.object({
   date: date.transform((d) => dayjs(d).startOf("day").toDate()),

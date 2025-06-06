@@ -13,7 +13,7 @@ import { Label } from "~/components/ui/label";
 import { SelectItem } from "~/components/ui/select";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useUser } from "~/hooks/useUser";
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
@@ -23,6 +23,8 @@ import { getContactTypes } from "~/services.server/contact";
 import { sendPasswordSetupEmail } from "~/services.server/mail";
 import { generatePasswordReset } from "~/services.server/password";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Routes.UserNew");
 
 const schema = z.object({
   firstName: text,

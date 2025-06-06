@@ -9,7 +9,7 @@ import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
 import { ButtonGroup } from "~/components/ui/button-group";
 import { FormField, FormSelect } from "~/components/ui/form";
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { AccountType } from "~/lib/constants";
@@ -18,6 +18,8 @@ import { Toasts } from "~/lib/toast.server";
 import { number, optionalSelect, text } from "~/schemas/fields";
 import { getAccountTypes } from "~/services.server/account";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Routes.AccountNew");
 
 const schema = z.object({
   code: text,

@@ -7,13 +7,15 @@ import { Button } from "~/components/ui/button";
 import { ButtonGroup } from "~/components/ui/button-group";
 import { FormField } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
 import { loader } from "~/routes/_app.organization";
 import { optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Routes.OrganizationSettings");
 
 const schema = z.object({
   name: text,

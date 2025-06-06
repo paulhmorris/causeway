@@ -2,12 +2,14 @@ import { parseFormData, validationError } from "@rvf/react-router";
 import { ActionFunctionArgs, redirect } from "react-router";
 import { z } from "zod/v4";
 
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { serverError } from "~/lib/responses.server";
 import { optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Api.ChangeOrg");
 
 const schema = z.object({
   orgId: text,

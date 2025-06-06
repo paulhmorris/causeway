@@ -14,7 +14,7 @@ import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useUser } from "~/hooks/useUser";
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
@@ -22,6 +22,8 @@ import { handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { NewContactSchema } from "~/schemas";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Routes.ContactNew");
 
 export const meta: MetaFunction = () => [{ title: "New Contact" }];
 

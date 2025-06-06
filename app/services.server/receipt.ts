@@ -1,8 +1,10 @@
 import { Prisma } from "@prisma/client";
 
 import { Bucket } from "~/integrations/bucket.server";
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
+
+const logger = createLogger("ReceiptService");
 
 type ReceiptWithS3Url = Prisma.ReceiptGetPayload<{
   select: { s3Url: true; title: true; s3Key: true; id: true; s3UrlExpiry: true };

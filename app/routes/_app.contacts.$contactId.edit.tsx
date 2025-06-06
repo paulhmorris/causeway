@@ -18,7 +18,7 @@ import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useUser } from "~/hooks/useUser";
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
@@ -27,6 +27,8 @@ import { Toasts } from "~/lib/toast.server";
 import { UpdateContactSchema } from "~/schemas";
 import { getContactTypes } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Routes.ContactEdit");
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   try {

@@ -320,8 +320,12 @@ export function image(
   });
 }
 
-export function handleLoaderError(e: unknown): never {
-  logger.error(e);
+export function handleLoaderError(e: unknown, request?: Request): never {
+  if (e instanceof Error && request) {
+    logger.error(`Loader error at path ${new URL(request.url).pathname}: ${e.message}`);
+  } else {
+    logger.error(e);
+  }
   Sentry.captureException(e);
 
   // Handle Prisma Errors
