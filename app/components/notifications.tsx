@@ -66,7 +66,6 @@ export function Notifications() {
           theme={theme ?? undefined}
           toastOptions={{
             classNames: {
-              success: "bg-success/5! text-success-foreground! border-success-foreground/10!",
               closeButton: "bg-background! text-foreground! border-border!",
             },
           }}

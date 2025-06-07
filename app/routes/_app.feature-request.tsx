@@ -8,16 +8,19 @@ import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
 import { SelectItem } from "~/components/ui/select";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { sendEmail } from "~/integrations/email.server";
+import { createLogger } from "~/integrations/logger.server";
+import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
 import { constructOrgMailFrom } from "~/lib/utils";
-import { longText, text, url } from "~/schemas/fields";
+import { longText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Routes.FeatureRequest");
 
 const schema = z.object({
   title: text,
   type: text,
   description: longText,
-  attachmentUrl: url.or(z.literal("")),
 });
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -33,16 +36,22 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const { type, title, description } = result.data;
 
-  await sendEmail({
-    to: "paul@paulmorris.dev",
-    from: constructOrgMailFrom(user.org),
-    subject: `New ${type}: ${title}`,
-    html: `A new ${type} has been submitted by ${user.contact.email}.\n\n${description}`,
-  });
+  try {
+    await sendEmail({
+      to: "paul@paulmorris.dev",
+      from: constructOrgMailFrom(user.org),
+      subject: `New ${type}: ${title}`,
+      html: `A new ${type} has been submitted by ${user.contact.email}.\n\n${description}`,
+    });
 
-  return Toasts.redirectWithSuccess(user.isMember ? "/dashboards/staff" : "/dashboards/admin", {
-    message: "Request Sent",
-  });
+    return Toasts.redirectWithSuccess(user.isMember ? "/dashboards/staff" : "/dashboards/admin", {
+      message: "Request Sent",
+    });
+  } catch (e) {
+    logger.error(e);
+    Sentry.captureException(e);
+    return Toasts.dataWithError(null, { message: "Error", description: "An unknown error occurred." });
+  }
 }
 
 export const meta: MetaFunction = () => [{ title: `Feature Request` }];
@@ -60,7 +69,6 @@ export default function FeatureRequestPage() {
             title: "",
             type: "",
             description: "",
-            attachmentUrl: "",
           }}
         >
           {(form) => (
