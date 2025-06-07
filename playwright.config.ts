@@ -14,6 +14,7 @@ export default defineConfig({
   reporter: isCI ? [["dot"], ["html"]] : "list",
   use: {
     baseURL,
+    trace: "on-first-retry",
   },
 
   projects: [
