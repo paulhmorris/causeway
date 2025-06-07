@@ -24,6 +24,7 @@ jobs:
           node-version: 22.15.0
           cache: "npm"
       - run: npm ci
+      - run: npm run typegen
       - run: npm run lint
 
   typecheck:
@@ -36,6 +37,7 @@ jobs:
           node-version: 22.15.0
           cache: "npm"
       - run: npm ci
+      - run: npm run typegen
       - run: npm run typecheck
 
   deploy:
