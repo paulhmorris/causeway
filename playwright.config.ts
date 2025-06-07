@@ -11,7 +11,7 @@ export default defineConfig({
   forbidOnly: !!isCI,
   retries: isCI ? 2 : 0,
   workers: isCI ? 1 : undefined,
-  reporter: isCI ? "html" : "list",
+  reporter: isCI ? [["dot"], ["html"]] : "list",
   use: {
     baseURL,
   },

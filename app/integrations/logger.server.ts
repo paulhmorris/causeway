@@ -14,7 +14,7 @@ const transport: pino.LoggerOptions["transport"] = isDev
 
 const baseLogger = pino({
   transport,
-  level: process.env.LOG_LEVEL ?? "debug",
+  level: isDev ? "debug" : (process.env.LOG_LEVEL ?? "info"),
   name: "Global",
 });
 
