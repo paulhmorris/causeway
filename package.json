@@ -107,7 +107,6 @@
     "@types/source-map-support": "^0.5.10",
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^4.5.0",
-    "@vitest/coverage-v8": "^3.1.4",
     "cookie": "^1.0.2",
     "eslint": "^9.28.0",
     "eslint-config-prettier": "^10.1.5",
@@ -118,7 +117,6 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^16.2.0",
-    "happy-dom": "^17.5.6",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.0",
     "morgan": "^1.10.0",
@@ -144,6 +142,6 @@
     "seed": "tsx prisma/seed.ts"
   },
   "volta": {
-    "node": "22.15.0"
+    "node": "22.16.0"
   }
 }
