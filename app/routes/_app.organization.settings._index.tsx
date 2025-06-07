@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import { ActionFunctionArgs, useRouteLoaderData } from "react-router";
 import { z } from "zod/v4";
@@ -8,13 +7,15 @@ import { Button } from "~/components/ui/button";
 import { ButtonGroup } from "~/components/ui/button-group";
 import { FormField } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
-import { handlePrismaError, serverError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { loader } from "~/routes/_app.organization";
 import { optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Routes.OrganizationSettings");
 
 const schema = z.object({
   name: text,
@@ -38,12 +39,9 @@ export async function action({ request }: ActionFunctionArgs) {
     await db.organization.update({ where: { id: orgId }, data: result.data });
     return Toasts.redirectWithSuccess("/organization/settings", { message: "Organization settings updated" });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      throw handlePrismaError(error);
-    }
-    throw serverError("Unknown error occurred");
+    return Toasts.dataWithError({ success: false }, { message: "Error", description: "An unknown error occurred" });
   }
 }
 

@@ -1,4 +1,4 @@
-import { Engagement, Prisma } from "@prisma/client";
+import { Engagement } from "@prisma/client";
 import { IconAddressBook, IconPlus, IconUser } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
@@ -17,13 +17,16 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { useUser } from "~/hooks/useUser";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
-import { forbidden, getPrismaErrorText } from "~/lib/responses.server";
+import { forbidden, handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cn } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Routes.ContactShow");
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const user = await SessionService.requireUser(request);
@@ -72,10 +75,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     }
 
     return { contact };
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    throw error;
+  } catch (e) {
+    handleLoaderError(e);
   }
 };
 
@@ -131,13 +132,9 @@ export async function action({ request, params }: ActionFunctionArgs) {
         description: `${contact.firstName} ${contact.lastName} was deleted successfully.`,
       });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       Sentry.captureException(error);
-      let message = error instanceof Error ? error.message : "An error occurred while deleting the contact.";
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        message = getPrismaErrorText(error);
-      }
-      return Toasts.dataWithError({ success: false }, { message: "Error deleting contact", description: message });
+      return Toasts.dataWithError({ success: false }, { message: "Error", description: "An unknown error occurred" });
     }
   }
 }

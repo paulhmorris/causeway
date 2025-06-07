@@ -1,4 +1,5 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "github": {
     "enabled": false
   },
@@ -7,5 +8,11 @@
       "main": false,
       "staging": false
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/engagement-reminder",
+      "schedule": "0 15 * * 1"
+    }
+  ]
 }

@@ -15,6 +15,7 @@ import { Callout } from "~/components/ui/callout";
 import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { sendEmail } from "~/integrations/email.server";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod } from "~/lib/constants";
@@ -24,6 +25,8 @@ import { cuid, currency, date, number, optionalLongText, optionalText } from "~/
 import { generateS3Urls } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
 import { getTransactionItemMethods } from "~/services.server/transaction";
+
+const logger = createLogger("Routes.ReimbursementsNew");
 
 const schema = z.object({
   date: date,
@@ -145,7 +148,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       description: "Your request will be processed as soon as possible.",
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
     return Toasts.dataWithError(null, { message: "An unknown error occurred" }, { status: 500 });
   }

@@ -14,6 +14,7 @@ import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
 import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType, EngagementType } from "~/lib/constants";
@@ -23,6 +24,8 @@ import { cuid, number, optionalLongText, text } from "~/schemas/fields";
 import { getContactTypes } from "~/services.server/contact";
 import { getEngagementTypes } from "~/services.server/engagement";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Routes.EngagementNew");
 
 const schema = z.object({
   // This doesn't use date because it needs to be in YYYY-MM-DD format
@@ -88,7 +91,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
   } catch (error) {
     Sentry.captureException(error);
-    console.error(error);
+    logger.error(error);
     return Toasts.dataWithError(null, { message: "An unknown error occurred" });
   }
 };

@@ -6,6 +6,7 @@ import { z } from "zod/v4";
 import { FormField } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useUser } from "~/hooks/useUser";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { unauthorized } from "~/lib/responses.server";
@@ -13,6 +14,8 @@ import { Toasts } from "~/lib/toast.server";
 import { password } from "~/schemas/fields";
 import { hashPassword, verifyLogin } from "~/services.server/auth";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Routes.UserPassword");
 
 const schema = z
   .object({
@@ -81,7 +84,7 @@ export async function action({ params, request }: ActionFunctionArgs) {
 
     return Toasts.redirectWithSuccess(`/users/${params.userId}/password`, { message: "Password updated!" });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
     return Toasts.dataWithError({ success: false }, { message: "Error", description: "An unknown error occurred" });
   }

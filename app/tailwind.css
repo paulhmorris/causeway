@@ -129,8 +129,8 @@
     --accent: 16 58% 50%;
     --accent-foreground: 221 10% 8%;
 
-    --success: 142 76% 27.1%;
-    --success-foreground: 140 100% 25%;
+    --success: 142 76% 40%;
+    --success-foreground: 0 0% 100%;
 
     --warning: 48 96% 53%;
     --warning-foreground: 0 0% 0%;
@@ -168,9 +168,6 @@
 
     --accent: 0 0% 14.9%;
     --accent-foreground: 0 0% 98%;
-
-    --success: 142 76% 40%;
-    --success-foreground: 38 92% 50%;
 
     --warning: 48 96% 53%;
     --warning-foreground: 0 0 0%;

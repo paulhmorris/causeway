@@ -18,80 +18,87 @@ import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useUser } from "~/hooks/useUser";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
-import { forbidden, notFound } from "~/lib/responses.server";
+import { forbidden, handleLoaderError, notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { UpdateContactSchema } from "~/schemas";
 import { getContactTypes } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
 
+const logger = createLogger("Routes.ContactEdit");
+
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  const user = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+  try {
+    const user = await SessionService.requireUser(request);
+    const orgId = await SessionService.requireOrgId(request);
 
-  invariant(params.contactId, "contactId not found");
+    invariant(params.contactId, "contactId not found");
 
-  // Users can only edit their assigned contacts
-  if (user.isMember && params.contactId !== user.contactId) {
-    const assignment = await db.contactAssigment.findUnique({
-      where: {
-        orgId,
-        contactId_userId: {
-          contactId: params.contactId,
-          userId: user.id,
+    // Users can only edit their assigned contacts
+    if (user.isMember && params.contactId !== user.contactId) {
+      const assignment = await db.contactAssigment.findUnique({
+        where: {
+          orgId,
+          contactId_userId: {
+            contactId: params.contactId,
+            userId: user.id,
+          },
         },
-      },
-    });
-    if (!assignment) {
-      throw forbidden({ message: "You do not have permission to edit this contact." });
+      });
+      if (!assignment) {
+        throw forbidden({ message: "You do not have permission to edit this contact." });
+      }
     }
-  }
 
-  const [contactTypes, usersWhoCanBeAssigned] = await Promise.all([
-    getContactTypes(orgId),
-    db.user.findMany({
-      where: {
-        memberships: {
-          some: { orgId },
+    const [contactTypes, usersWhoCanBeAssigned] = await Promise.all([
+      getContactTypes(orgId),
+      db.user.findMany({
+        where: {
+          memberships: {
+            some: { orgId },
+          },
+          role: { notIn: [UserRole.SUPERADMIN] },
+          contactId: { not: params.contactId },
         },
-        role: { notIn: [UserRole.SUPERADMIN] },
-        contactId: { not: params.contactId },
-      },
-      include: {
-        contact: true,
-      },
-    }),
-  ]);
-
-  const contact = await db.contact.findUnique({
-    where: { id: params.contactId, orgId },
-    include: {
-      user: true,
-      assignedUsers: {
         include: {
-          user: {
-            include: {
-              contact: true,
+          contact: true,
+        },
+      }),
+    ]);
+
+    const contact = await db.contact.findUnique({
+      where: { id: params.contactId, orgId },
+      include: {
+        user: true,
+        assignedUsers: {
+          include: {
+            user: {
+              include: {
+                contact: true,
+              },
             },
           },
         },
+        address: true,
+        type: true,
       },
-      address: true,
-      type: true,
-    },
-  });
+    });
 
-  if (!contact) {
-    throw notFound({ message: "Contact not found" });
+    if (!contact) {
+      throw notFound({ message: "Contact not found" });
+    }
+
+    return {
+      contact,
+      contactTypes,
+      usersWhoCanBeAssigned,
+    };
+  } catch (e) {
+    handleLoaderError(e);
   }
-
-  return {
-    contact,
-    contactTypes,
-    usersWhoCanBeAssigned,
-  };
 };
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
@@ -192,7 +199,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       description: `${contact.firstName} ${contact.lastName} was updated successfully.`,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
     return Toasts.dataWithError(null, {
       message: "Unknown error",
@@ -213,19 +220,19 @@ export default function EditContactPage() {
     method: "put",
     defaultValues: {
       ...contact,
-      phone: contact.phone ?? undefined,
-      email: contact.email ?? undefined,
-      lastName: contact.lastName ?? undefined,
-      firstName: contact.firstName ?? undefined,
-      alternateEmail: contact.alternateEmail ?? undefined,
-      alternatePhone: contact.alternatePhone ?? undefined,
-      organizationName: contact.organizationName ?? undefined,
+      phone: contact.phone ?? "",
+      email: contact.email ?? "",
+      lastName: contact.lastName ?? "",
+      firstName: contact.firstName ?? "",
+      alternateEmail: contact.alternateEmail ?? "",
+      alternatePhone: contact.alternatePhone ?? "",
+      organizationName: contact.organizationName ?? "",
       assignedUserIds: contact.assignedUsers.map((a) => a.userId),
       typeId: "",
       address: contact.address
         ? {
             street: contact.address.street,
-            street2: contact.address.street2 ?? undefined,
+            street2: contact.address.street2 ?? "",
             city: contact.address.city,
             state: contact.address.state,
             zip: contact.address.zip,

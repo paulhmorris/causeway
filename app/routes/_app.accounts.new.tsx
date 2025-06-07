@@ -9,13 +9,17 @@ import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
 import { ButtonGroup } from "~/components/ui/button-group";
 import { FormField, FormSelect } from "~/components/ui/form";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { AccountType } from "~/lib/constants";
+import { handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { number, optionalSelect, text } from "~/schemas/fields";
 import { getAccountTypes } from "~/services.server/account";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Routes.AccountNew");
 
 const schema = z.object({
   code: text,
@@ -55,10 +59,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       users,
       accountTypes,
     };
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    throw error;
+  } catch (e) {
+    handleLoaderError(e);
   }
 };
 
@@ -88,7 +90,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       description: "Well done.",
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
     return Toasts.dataWithError({ success: false }, { message: "Error creating account" });
   }

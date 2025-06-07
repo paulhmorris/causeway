@@ -9,8 +9,7 @@ import { Badge } from "~/components/ui/badge";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
-import { Sentry } from "~/integrations/sentry";
-import { forbidden } from "~/lib/responses.server";
+import { forbidden, handleLoaderError } from "~/lib/responses.server";
 import { cn } from "~/lib/utils";
 import { passwordResetSchema } from "~/routes/resources.reset-password";
 import { SessionService } from "~/services.server/session";
@@ -109,10 +108,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       accountsThatCanBeSubscribedTo,
       hasPassword: !!_password,
     };
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    throw error;
+  } catch (e) {
+    handleLoaderError(e);
   }
 };
 

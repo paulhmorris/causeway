@@ -8,46 +8,51 @@ import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
 import { db } from "~/integrations/prisma.server";
+import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
 
 export const meta: MetaFunction = () => [{ title: "Engagements" }];
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const user = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+  try {
+    const user = await SessionService.requireUser(request);
+    const orgId = await SessionService.requireOrgId(request);
 
-  const engagements = await db.engagement.findMany({
-    where: {
-      orgId,
-      userId: user.isMember ? user.id : undefined,
-    },
-    select: {
-      id: true,
-      date: true,
-      type: {
-        select: { name: true },
+    const engagements = await db.engagement.findMany({
+      where: {
+        orgId,
+        userId: user.isMember ? user.id : undefined,
       },
-      contact: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
+      select: {
+        id: true,
+        date: true,
+        type: {
+          select: { name: true },
         },
-      },
-      user: {
-        select: {
-          contact: {
-            select: {
-              firstName: true,
-              lastName: true,
+        contact: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        user: {
+          select: {
+            contact: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
             },
           },
         },
       },
-    },
-    orderBy: { date: "desc" },
-  });
-  return { engagements };
+      orderBy: { date: "desc" },
+    });
+    return { engagements };
+  } catch (e) {
+    handleLoaderError(e);
+  }
 }
 
 export default function EngagementIndexPage() {

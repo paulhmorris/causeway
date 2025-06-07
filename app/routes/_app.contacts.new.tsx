@@ -1,4 +1,4 @@
-import { MembershipRole, Prisma } from "@prisma/client";
+import { MembershipRole } from "@prisma/client";
 import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import { useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
@@ -14,13 +14,16 @@ import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useUser } from "~/hooks/useUser";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
-import { getPrismaErrorText, handlePrismaError, serverError } from "~/lib/responses.server";
+import { handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { NewContactSchema } from "~/schemas";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Routes.ContactNew");
 
 export const meta: MetaFunction = () => [{ title: "New Contact" }];
 
@@ -63,13 +66,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       contactTypes,
       usersWhoCanBeAssigned,
     };
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      throw handlePrismaError(error);
-    }
-    throw serverError("An error occurred while loading the page. Please try again.");
+  } catch (e) {
+    handleLoaderError(e);
   }
 };
 
@@ -83,7 +81,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   const { address, assignedUserIds, ...formData } = result.data;
-
   try {
     // Verify email is unique
     if (formData.email) {
@@ -121,16 +118,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       description: `${contact.firstName} ${contact.lastName} was created successfully.`,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      const message = getPrismaErrorText(error);
-      return Toasts.dataWithError(
-        { message: `An error occurred: ${message}` },
-        { description: message, message: "Error creating contact" },
-      );
-    }
-    throw serverError("An error occurred while creating the contact. Please try again.");
+    return Toasts.dataWithError(null, { message: "Error", description: "An unknown error occurred." });
   }
 };
 

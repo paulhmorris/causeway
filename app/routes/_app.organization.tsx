@@ -1,11 +1,9 @@
-import { Prisma } from "@prisma/client";
 import { LoaderFunctionArgs, MetaFunction, NavLink, Outlet, useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
 import { Separator } from "~/components/ui/separator";
 import { db } from "~/integrations/prisma.server";
-import { Sentry } from "~/integrations/sentry";
-import { handlePrismaError, serverError } from "~/lib/responses.server";
+import { handleLoaderError } from "~/lib/responses.server";
 import { cn } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
 
@@ -16,13 +14,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const org = await db.organization.findUniqueOrThrow({ where: { id: orgId } });
     return { org };
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      throw handlePrismaError(error);
-    }
-    throw serverError("Unknown error occurred");
+  } catch (e) {
+    handleLoaderError(e);
   }
 }
 

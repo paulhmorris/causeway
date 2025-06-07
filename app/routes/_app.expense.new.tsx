@@ -14,6 +14,7 @@ import { Button } from "~/components/ui/button";
 import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
 import { Separator } from "~/components/ui/separator";
 import { SubmitButton } from "~/components/ui/submit-button";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
@@ -22,6 +23,8 @@ import { TransactionSchema } from "~/schemas";
 import { getContactTypes } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
 import { generateTransactionItems, getTransactionItemMethods } from "~/services.server/transaction";
+
+const logger = createLogger("Routes.ExpenseNew");
 
 export const meta: MetaFunction = () => [{ title: "Add Expense" }];
 
@@ -105,7 +108,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       description: `Expense of ${formatCentsAsDollars(totalInCents)} charged to account ${transaction.account.code}`,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
     return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
   }

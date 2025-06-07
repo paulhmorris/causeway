@@ -7,12 +7,15 @@ const serverEnvValidation = z.object({
   // CI
   CI: z.string().optional(),
 
-  // Remix
+  // RR
   SESSION_SECRET: z.string().min(16),
+
+  // Vercel
+  CRON_SECRET: z.string().min(16),
 
   // Cloudflare
   R2_BUCKET_NAME: z.string().min(1),
-  R2_BUCKET_URL: z.string().url(),
+  R2_BUCKET_URL: z.url(),
   R2_ACCESS_KEY_ID: z.string().min(1),
   R2_SECRET_ACCESS_KEY: z.string().min(1),
 
@@ -23,11 +26,8 @@ const serverEnvValidation = z.object({
   // Database
   DATABASE_URL: z.string().min(1),
 
-  // Trigger.dev
-  TRIGGER_SECRET_KEY: z.string().startsWith("tr_"),
-
   // Playwright
-  PLAYWRIGHT_TEST_BASE_URL: z.string().url().optional(),
+  PLAYWRIGHT_TEST_BASE_URL: z.url().optional(),
 });
 
 const _deploymentPublicEnvValidation = z.object({

@@ -3,7 +3,10 @@ import bcrypt from "bcryptjs";
 import { customAlphabet } from "nanoid";
 
 import { sendEmail } from "~/integrations/email.server";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
+
+const logger = createLogger("AuthService");
 
 export function hashPassword(password: string) {
   return bcrypt.hash(password, 10);
@@ -45,17 +48,17 @@ export async function checkVerificationCode(email: string, code: string) {
   });
 
   if (!user) {
-    console.info("DEBUG: User not found");
+    logger.info(`User with email ${email} not found`);
     return null;
   }
 
   if (user.verificationCode?.toLowerCase() !== code.toLowerCase()) {
-    console.info("DEBUG: Verification code does not match");
+    logger.info(`User ${email}: supplied invalid verification code`);
     return null;
   }
 
   if (!user.verificationCodeExpiry || user.verificationCodeExpiry < new Date()) {
-    console.info("DEBUG: Verification code expired");
+    logger.info(`User ${email} supplied expired verification code`);
     return null;
   }
 
@@ -91,7 +94,7 @@ export async function verifyLogin({
   }
 
   if (userWithPassword.lockoutExpiration && userWithPassword.lockoutExpiration > new Date()) {
-    console.info("DEBUG: User is locked out");
+    logger.info(`User ${userWithPassword.username} is locked out`);
     const { password: _password, ...userWithoutPw } = userWithPassword;
     return userWithoutPw;
   }
@@ -100,7 +103,7 @@ export async function verifyLogin({
 
   if (!isValid) {
     if (userWithPassword.loginAttempts >= 5) {
-      console.info("DEBUG: Locking out user");
+      logger.info(`User ${userWithPassword.username} had 5 failed login attempts. Locking them out.`);
       userWithPassword = await db.user.update({
         where: { id: userWithPassword.id },
         data: {
@@ -113,7 +116,7 @@ export async function verifyLogin({
         },
       });
     } else {
-      console.info("DEBUG: Invalid password, incrementing login attempts");
+      logger.info(`User ${userWithPassword.username} supplied invalid credentials, incrementing login attempts`);
       userWithPassword = await db.user.update({
         where: { id: userWithPassword.id },
         data: {

@@ -8,9 +8,11 @@ import { renderToPipeableStream } from "react-dom/server";
 import type { EntryContext, HandleErrorFunction } from "react-router";
 import { ServerRouter } from "react-router";
 
+import { createLogger } from "~/integrations/logger.server";
 import { Sentry } from "~/integrations/sentry";
 
 export const streamTimeout = 5_000;
+const logger = createLogger("ServerEntry");
 
 export const handleError: HandleErrorFunction = (error, { request }) => {
   if (request.url.includes(".well-known")) {
@@ -18,7 +20,7 @@ export const handleError: HandleErrorFunction = (error, { request }) => {
   }
   if (!request.signal.aborted) {
     Sentry.captureException(error);
-    console.error(error);
+    logger.error(error);
   }
 };
 
@@ -64,7 +66,7 @@ const handleRequest = function handleRequest(
         // errors encountered during initial shell rendering since they'll
         // reject and get logged in handleDocumentRequest.
         if (shellRendered) {
-          console.error(error);
+          logger.error(error);
         }
       },
     });

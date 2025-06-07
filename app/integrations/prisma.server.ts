@@ -25,7 +25,6 @@ function getPrismaClient() {
         },
       },
     });
-    // connect eagerly
     void client.$connect();
 
     return client;
@@ -33,7 +32,9 @@ function getPrismaClient() {
 
   neonConfig.webSocketConstructor = ws;
   const adapter = new PrismaNeon({ connectionString: `${DATABASE_URL}` });
-  const client = new PrismaClient({ adapter });
+  const client = new PrismaClient({
+    adapter,
+  });
   return client;
 }
 
