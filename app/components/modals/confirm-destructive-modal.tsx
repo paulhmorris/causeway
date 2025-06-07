@@ -1,9 +1,10 @@
-import { IconAlertTriangleFilled, IconLoader } from "@tabler/icons-react";
+import { IconAlertTriangleFilled } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { useFetcher } from "react-router";
 
 import { Button } from "~/components/ui/button";
 import { DrawerDialog, DrawerDialogFooter } from "~/components/ui/drawer-dialog";
+import { SubmitButton } from "~/components/ui/submit-button";
 
 export function ConfirmDestructiveModal({ description }: { description: string }) {
   const [open, setOpen] = useState(false);
@@ -40,17 +41,15 @@ export function ConfirmDestructiveModal({ description }: { description: string }
             Cancel
           </Button>
           <fetcher.Form method="delete">
-            <Button
+            <SubmitButton
               className="w-full sm:w-auto"
               variant="destructive"
               name="_action"
               value="delete"
-              type="submit"
-              disabled={isSubmitting}
+              isSubmitting={isSubmitting}
             >
-              {isSubmitting ? <IconLoader className="size-4 animate-spin" /> : null}
-              <span>Confirm</span>
-            </Button>
+              Confirm
+            </SubmitButton>
           </fetcher.Form>
         </DrawerDialogFooter>
       </DrawerDialog>

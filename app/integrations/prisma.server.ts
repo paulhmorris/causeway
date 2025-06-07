@@ -24,19 +24,7 @@ function getPrismaClient() {
           url: databaseUrl.toString(),
         },
       },
-      // log: [
-      //   { emit: "event", level: "query" },
-      //   { emit: "stdout", level: "error" },
-      //   { emit: "stdout", level: "info" },
-      //   { emit: "stdout", level: "warn" },
-      // ],
     });
-    // client.$on("query", (e) => {
-    //   logger.debug("Query: " + e.query);
-    //   logger.debug("Params: " + e.params);
-    //   logger.debug("Duration: " + e.duration + "ms");
-    // });
-    // connect eagerly
     void client.$connect();
 
     return client;

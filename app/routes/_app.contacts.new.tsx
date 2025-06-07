@@ -81,7 +81,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   const { address, assignedUserIds, ...formData } = result.data;
-
   try {
     // Verify email is unique
     if (formData.email) {
