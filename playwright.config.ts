@@ -66,6 +66,6 @@ export default defineConfig({
   webServer: {
     url: baseURL,
     command: "npm run dev",
-    reuseExistingServer: !isCI,
+    reuseExistingServer: true,
   },
 });
