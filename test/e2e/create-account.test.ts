@@ -3,7 +3,6 @@ import { nanoid } from "nanoid";
 
 import { expectVisibleNotification } from "test/e2e/helpers/notifications";
 
-test.use({ storageState: "playwright/.auth/admin.json" });
 test.describe("Create account", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/accounts/new");

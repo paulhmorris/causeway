@@ -9,7 +9,6 @@ export default defineConfig({
   testIgnore: !isCI ? "./test/e2e/a11y.test.ts" : undefined,
   fullyParallel: true,
   forbidOnly: !!isCI,
-  retries: 0,
   workers: isCI ? 1 : undefined,
   reporter: isCI ? [["dot"], ["html"]] : "list",
   use: {
@@ -32,6 +31,7 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
+        storageState: "playwright/.auth/admin.json",
       },
       dependencies: ["setup"],
     },

@@ -8,8 +8,6 @@ import { formatCurrency } from "~/lib/utils";
 
 dayjs.extend(utc);
 
-test.use({ storageState: "playwright/.auth/admin.json" });
-
 test.describe("Add Income", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/income/new");
