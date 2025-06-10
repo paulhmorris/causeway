@@ -20,6 +20,7 @@ const isCI = process.env.CI;
 
 export default defineConfig((config) => ({
   resolve: {
+    conditions: ["module-sync"],
     alias: {
       ".prisma/client/index-browser": "./node_modules/.prisma/client/index-browser.js",
     },
