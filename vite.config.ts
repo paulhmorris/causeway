@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { reactRouter } from "@react-router/dev/vite";
 import { sentryReactRouter, SentryReactRouterBuildOptions } from "@sentry/react-router";
 import tailwindcss from "@tailwindcss/vite";
@@ -29,13 +30,31 @@ export default defineConfig((config) => ({
   plugins: [
     morganPlugin(),
     tsconfigPaths(),
-    reactRouter(),
+    !process.env.VITEST && reactRouter(),
     tailwindcss(),
     ...(isCI ? [sentryReactRouter(sentryConfig, config)] : []),
   ],
 
   build: {
     sourcemap: !!process.env.CI,
+  },
+
+  test: {
+    exclude: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/playwright/**",
+      "test/e2e/**",
+      "**/.{idea,git,cache,output,temp}/**",
+      "**/*.config.*",
+    ],
+    environment: "jsdom",
+    globals: true,
+    setupFiles: "./test/setup.ts",
+    coverage: {
+      provider: "v8",
+      include: ["app/"],
+    },
   },
 }));
 
