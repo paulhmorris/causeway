@@ -103,7 +103,7 @@ export const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
 };
 
 export function getInitials(contact: Contact) {
-  return `${contact.firstName?.charAt(0)}${contact.lastName?.charAt(0)}`;
+  return `${contact.firstName?.charAt(0)}${contact.lastName?.charAt(0) ?? ""}`;
 }
 
 export function isArray(value: unknown): value is Array<unknown> {

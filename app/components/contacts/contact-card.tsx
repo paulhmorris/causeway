@@ -22,7 +22,7 @@ export function ContactCard({ contact }: { contact: Contact }) {
             <span>
               {(contact.typeId as ContactType) === ContactType.Organization
                 ? contact.organizationName
-                : `${contact.firstName} ${contact.lastName}`}
+                : `${contact.firstName} ${contact.lastName ?? ""}`}
             </span>
             {user.contactId === contact.id ? <Badge variant="outline">This is you</Badge> : null}
           </CardTitle>
