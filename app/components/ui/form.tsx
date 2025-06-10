@@ -12,7 +12,7 @@ import { cn } from "~/lib/utils";
 function FieldError({ id, error }: { id: string; error?: string | null }) {
   if (!error) return null;
   return (
-    <p aria-live="polite" id={`${id}-error`} className="text-destructive mt-1 ml-1 text-xs font-medium">
+    <p aria-live="polite" role="alert" id={`${id}-error`} className="text-destructive mt-1 ml-1 text-xs font-medium">
       {error ? <span>{error}</span> : null}
     </p>
   );

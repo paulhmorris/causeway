@@ -26,14 +26,20 @@ export const select = z.coerce
   .max(255, { error: "Must be 255 characters or less" });
 export const optionalSelect = select.optional().transform((v) => (v === "" ? undefined : v));
 
-export const cuid = z.cuid({ error: (e) => (!e.input ? "Required" : "Invalid ID") });
-export const email = z.email({ error: (e) => (!e.input ? "Required" : "Invalid email address") });
+export const cuid = z
+  .cuid({ error: (e) => (!e.input ? "Required" : "Invalid ID") })
+  .max(255, "Must be 255 characters or less");
+export const email = z
+  .email({ error: (e) => (!e.input ? "Required" : "Invalid email address") })
+  .max(255, "Must be 255 characters or less");
 export const optionalEmail = z
   .union([email, z.literal("")])
   .optional()
   .transform((v) => (v === "" ? undefined : v));
-export const password = _text.min(8, "Must be 8 or more characters");
-export const url = z.url({ error: (e) => (!e.input ? "Required" : "Invalid URL") });
+export const password = _text.min(8, "Must be 8 or more characters").max(255, "Must be 255 characters or less");
+export const url = z
+  .url({ error: (e) => (!e.input ? "Required" : "Invalid URL") })
+  .max(255, "Must be 255 characters or less");
 export const currency = z.preprocess(
   (v) => (typeof v === "string" && v.startsWith("$") ? v.slice(1) : v),
   number

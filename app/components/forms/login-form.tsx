@@ -1,4 +1,4 @@
-import { ValidatedForm } from "@rvf/react-router";
+import { useForm } from "@rvf/react-router";
 import { useSearchParams } from "react-router";
 import { z } from "zod/v4";
 
@@ -15,34 +15,29 @@ export const loginSchema = z.object({
 export function LoginForm() {
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/";
+  const form = useForm({
+    schema: loginSchema,
+    method: "POST",
+    defaultValues: { email: "", password: "" },
+  });
 
   return (
-    <ValidatedForm
-      schema={loginSchema}
-      method="post"
-      className="mt-4 space-y-4"
-      defaultValues={{
-        email: import.meta.env.DEV ? "paulh.morris@gmail.com" : "",
-        password: import.meta.env.DEV ? "password" : "",
-      }}
-    >
-      {(form) => (
-        <>
-          <FormField label="Email" scope={form.scope("email")} type="email" autoComplete="username" required />
-          <FormField
-            label="Password"
-            scope={form.scope("password")}
-            type="password"
-            autoComplete="current-password"
-            required
-          />
+    <form {...form.getFormProps()} className="mt-4 space-y-4">
+      <>
+        <FormField label="Email" scope={form.scope("email")} type="email" autoComplete="username" required />
+        <FormField
+          label="Password"
+          scope={form.scope("password")}
+          type="password"
+          autoComplete="current-password"
+          required
+        />
 
-          <input type="hidden" name="redirectTo" value={redirectTo} />
-          <SubmitButton isSubmitting={form.formState.isSubmitting} className="w-full">
-            Login
-          </SubmitButton>
-        </>
-      )}
-    </ValidatedForm>
+        <input type="hidden" name="redirectTo" value={redirectTo} />
+        <SubmitButton isSubmitting={form.formState.isSubmitting} className="w-full">
+          Login
+        </SubmitButton>
+      </>
+    </form>
   );
 }
