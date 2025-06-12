@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 import { AddressSchema } from "~/components/forms/new-contact-form";
 import { FormField } from "~/components/ui/form";
 
-export function AddressForm({ scope }: { scope: FormScope<z.infer<typeof AddressSchema>> }) {
+export function AddressFields({ scope }: { scope: FormScope<z.infer<typeof AddressSchema>> }) {
   const form = useFormScope(scope);
 
   return (

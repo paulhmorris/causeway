@@ -1,8 +1,9 @@
-import { useForm } from "@rvf/react-router";
+import { FormScope, useForm } from "@rvf/react-router";
 import { useState } from "react";
 import { useLocation } from "react-router";
 import { z } from "zod/v4";
 
+import { AddressFields } from "~/components/contacts/address-fields";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { FormField, FormSelect } from "~/components/ui/form";
@@ -30,7 +31,7 @@ export const newContactSchema = z.object({
   alternateEmail: optionalEmail,
   phone: optionalPhoneNumber,
   alternatePhone: optionalPhoneNumber,
-  typeId: number.pipe(z.enum(ContactType)),
+  typeId: number.pipe(z.enum(ContactType, { error: "Invalid type" })),
   address: AddressSchema.optional(),
   assignedUserIds: z.array(cuid).optional(),
 });
@@ -129,30 +130,8 @@ export function NewContactForm({ user, contactTypes, usersWhoCanBeAssigned }: Pr
           <Button type="button" variant="outline" onClick={() => setAddressEnabled(false)}>
             Remove Address
           </Button>
-          <fieldset className="space-y-4">
-            <FormField label="Street 1" placeholder="1234 Main St." scope={form.scope("address.street")} required />
-            <div className="flex items-start gap-2">
-              <FormField label="Street 2" placeholder="Apt 4" scope={form.scope("address.street2")} />
-              <FormField label="City" placeholder="Richardson" scope={form.scope("address.city")} required />
-            </div>
-            <div className="grid grid-cols-2 items-start gap-2 md:grid-cols-12">
-              <div className="col-span-6">
-                <FormField label="State / Province" placeholder="TX" scope={form.scope("address.state")} required />
-              </div>
-              <div className="col-span-1 w-full sm:col-span-3">
-                <FormField label="Postal Code" placeholder="75080" scope={form.scope("address.zip")} required />
-              </div>
-              <div className="col-span-1 w-full sm:col-span-3">
-                <FormField
-                  label="Country"
-                  placeholder="US"
-                  scope={form.scope("address.country")}
-                  required
-                  defaultValue="US"
-                />
-              </div>
-            </div>
-          </fieldset>
+          {/* address starts as undefined because it's hidden, but we know it's not undefined when we've enabled the fields */}
+          <AddressFields scope={form.scope("address") as FormScope<z.infer<typeof AddressSchema>>} />
         </>
       )}
       <Separator className="my-4" />

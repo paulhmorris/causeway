@@ -8,15 +8,9 @@ const _longText = z.string().max(1000, "Must be 1000 characters or less").trim()
 export const longText = _longText.min(1, "Required");
 export const optionalLongText = _longText.optional().transform((v) => (v === "" ? undefined : v));
 
-export const number = z.preprocess(
-  (v) => (v === "" ? undefined : v),
-  z.number({ error: (e) => (!e.input ? "Required" : "Must be a number") }),
-);
+export const number = z.coerce.number({ error: (e) => (!e.input ? "Required" : "Must be a number") });
 export const optionalNumber = number.optional();
-export const positiveNumber = z.preprocess(
-  (v) => (v === "" ? undefined : v),
-  z.number({ error: (e) => (!e.input ? "Required" : "Must be a number") }).positive(),
-);
+export const positiveNumber = z.number({ error: (e) => (!e.input ? "Required" : "Must be a number") }).positive();
 
 export const date = z.coerce.date({ error: (e) => (!e.input ? "Required" : "Invalid date") });
 export const optionalDate = date.optional();

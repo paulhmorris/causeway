@@ -188,7 +188,7 @@ export function FormSelect(props: FormSelectProps) {
   const { scope, label, placeholder, options, hideLabel, divProps, ...rest } = props;
   const field = useField(scope);
   const selectId = useId();
-  const { onChange, ...input } = field.getControlProps();
+  const { onChange, name, ...input } = field.getControlProps();
   const error = field.error();
 
   return (
@@ -212,6 +212,7 @@ export function FormSelect(props: FormSelectProps) {
           {props.required ? "*" : "(optional)"}
         </span>
       </Label>
+      <input type="hidden" name={name} value={input.value?.toString()} />
       <Select
         {...input}
         value={String(input.value)}
