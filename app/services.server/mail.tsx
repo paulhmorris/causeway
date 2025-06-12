@@ -72,7 +72,7 @@ export async function sendReimbursementRequestUpdateEmail(args: {
 }) {
   try {
     const url = new URL("/", process.env.BASE_URL).toString();
-    const html = render(<ReimbursementRequestUpdateEmail status={args.status} url={url} />);
+    const html = await render(<ReimbursementRequestUpdateEmail status={args.status} url={url} />);
 
     const data = await sendEmail({
       to: args.email,

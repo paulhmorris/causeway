@@ -1,6 +1,6 @@
 import "@fontsource-variable/dm-sans/wght.css";
 import { Analytics } from "@vercel/analytics/react";
-import React, { useEffect } from "react";
+import React from "react";
 import type { LinksFunction, LoaderFunctionArgs } from "react-router";
 import {
   data,
@@ -17,18 +17,13 @@ import { PreventFlashOnWrongTheme, ThemeProvider, useTheme } from "remix-themes"
 
 import { ErrorComponent } from "~/components/error-component";
 import { Notifications } from "~/components/notifications";
-import { createLogger } from "~/integrations/logger.server";
-import { db } from "~/integrations/prisma.server";
-import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
 import { cn } from "~/lib/utils";
-import { SessionService, themeSessionResolver } from "~/services.server/session";
+import { themeSessionResolver } from "~/services.server/session";
 import tailwindUrl from "~/tailwind.css?url";
 
 // eslint-disable-next-line import/no-unresolved
 import { Route } from "./+types/root";
-
-const logger = createLogger("Routes.Root");
 
 export const links: LinksFunction = () => [{ rel: "stylesheet", href: tailwindUrl, as: "style" }];
 
@@ -55,78 +50,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return redirect("/maintenance", { status: 307 });
   }
 
-  const org = await SessionService.getOrg(request);
-  const { toast, headers } = await Toasts.getToast(request);
-  const userId = await SessionService.getUserId(request);
   const { getTheme } = await themeSessionResolver(request);
-
-  let user;
-  if (userId) {
-    const dbUser = await db.user.findUnique({
-      where: { id: userId },
-      include: {
-        contactAssignments: true,
-        contact: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            typeId: true,
-            accountSubscriptions: {
-              where: org
-                ? {
-                    account: {
-                      orgId: org.id,
-                    },
-                  }
-                : {},
-              select: {
-                accountId: true,
-              },
-            },
-          },
-        },
-        memberships: {
-          include: {
-            org: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!dbUser) {
-      logger.error(`No user found for ${userId}`);
-      throw await SessionService.logout(request);
-    }
-
-    const currentMembership = dbUser.memberships.find((m) => m.orgId === org?.id);
-    if (org && !currentMembership) {
-      logger.warn(`User ${dbUser.username} has no memberships for the current org. Logging out.`);
-      throw await SessionService.logout(request);
-    }
-
-    const { pathname } = new URL(request.url);
-    if (!currentMembership && !pathname.includes("/choose-org")) {
-      return redirect("/choose-org");
-    }
-
-    user = {
-      ...dbUser,
-      role: currentMembership?.role,
-      systemRole: dbUser.role,
-      org: org ?? null,
-    };
-  }
+  const { toast, headers } = await Toasts.getToast(request);
 
   return data(
     {
-      user,
       toast,
       theme: getTheme(),
       ENV: {
@@ -154,14 +82,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 function InnerLayout({ ssrTheme, children }: { ssrTheme: boolean; children: React.ReactNode }) {
   const data = useRouteLoaderData<typeof loader>("root");
   const [theme] = useTheme();
-
-  useEffect(() => {
-    if (!data?.user) {
-      Sentry.setUser(null);
-      return;
-    }
-    Sentry.setUser({ id: data.user.id, username: data.user.username });
-  }, [data?.user]);
 
   return (
     <html lang="en" className={cn("h-full", theme)}>
