@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
 import eslint from "@eslint/js";
+import vitest from "@vitest/eslint-plugin";
 import prettier from "eslint-config-prettier/flat";
 import importPlugin from "eslint-plugin-import";
 import jsxA11y from "eslint-plugin-jsx-a11y";
@@ -128,5 +129,11 @@ export default tseslint.config(
         },
       ],
     },
+  },
+
+  // Vitest
+  {
+    files: ["app/**/*.test.{ts,tsx}"],
+    ...vitest.configs.recommended,
   },
 );

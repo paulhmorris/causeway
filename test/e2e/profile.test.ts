@@ -2,7 +2,6 @@ import { expect, test } from "@playwright/test";
 
 import { expectVisibleNotification } from "test/e2e/helpers/notifications";
 
-test.use({ storageState: "playwright/.auth/admin.json" });
 test.describe("Profile", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");

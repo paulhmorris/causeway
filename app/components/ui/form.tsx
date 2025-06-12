@@ -12,7 +12,7 @@ import { cn } from "~/lib/utils";
 function FieldError({ id, error }: { id: string; error?: string | null }) {
   if (!error) return null;
   return (
-    <p aria-live="polite" id={`${id}-error`} className="text-destructive mt-1 ml-1 text-xs font-medium">
+    <p aria-live="polite" role="alert" id={`${id}-error`} className="text-destructive mt-1 ml-1 text-xs font-medium">
       {error ? <span>{error}</span> : null}
     </p>
   );
@@ -188,7 +188,7 @@ export function FormSelect(props: FormSelectProps) {
   const { scope, label, placeholder, options, hideLabel, divProps, ...rest } = props;
   const field = useField(scope);
   const selectId = useId();
-  const { onChange, ...input } = field.getControlProps();
+  const { onChange, name, ...input } = field.getControlProps();
   const error = field.error();
 
   return (
@@ -212,6 +212,7 @@ export function FormSelect(props: FormSelectProps) {
           {props.required ? "*" : "(optional)"}
         </span>
       </Label>
+      <input type="hidden" name={name} value={input.value?.toString()} />
       <Select
         {...input}
         value={String(input.value)}

@@ -2,7 +2,8 @@ import { test as setup } from "@playwright/test";
 
 import { createAdmin } from "test/e2e/helpers/auth";
 
-const authFile = "playwright/.auth/admin.json";
+const authFile = `${process.cwd()}/playwright/.auth/admin.json`;
+
 setup("authenticate as admin", async ({ page }) => {
   // Create admin
   const user = await createAdmin();

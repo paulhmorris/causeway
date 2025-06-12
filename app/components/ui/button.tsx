@@ -4,6 +4,8 @@ import * as React from "react";
 
 import { cn } from "~/lib/utils";
 
+// #4567B0
+
 const buttonVariants = cva(
   [
     "relative isolate inline-flex gap-x-2 items-center select-none justify-center touch-manipulation whitespace-nowrap rounded-lg text-base/6 sm:text-sm font-semibold ring-offset-background transition-colors transition-[box-shadow]",
@@ -14,9 +16,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-white dark:text-black hover:bg-primary/95 border border-transparent shadow-[inset_0_1px_#FFFFFF44]",
+          "bg-gradient-to-b from-primary to-[#2E4476] text-white dark:text-black border border-transparent dark:border-none shadow-[inset_0_1px_#FFFFFF44]",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/95 border border-transparent shadow-[inset_0_1px_#FFFFFF44]",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/95 border border-transparent dark:border-none shadow-[inset_0_1px_#FFFFFF44]",
         outline: "text-primary border border-primary/50 bg-transparent hover:bg-primary/10",
         ghost: "text-primary hover:bg-primary/10",
         link: "text-accent underline-offset-4 decoration-2 hover:underline",

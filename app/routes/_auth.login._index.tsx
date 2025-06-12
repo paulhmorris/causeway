@@ -1,23 +1,14 @@
-import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
-import { redirect, useSearchParams } from "react-router";
-import { z } from "zod/v4";
+import { parseFormData, validationError } from "@rvf/react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { redirect } from "react-router";
 
 import { AuthCard } from "~/components/auth/auth-card";
 import { ErrorComponent } from "~/components/error-component";
-import { FormField } from "~/components/ui/form";
-import { SubmitButton } from "~/components/ui/submit-button";
+import { LoginForm, loginSchema } from "~/components/forms/login-form";
 import { Toasts } from "~/lib/toast.server";
 import { safeRedirect } from "~/lib/utils";
-import { email, optionalText, password } from "~/schemas/fields";
 import { generateVerificationCode, verifyLogin } from "~/services.server/auth";
 import { SessionService } from "~/services.server/session";
-
-const schema = z.object({
-  email: email,
-  password: password,
-  redirectTo: optionalText,
-});
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const userId = await SessionService.getUserId(request);
@@ -31,7 +22,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(request, loginSchema);
 
   if (result.error) {
     return validationError(result.error);
@@ -81,43 +72,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   return redirect(url.toString());
 };
 
-export const meta: MetaFunction = () => [{ title: "Login" }];
-
 export default function LoginPage() {
-  const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") ?? "/";
-
   return (
-    <AuthCard>
-      <h1 className="text-3xl font-black sm:text-4xl">Login</h1>
-      <ValidatedForm
-        schema={schema}
-        method="post"
-        className="mt-4 space-y-4"
-        defaultValues={{
-          email: import.meta.env.DEV ? "paulh.morris@gmail.com" : "",
-          password: import.meta.env.DEV ? "password" : "",
-        }}
-      >
-        {(form) => (
-          <>
-            <FormField label="Email" scope={form.scope("email")} type="email" autoComplete="username" required />
-            <FormField
-              label="Password"
-              scope={form.scope("password")}
-              type="password"
-              autoComplete="current-password"
-              required
-            />
-
-            <input type="hidden" name="redirectTo" value={redirectTo} />
-            <SubmitButton isSubmitting={form.formState.isSubmitting} className="w-full">
-              Login
-            </SubmitButton>
-          </>
-        )}
-      </ValidatedForm>
-    </AuthCard>
+    <>
+      <title>Login</title>
+      <AuthCard>
+        <h1 className="text-3xl font-black sm:text-4xl">Login</h1>
+        <LoginForm />
+      </AuthCard>
+    </>
   );
 }
 

@@ -10,6 +10,7 @@ export const optionalLongText = _longText.optional().transform((v) => (v === "" 
 
 export const number = z.coerce.number({ error: (e) => (!e.input ? "Required" : "Must be a number") });
 export const optionalNumber = number.optional();
+export const positiveNumber = z.number({ error: (e) => (!e.input ? "Required" : "Must be a number") }).positive();
 
 export const date = z.coerce.date({ error: (e) => (!e.input ? "Required" : "Invalid date") });
 export const optionalDate = date.optional();
@@ -26,17 +27,18 @@ export const select = z.coerce
   .max(255, { error: "Must be 255 characters or less" });
 export const optionalSelect = select.optional().transform((v) => (v === "" ? undefined : v));
 
-export const cuid = z.cuid({ error: (e) => (!e.input ? "Required" : "Invalid ID") });
-export const email = z.email({ error: (e) => (!e.input ? "Required" : "Invalid email address") });
+export const cuid = z.cuid({ error: (e) => (!e.input ? "Required" : "Invalid ID") }).max(255);
+export const email = z.email({ error: (e) => (!e.input ? "Required" : "Invalid email address") }).max(255);
 export const optionalEmail = z
   .union([email, z.literal("")])
   .optional()
   .transform((v) => (v === "" ? undefined : v));
-export const password = _text.min(8, "Must be 8 or more characters");
-export const url = z.url({ error: (e) => (!e.input ? "Required" : "Invalid URL") });
+export const password = _text.min(8, "Must be 8 or more characters").max(255);
+export const url = z.url({ error: (e) => (!e.input ? "Required" : "Invalid URL") }).max(255);
 export const currency = z.preprocess(
   (v) => (typeof v === "string" && v.startsWith("$") ? v.slice(1) : v),
-  number
+  z.coerce
+    .number()
     .multipleOf(0.01, { error: "Must be multiple of $0.01" })
     .nonnegative({ error: "Must be greater than $0.00" })
     .transform((dollars) => Math.round(dollars * 100)),

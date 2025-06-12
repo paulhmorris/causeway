@@ -89,9 +89,9 @@ export function UserMenu() {
             </button>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="px-0 py-0">
+          <DropdownMenuItem className="px-0 py-0" asChild>
             <Form className="w-full" method="post" action="/logout" navigate={false}>
-              <button className="w-full px-2 py-1.5 text-left">Log out</button>
+              <button className="w-full cursor-pointer px-2 py-1.5 text-left">Log out</button>
             </Form>
           </DropdownMenuItem>
         </DropdownMenuContent>

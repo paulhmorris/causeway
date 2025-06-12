@@ -3,16 +3,16 @@ import { FormScope, useFormScope } from "@rvf/react-router";
 import { useLocation } from "react-router";
 import { z } from "zod/v4";
 
+import { newContactSchema } from "~/components/forms/new-contact-form";
 import { FormField, FormSelect } from "~/components/ui/form";
 import { useUser } from "~/hooks/useUser";
-import { NewContactSchema } from "~/schemas";
 
 export function ContactFields({
   contactTypes,
   scope,
 }: {
   contactTypes: Array<ContactType>;
-  scope: FormScope<z.infer<typeof NewContactSchema>>;
+  scope: FormScope<z.infer<typeof newContactSchema>>;
 }) {
   const user = useUser();
   const location = useLocation();

@@ -7,7 +7,6 @@ import { expectVisibleNotification } from "test/e2e/helpers/notifications";
 
 dayjs.extend(utc);
 
-test.use({ storageState: "playwright/.auth/admin.json" });
 test.describe("Add transfer", () => {
   // Sometimes the transfer submission just doesn't ever load the next page
   test.describe.configure({ retries: 3 });

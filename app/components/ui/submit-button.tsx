@@ -14,6 +14,7 @@ export function SubmitButton(props: ButtonProps & { isSubmitting: boolean } = { 
       {...rest}
       type="submit"
       disabled={isDisabled}
+      aria-busy={isSubmitting ? "true" : "false"}
       className={cn(
         "relative transition-[padding,width,background-color,opacity] duration-150 ease-in-out",
         isSubmitting && "pl-10",
