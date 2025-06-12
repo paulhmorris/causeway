@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
-import { Link } from "@remix-run/react";
 import { IconAddressBook, IconMail, IconPhone } from "@tabler/icons-react";
+import { Link } from "react-router";
 
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
@@ -22,7 +22,7 @@ export function ContactCard({ contact }: { contact: Contact }) {
             <span>
               {(contact.typeId as ContactType) === ContactType.Organization
                 ? contact.organizationName
-                : `${contact.firstName} ${contact.lastName}`}
+                : `${contact.firstName} ${contact.lastName ?? ""}`}
             </span>
             {user.contactId === contact.id ? <Badge variant="outline">This is you</Badge> : null}
           </CardTitle>
@@ -41,7 +41,7 @@ export function ContactCard({ contact }: { contact: Contact }) {
               <>
                 <dt className="self-start">
                   <span className="sr-only">Address</span>
-                  <IconAddressBook className="h-5 w-5 text-muted-foreground" />
+                  <IconAddressBook className="text-muted-foreground size-5" />
                 </dt>
                 <dd>
                   <span className="block">
@@ -59,7 +59,7 @@ export function ContactCard({ contact }: { contact: Contact }) {
             <div className="flex items-center gap-4">
               <dt>
                 <span className="sr-only">Phone</span>
-                <IconPhone className="h-5 w-5 text-muted-foreground" />
+                <IconPhone className="text-muted-foreground size-5" />
               </dt>
               <dd>
                 <a href={`tel:${contact.phone}`}>{formatPhoneNumber(contact.phone)}</a>
@@ -70,7 +70,7 @@ export function ContactCard({ contact }: { contact: Contact }) {
             <div className="flex items-center gap-4">
               <dt>
                 <span className="sr-only">Phone</span>
-                <IconPhone className="h-5 w-5 text-muted-foreground" />
+                <IconPhone className="text-muted-foreground size-5" />
               </dt>
               <dd>
                 <a href={`tel:${contact.alternatePhone}`}>{formatPhoneNumber(contact.alternatePhone)}</a>
@@ -81,7 +81,7 @@ export function ContactCard({ contact }: { contact: Contact }) {
             <div className="flex items-center gap-4">
               <dt>
                 <span className="sr-only">Email</span>
-                <IconMail className="h-5 w-5 text-muted-foreground" />
+                <IconMail className="text-muted-foreground size-5" />
               </dt>
               <dd>
                 <a href={`mailto:${contact.email}`}>{contact.email}</a>
@@ -92,7 +92,7 @@ export function ContactCard({ contact }: { contact: Contact }) {
             <div className="flex items-center gap-4">
               <dt>
                 <span className="sr-only">Email</span>
-                <IconMail className="h-5 w-5 text-muted-foreground" />
+                <IconMail className="text-muted-foreground size-5" />
               </dt>
               <dd>
                 <a href={`mailto:${contact.alternateEmail}`}>{contact.alternateEmail}</a>
@@ -104,7 +104,9 @@ export function ContactCard({ contact }: { contact: Contact }) {
       {!user.isMember || user.contactAssignments.some((a) => a.contactId === contact.id) ? (
         <CardFooter>
           <Button variant="outline" className="ml-auto" asChild>
-            <Link to={`/contacts/${contact.id}/edit`}>Edit</Link>
+            <Link prefetch="intent" to={`/contacts/${contact.id}/edit`}>
+              Edit
+            </Link>
           </Button>
         </CardFooter>
       ) : null}

@@ -1,10 +1,8 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { useSearchParams } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import { IconChevronRight } from "@tabler/icons-react";
-import { redirect, typedjson, useTypedLoaderData } from "remix-typedjson";
-import { ValidatedForm, validationError } from "remix-validated-form";
-import { z } from "zod";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import { redirect, useLoaderData, useSearchParams } from "react-router";
+import { z } from "zod/v4";
 
 import { AuthCard } from "~/components/auth/auth-card";
 import { BigButton } from "~/components/ui/big-button";
@@ -13,16 +11,14 @@ import { Label } from "~/components/ui/label";
 import { db } from "~/integrations/prisma.server";
 import { Toasts } from "~/lib/toast.server";
 import { normalizeEnum } from "~/lib/utils";
-import { CheckboxSchema } from "~/models/schemas";
+import { checkbox, optionalText, text } from "~/schemas/fields";
 import { SessionService, sessionStorage } from "~/services.server/session";
 
-const validator = withZod(
-  z.object({
-    orgId: z.string().min(1, { message: "Organization is required" }),
-    redirectTo: z.string().optional(),
-    rememberSelection: CheckboxSchema,
-  }),
-);
+const schema = z.object({
+  orgId: text,
+  redirectTo: optionalText,
+  rememberSelection: checkbox,
+});
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const userId = await SessionService.requireUserId(request);
@@ -51,7 +47,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   if (!user.memberships.length) {
     return Toasts.redirectWithError(
       "/login",
-      { title: "Error", description: "You are not a member of any organizations." },
+      { message: "Error", description: "You are not a member of any organizations." },
       {
         headers: {
           "Set-Cookie": await sessionStorage.destroySession(session),
@@ -59,14 +55,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       },
     );
   }
-  return typedjson({
+  return {
     orgs: user.memberships.map((m) => ({ id: m.org.id, name: m.org.name, role: m.role, isDefault: m.isDefault })),
-  });
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const userId = await SessionService.requireUserId(request);
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
 
   if (result.error) {
     return validationError(result.error);
@@ -111,15 +107,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export const meta: MetaFunction = () => [{ title: "Choose Organization" }];
 
 export default function LoginPage() {
-  const { orgs } = useTypedLoaderData<typeof loader>();
+  const { orgs } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/";
+  const redirectTo = searchParams.get("redirectTo") ?? "/";
 
   return (
     <AuthCard>
       <h1 className="text-4xl font-extrabold">Choose organization</h1>
-      <p className="mt-1 text-sm text-muted-foreground">You can change organizations at any time.</p>
-      <ValidatedForm validator={validator} method="post" className="mt-6 space-y-4">
+      <p className="text-muted-foreground mt-1 text-sm">You can change organizations at any time.</p>
+      <ValidatedForm
+        schema={schema}
+        method="post"
+        className="mt-6 space-y-4"
+        defaultValues={{
+          redirectTo: redirectTo === "/" ? undefined : redirectTo,
+          rememberSelection: "",
+          orgId: "",
+        }}
+      >
         <input type="hidden" name="redirectTo" value={redirectTo === "/choose-org" ? "/" : redirectTo} />
         <Label className="inline-flex cursor-pointer items-center gap-2">
           <Checkbox
@@ -134,8 +139,8 @@ export default function LoginPage() {
             return (
               <BigButton key={org.id} type="submit" name="orgId" value={org.id}>
                 <div>
-                  <p className="text-lg font-bold text-foreground">{org.name}</p>
-                  <p className="text-sm text-muted-foreground">{normalizeEnum(org.role)}</p>
+                  <p className="text-foreground text-lg font-bold">{org.name}</p>
+                  <p className="text-muted-foreground text-sm">{normalizeEnum(org.role)}</p>
                 </div>
                 <IconChevronRight />
               </BigButton>

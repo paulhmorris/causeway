@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
-import { Link } from "@remix-run/react";
 import { ColumnDef } from "@tanstack/react-table";
+import { Link } from "react-router";
 
 import { DataTable } from "~/components/ui/data-table/data-table";
 import { DataTableColumnHeader } from "~/components/ui/data-table/data-table-column-header";
@@ -17,7 +17,7 @@ const columns: Array<ColumnDef<Contact>> = [
     id: "action",
     header: () => <span className="sr-only">Action</span>,
     cell: ({ row }) => (
-      <Link to={`/contacts/${row.original.id}`} className="font-medium text-primary">
+      <Link prefetch="intent" to={`/contacts/${row.original.id}`} className="text-primary font-medium">
         View
       </Link>
     ),

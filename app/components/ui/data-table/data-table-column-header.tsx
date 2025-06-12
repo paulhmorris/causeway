@@ -23,18 +23,18 @@ export function DataTableColumnHeader<TData, TValue>({
       variant="ghost"
       size="sm"
       className={cn(
-        "-ml-3 h-8 data-[state=open]:bg-accent",
-        column.getIsSorted() && "bg-primary text-white hover:bg-primary/90 hover:text-white",
+        "data-[state=open]:bg-secondary -ml-3 h-8",
+        column.getIsSorted() && "bg-primary hover:bg-primary/90 text-white hover:text-white",
       )}
       onClick={() => column.toggleSorting()}
     >
       <span>{title}</span>
       {column.getIsSorted() === "desc" ? (
-        <IconArrowNarrowDown className="ml-2 h-4 w-4" />
+        <IconArrowNarrowDown className="ml-2 size-4" />
       ) : column.getIsSorted() === "asc" ? (
-        <IconArrowNarrowUp className="ml-2 h-4 w-4" />
+        <IconArrowNarrowUp className="ml-2 size-4" />
       ) : (
-        <IconSelector className="ml-2 h-4 w-4" />
+        <IconSelector className="ml-2 size-4" />
       )}
     </Button>
   );

@@ -1,7 +1,6 @@
-import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { Form, Link, useSearchParams, useSubmit } from "@remix-run/react";
 import { IconPlus } from "@tabler/icons-react";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
+import type { LoaderFunctionArgs, MetaFunction } from "react-router";
+import { Form, Link, useLoaderData, useSearchParams, useSubmit } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
 import { ContactsTable } from "~/components/contacts/contacts-table";
@@ -11,7 +10,7 @@ import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Label } from "~/components/ui/label";
 import { db } from "~/integrations/prisma.server";
-import { Sentry } from "~/integrations/sentry";
+import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -43,7 +42,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         },
         include: { type: true },
       });
-      return typedjson({ contacts });
+      return { contacts };
     }
 
     const contacts = await db.contact.findMany({
@@ -51,18 +50,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
       include: { type: true },
       orderBy: { createdAt: "desc" },
     });
-    return typedjson({ contacts });
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    throw error;
+    return { contacts };
+  } catch (e) {
+    handleLoaderError(e);
   }
 }
 
 export const meta: MetaFunction = () => [{ title: "Contacts" }];
 
 export default function ContactIndexPage() {
-  const { contacts } = useTypedLoaderData<typeof loader>();
+  const { contacts } = useLoaderData<typeof loader>();
   const submit = useSubmit();
   const [searchParams] = useSearchParams();
 
@@ -70,8 +67,8 @@ export default function ContactIndexPage() {
     <>
       <PageHeader title="Contacts">
         <Button asChild>
-          <Link to="/contacts/new">
-            <IconPlus className="mr-2 h-5 w-5" />
+          <Link to="/contacts/new" prefetch="intent">
+            <IconPlus className="mr-2 size-5" />
             <span>New Contact</span>
           </Link>
         </Button>

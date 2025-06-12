@@ -1,39 +1,28 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { json, redirect } from "@remix-run/node";
-import { useSearchParams } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { ValidatedForm, validationError } from "remix-validated-form";
-import { z } from "zod";
+import { parseFormData, validationError } from "@rvf/react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { redirect } from "react-router";
 
 import { AuthCard } from "~/components/auth/auth-card";
 import { ErrorComponent } from "~/components/error-component";
-import { FormField } from "~/components/ui/form";
-import { SubmitButton } from "~/components/ui/submit-button";
+import { LoginForm, loginSchema } from "~/components/forms/login-form";
 import { Toasts } from "~/lib/toast.server";
+import { safeRedirect } from "~/lib/utils";
 import { generateVerificationCode, verifyLogin } from "~/services.server/auth";
 import { SessionService } from "~/services.server/session";
 
-const validator = withZod(
-  z.object({
-    email: z.string().min(1, { message: "Email is required" }).email(),
-    password: z.string().min(8, { message: "Password must be 8 or more characters." }),
-    redirectTo: z.string().optional(),
-  }),
-);
-
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const user = await SessionService.getUser(request);
+  const userId = await SessionService.getUserId(request);
   const orgId = await SessionService.getOrgId(request);
 
-  if (user && orgId) {
+  if (userId && orgId) {
     return redirect("/");
   }
 
-  return json({});
+  return null;
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, loginSchema);
 
   if (result.error) {
     return validationError(result.error);
@@ -59,55 +48,39 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   if (user.memberships.length === 0) {
-    return Toasts.jsonWithError(
-      { message: "You are not a member of any organizations. Please contact your administrator." },
-      {
-        title: "Error",
-        description: "You are not a member of any organizations. Please contact your administrator.",
-      },
-    );
+    return Toasts.dataWithError(null, {
+      message: "Error",
+      description: "You are not a member of any organizations. Please contact your administrator.",
+    });
+  }
+
+  // Skip verification code step in dev/qa
+  if (process.env.VERCEL_ENV !== "production") {
+    return SessionService.createUserSession({
+      request,
+      userId: user.id,
+      orgId: user.memberships[0].orgId,
+      redirectTo: safeRedirect(redirectTo, "/"),
+      remember: false,
+    });
   }
 
   await generateVerificationCode(user.id);
   const url = new URL("/login/verify", request.url);
   url.searchParams.set("email", email);
-  url.searchParams.set("redirectTo", redirectTo || "/");
+  url.searchParams.set("redirectTo", redirectTo ?? "/");
   return redirect(url.toString());
 };
 
-export const meta: MetaFunction = () => [{ title: "Login" }];
-
 export default function LoginPage() {
-  const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/";
-
   return (
-    <AuthCard>
-      <h1 className="text-3xl font-extrabold">Login</h1>
-      <ValidatedForm validator={validator} method="post" className="mt-4 space-y-4">
-        <FormField
-          label="Email"
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          defaultValue={process.env.NODE_ENV === "development" ? "paulh.morris@gmail.com" : ""}
-          required
-        />
-        <FormField
-          label="Password"
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          defaultValue={process.env.NODE_ENV === "development" ? "password" : ""}
-          required
-        />
-
-        <input type="hidden" name="redirectTo" value={redirectTo} />
-        <SubmitButton className="w-full">Log in</SubmitButton>
-      </ValidatedForm>
-    </AuthCard>
+    <>
+      <title>Login</title>
+      <AuthCard>
+        <h1 className="text-3xl font-black sm:text-4xl">Login</h1>
+        <LoginForm />
+      </AuthCard>
+    </>
   );
 }
 

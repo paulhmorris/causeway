@@ -1,19 +1,30 @@
-import { useNavigation } from "@remix-run/react";
 import { IconLoader } from "@tabler/icons-react";
-import { useIsSubmitting } from "remix-validated-form";
 
 import type { ButtonProps } from "~/components/ui/button";
 import { Button } from "~/components/ui/button";
+import { cn } from "~/lib/utils";
 
-export function SubmitButton(props: ButtonProps & { formId?: string }) {
-  const { formId, ...rest } = props;
-  const navigation = useNavigation();
-  const isSubmitting = useIsSubmitting(formId);
-  const isDisabled = props.disabled || isSubmitting || navigation.state === "submitting";
+export function SubmitButton(props: ButtonProps & { isSubmitting: boolean } = { isSubmitting: false }) {
+  const { isSubmitting, ...rest } = props;
+  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+  const isDisabled = props.disabled || isSubmitting;
 
   return (
-    <Button {...rest} type="submit" disabled={isDisabled}>
-      {isSubmitting ? <IconLoader className="h-4 w-4 animate-spin" /> : null}
+    <Button
+      {...rest}
+      type="submit"
+      disabled={isDisabled}
+      aria-busy={isSubmitting ? "true" : "false"}
+      className={cn(
+        "relative transition-[padding,width,background-color,opacity] duration-150 ease-in-out",
+        isSubmitting && "pl-10",
+      )}
+    >
+      {isSubmitting ? (
+        <div className="animate-in fade-in-0 absolute left-4">
+          <IconLoader className="size-4 animate-spin" />
+        </div>
+      ) : null}
       {props.children}
     </Button>
   );

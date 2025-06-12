@@ -1,26 +1,27 @@
-import { Prisma } from "@prisma/client";
-import { ActionFunctionArgs, redirect } from "@remix-run/node";
-import { withZod } from "@remix-validated-form/with-zod";
-import { validationError } from "remix-validated-form";
-import { z } from "zod";
+import { parseFormData, validationError } from "@rvf/react-router";
+import { ActionFunctionArgs, redirect } from "react-router";
+import { z } from "zod/v4";
 
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
+import { serverError } from "~/lib/responses.server";
+import { optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
-const validator = withZod(
-  z.object({
-    orgId: z.string().min(1, { message: "Organization is required" }),
-    pathname: z.string().optional(),
-  }),
-);
+const logger = createLogger("Api.ChangeOrg");
+
+const schema = z.object({
+  orgId: text,
+  pathname: optionalText,
+});
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     switch (request.method.toLowerCase()) {
       case "post": {
         const userId = await SessionService.requireUserId(request);
-        const result = await validator.validate(await request.formData());
+        const result = await parseFormData(request, schema);
 
         if (result.error) {
           return validationError(result.error);
@@ -48,12 +49,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return new Response("Method Not Allowed", { status: 405, statusText: "Method Not Allowed" });
       }
     }
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      return new Response(error.message, { status: 400, statusText: error.message });
-    }
-    throw new Response("Unknown error", { status: 500, statusText: "Unknown error" });
+  } catch (e) {
+    logger.error(e);
+    Sentry.captureException(e);
+    throw serverError("An unknown error occurred");
   }
 };

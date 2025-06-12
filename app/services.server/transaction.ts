@@ -1,8 +1,8 @@
 import { Organization, TransactionItemTypeDirection } from "@prisma/client";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { db } from "~/integrations/prisma.server";
-import { TransactionItemSchema } from "~/models/schemas";
+import { TransactionItemSchema } from "~/schemas";
 
 type OrgId = Organization["id"];
 

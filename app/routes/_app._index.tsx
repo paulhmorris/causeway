@@ -1,5 +1,4 @@
-import { type LoaderFunctionArgs, type MetaFunction } from "@remix-run/node";
-import { redirect } from "remix-typedjson";
+import { redirect, type LoaderFunctionArgs, type MetaFunction } from "react-router";
 
 import { ErrorComponent } from "~/components/error-component";
 import { SessionService } from "~/services.server/session";

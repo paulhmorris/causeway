@@ -1,7 +1,6 @@
 import { ExcelBuilder, ExcelSchemaBuilder } from "@chronicstone/typed-xlsx";
-import { json, LoaderFunctionArgs } from "@remix-run/node";
-import { z } from "zod";
-import { fromZodError } from "zod-validation-error";
+import { data, LoaderFunctionArgs } from "react-router";
+import { z } from "zod/v4";
 
 import { db } from "~/integrations/prisma.server";
 import { Toasts } from "~/lib/toast.server";
@@ -21,7 +20,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const parsedParams = TransactionsReportSchema.safeParse({ trxStartDate, trxEndDate });
   if (!parsedParams.success) {
-    return json({ message: fromZodError(parsedParams.error).toString() }, { status: 400 });
+    const tree = z.treeifyError(parsedParams.error);
+    return data({ message: tree.errors.join(", ") }, { status: 400 });
   }
 
   const transactionItems = await db.transactionItem.findMany({
@@ -82,7 +82,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   if (!transactionItems.length) {
     return Toasts.redirectWithError("/reports", {
-      title: "No transactions found",
+      message: "No transactions found",
       description: `No transactions found from ${trxStartDate} to ${trxEndDate}. Update your date filters.`,
     });
   }
@@ -105,11 +105,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
     .column("Account Description", { key: "transaction.account.description" })
     .column("Organization", {
       key: "transaction.contact",
-      transform: (c) => (c && c.organizationName ? c.organizationName : ""),
+      transform: (c) => c?.organizationName ?? "",
     })
     .column("Contact", {
       key: "transaction.contact",
-      transform: (c) => ((c && c.firstName) || c?.lastName ? `${c.firstName} ${c.lastName}` : "N/A"),
+      transform: (c) => (c?.firstName || c?.lastName ? `${c.firstName} ${c.lastName}` : "N/A"),
     })
     .build();
 

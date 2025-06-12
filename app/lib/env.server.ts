@@ -1,20 +1,23 @@
-/* eslint-disable @typescript-eslint/no-empty-interface */
 /* eslint-disable @typescript-eslint/no-namespace */
 import { loadEnv } from "vite";
-import { TypeOf, z } from "zod";
+import { TypeOf, z } from "zod/v4";
 
 const serverEnvValidation = z.object({
   BASE_URL: z.string().url(),
   EMAIL_FROM_DOMAIN: z.string(),
+  NODE_ENV: z.enum(["development", "production", "test"]),
   // CI
   CI: z.string().optional(),
 
-  // Remix
+  // RR
   SESSION_SECRET: z.string().min(16),
+
+  // Vercel
+  CRON_SECRET: z.string().min(16),
 
   // Cloudflare
   R2_BUCKET_NAME: z.string().min(1),
-  R2_BUCKET_URL: z.string().url(),
+  R2_BUCKET_URL: z.url(),
   R2_ACCESS_KEY_ID: z.string().min(1),
   R2_SECRET_ACCESS_KEY: z.string().min(1),
 
@@ -25,17 +28,11 @@ const serverEnvValidation = z.object({
   // Database
   DATABASE_URL: z.string().min(1),
 
-  // Linear
-  LINEAR_API_KEY: z.string().min(1).startsWith("lin_api_"),
-
-  // Trigger.dev
-  TRIGGER_SECRET_KEY: z.string().startsWith("tr_"),
-
   // Playwright
-  PLAYWRIGHT_TEST_BASE_URL: z.string().url().optional(),
+  PLAYWRIGHT_TEST_BASE_URL: z.url().optional(),
 });
 
-const deploymentPublicEnvValidation = z.object({
+const _deploymentPublicEnvValidation = z.object({
   // Vercel
   VERCEL_URL: z.string(),
   VERCEL_ENV: z.enum(["production", "preview", "development"]),
@@ -44,12 +41,13 @@ const deploymentPublicEnvValidation = z.object({
 declare global {
   // Server side
   namespace NodeJS {
-    interface ProcessEnv extends TypeOf<typeof serverEnvValidation & typeof deploymentPublicEnvValidation> {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+    interface ProcessEnv extends TypeOf<typeof serverEnvValidation & typeof _deploymentPublicEnvValidation> {}
   }
 
   // Client side
   interface Window {
-    ENV: TypeOf<typeof deploymentPublicEnvValidation>;
+    ENV: TypeOf<typeof _deploymentPublicEnvValidation>;
   }
 }
 
@@ -60,11 +58,9 @@ export function validateEnv(): void {
     serverEnvValidation.parse(env);
   } catch (err) {
     if (err instanceof z.ZodError) {
-      const { fieldErrors } = err.flatten();
-      const errorMessage = Object.entries(fieldErrors)
-        .map(([field, errors]) => (errors ? `${field}: ${errors.join(", ")}` : field))
-        .join("\n  ");
-      throw new Error(`Missing environment variables:\n  ${errorMessage}`);
+      const tree = z.treeifyError(err);
+      const message = tree.errors.join("\n  ");
+      throw new Error(`Missing environment variables:\n  ${message}`);
     }
   }
 }

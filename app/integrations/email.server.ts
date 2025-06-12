@@ -2,8 +2,11 @@ import type { SendEmailCommandInput, SendEmailCommandOutput } from "@aws-sdk/cli
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import { nanoid } from "nanoid";
 
+import { createLogger } from "~/integrations/logger.server";
+import { Sentry } from "~/integrations/sentry";
 import { Prettify } from "~/lib/utils";
 
+const logger = createLogger("EmailService");
 const client = new SESv2Client({ region: "us-east-1" });
 
 export type SendEmailInput = {
@@ -40,15 +43,33 @@ export async function sendEmail(props: SendEmailInput) {
     },
   };
 
-  const command = new SendEmailCommand(input);
-  const response = await client.send(command);
-  if (!response.MessageId) {
-    throw new Error("Email not sent");
+  if (process.env.NODE_ENV === "production") {
+    try {
+      const command = new SendEmailCommand(input);
+      const response = await client.send(command);
+      if (!response.MessageId) {
+        throw new Error("Email not sent");
+      }
+
+      return { messageId: response.MessageId, $metadata: response.$metadata } as Prettify<
+        { messageId: string } & {
+          $metadata: SendEmailCommandOutput["$metadata"];
+        }
+      >;
+    } catch (e) {
+      logger.error(e);
+      Sentry.captureException(e);
+      throw e;
+    }
   }
 
-  return { messageId: response.MessageId, $metadata: response.$metadata } as Prettify<
-    { messageId: string } & {
-      $metadata: SendEmailCommandOutput["$metadata"];
-    }
-  >;
+  logger.debug(
+    {
+      From: props.from,
+      To: props.to,
+      Subject: props.subject,
+    },
+    "Email sent",
+  );
+  return { messageId: "test", $metadata: {} };
 }

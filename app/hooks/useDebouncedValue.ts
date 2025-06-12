@@ -1,5 +1,5 @@
-import { useSearchParams } from "@remix-run/react";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router";
 import { useDebounce } from "use-debounce";
 
 type Options = {
@@ -30,7 +30,6 @@ export function useDebouncedValue({ delay = 500, minLength = 3 }: Options = { de
 
     params.set("s", debouncedValue);
     setSearchParams(params, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedValue]);
 
   return [value, setValue];

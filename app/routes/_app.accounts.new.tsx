@@ -1,33 +1,32 @@
-import { MembershipRole, Prisma } from "@prisma/client";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { type MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
-import { ValidatedForm, validationError } from "remix-validated-form";
-import { z } from "zod";
+import { MembershipRole } from "@prisma/client";
+import { parseFormData, useForm, validationError } from "@rvf/react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import { useLoaderData } from "react-router";
+import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
 import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
 import { ButtonGroup } from "~/components/ui/button-group";
 import { FormField, FormSelect } from "~/components/ui/form";
-import { SubmitButton } from "~/components/ui/submit-button";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { AccountType } from "~/lib/constants";
-import { getPrismaErrorText } from "~/lib/responses.server";
+import { handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
+import { number, optionalSelect, text } from "~/schemas/fields";
 import { getAccountTypes } from "~/services.server/account";
 import { SessionService } from "~/services.server/session";
 
-const validator = withZod(
-  z.object({
-    code: z.string().min(1, { message: "Code is required" }),
-    description: z.string().min(1, { message: "Description is required" }),
-    typeId: z.coerce.number().pipe(z.nativeEnum(AccountType)),
-    userId: z.string().optional(),
-  }),
-);
+const logger = createLogger("Routes.AccountNew");
+
+const schema = z.object({
+  code: text,
+  description: text,
+  typeId: number.pipe(z.enum(AccountType)),
+  userId: optionalSelect.transform((v) => (v === "Select user" ? undefined : v)),
+});
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await SessionService.requireAdmin(request);
@@ -56,14 +55,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       },
     });
 
-    return typedjson({
+    return {
       users,
       accountTypes,
-    });
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    throw error;
+    };
+  } catch (e) {
+    handleLoaderError(e);
   }
 };
 
@@ -71,7 +68,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -89,53 +86,59 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     return Toasts.redirectWithSuccess(`/accounts/${account.id}`, {
-      title: "Account created",
+      message: "Account created",
       description: "Well done.",
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
-    let message = error instanceof Error ? error.message : "An error occurred while creating the account.";
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      message = getPrismaErrorText(error);
-    }
-    return Toasts.jsonWithError({ success: false }, { title: "Error creating account", description: message });
+    return Toasts.dataWithError({ success: false }, { message: "Error creating account" });
   }
 };
 
 export const meta: MetaFunction = () => [{ title: "New Account" }];
 
 export default function NewAccountPage() {
-  const { users, accountTypes } = useTypedLoaderData<typeof loader>();
+  const { users, accountTypes } = useLoaderData<typeof loader>();
+  const form = useForm({
+    schema,
+    method: "POST",
+    defaultValues: {
+      code: "",
+      userId: "",
+      typeId: "",
+      description: "",
+    },
+  });
   return (
     <>
       <PageHeader title="New Account" />
       <PageContainer>
-        <ValidatedForm validator={validator} method="post" className="space-y-4 sm:max-w-md">
-          <FormField label="Code" id="name" name="code" required />
-          <FormField label="Description" id="name" name="description" required />
+        <form {...form.getFormProps()} className="space-y-4 sm:max-w-md">
+          <FormField label="Code" scope={form.scope("code")} required />
+          <FormField label="Description" scope={form.scope("description")} required />
           <FormSelect
             required
             label="Type"
-            name="typeId"
+            scope={form.scope("typeId")}
             placeholder="Select type"
             options={accountTypes.map((a) => ({ label: a.name, value: a.id }))}
           />
           <FormSelect
             label="Linked User"
-            name="userId"
+            scope={form.scope("userId")}
             placeholder="Select user"
             description="Link this account to a user. They will be able to see this account and all related transactions."
             options={users.map((a) => ({ label: `${a.contact.firstName} ${a.contact.lastName}`, value: a.id }))}
           />
 
           <ButtonGroup>
-            <SubmitButton>Create Account</SubmitButton>
-            <Button type="reset" variant="outline">
+            <Button>Create Account</Button>
+            <Button type="reset" variant="ghost">
               Reset
             </Button>
           </ButtonGroup>
-        </ValidatedForm>
+        </form>
       </PageContainer>
     </>
   );

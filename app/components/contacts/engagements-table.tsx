@@ -1,8 +1,8 @@
 import { Prisma } from "@prisma/client";
-import { Link } from "@remix-run/react";
 import { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { Link } from "react-router";
 dayjs.extend(utc);
 
 import { DataTable } from "~/components/ui/data-table/data-table";
@@ -44,7 +44,7 @@ const columns: Array<ColumnDef<Engagement>> = [
     id: "action",
     header: () => <span className="sr-only">Action</span>,
     cell: ({ row }) => (
-      <Link to={`/engagements/${row.original.id}`} className="font-medium text-primary">
+      <Link prefetch="intent" to={`/engagements/${row.original.id}`} className="text-primary font-medium">
         View
       </Link>
     ),
@@ -56,7 +56,7 @@ const columns: Array<ColumnDef<Engagement>> = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Contact" />,
     cell: ({ row }) => {
       return (
-        <Link className="font-medium text-primary" to={`/contacts/${row.original.contact.id}`}>
+        <Link prefetch="intent" className="text-primary font-medium" to={`/contacts/${row.original.contact.id}`}>
           <span className="max-w-[500px] truncate font-medium">{row.getValue("contact")}</span>
         </Link>
       );

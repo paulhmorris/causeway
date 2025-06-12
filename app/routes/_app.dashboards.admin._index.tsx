@@ -1,8 +1,7 @@
 import { ReimbursementRequestStatus } from "@prisma/client";
-import { type LoaderFunctionArgs, type MetaFunction } from "@remix-run/node";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { redirect, typedjson, useTypedLoaderData } from "remix-typedjson";
+import { redirect, useLoaderData, type LoaderFunctionArgs, type MetaFunction } from "react-router";
 dayjs.extend(utc);
 
 import { AnnouncementCard } from "~/components/admin/announcement-card";
@@ -14,66 +13,71 @@ import { PageContainer } from "~/components/page-container";
 import { AccountBalanceCard } from "~/components/users/balance-card";
 import { db } from "~/integrations/prisma.server";
 import { AccountType } from "~/lib/constants";
+import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
 
 export const meta: MetaFunction = () => [{ title: "Home" }];
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const user = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+  try {
+    const user = await SessionService.requireUser(request);
+    const orgId = await SessionService.requireOrgId(request);
 
-  if (user.isMember) {
-    return redirect("/dashboards/staff");
-  }
+    if (user.isMember) {
+      return redirect("/dashboards/staff");
+    }
 
-  const [accounts, reimbursementRequests, announcement] = await Promise.all([
-    db.account.findMany({
-      where: {
-        orgId,
-        typeId: AccountType.Operating,
-      },
-      include: {
-        transactions: true,
-      },
-      orderBy: { code: "asc" },
-    }),
-
-    db.reimbursementRequest.findMany({
-      where: {
-        orgId,
-        status: ReimbursementRequestStatus.PENDING,
-      },
-      include: {
-        account: true,
-        user: {
-          include: { contact: true },
+    const [accounts, reimbursementRequests, announcement] = await Promise.all([
+      db.account.findMany({
+        where: {
+          orgId,
+          typeId: AccountType.Operating,
         },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    }),
-    db.announcement.findFirst({
-      where: {
-        orgId,
-        OR: [
-          {
-            expiresAt: { gt: dayjs().utc().toDate() },
-          },
-          { expiresAt: null },
-        ],
-      },
-      orderBy: {
-        id: "desc",
-      },
-    }),
-  ]);
+        include: {
+          transactions: true,
+        },
+        orderBy: { code: "asc" },
+      }),
 
-  return typedjson({ accounts, reimbursementRequests, announcement });
+      db.reimbursementRequest.findMany({
+        where: {
+          orgId,
+          status: ReimbursementRequestStatus.PENDING,
+        },
+        include: {
+          account: true,
+          user: {
+            include: { contact: true },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      }),
+      db.announcement.findFirst({
+        where: {
+          orgId,
+          OR: [
+            {
+              expiresAt: { gt: dayjs().utc().toDate() },
+            },
+            { expiresAt: null },
+          ],
+        },
+        orderBy: {
+          id: "desc",
+        },
+      }),
+    ]);
+
+    return { accounts, reimbursementRequests, announcement };
+  } catch (e) {
+    handleLoaderError(e);
+  }
 }
 
 export default function Index() {
-  const { accounts, reimbursementRequests, announcement } = useTypedLoaderData<typeof loader>();
+  const { accounts, reimbursementRequests, announcement } = useLoaderData<typeof loader>();
 
   return (
     <>

@@ -1,9 +1,7 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { json, redirect } from "@remix-run/node";
-import { MetaFunction, useSearchParams } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { ValidatedForm, validationError } from "remix-validated-form";
-import { z } from "zod";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { MetaFunction, redirect, useSearchParams } from "react-router";
+import { z } from "zod/v4";
 
 import { AuthCard } from "~/components/auth/auth-card";
 import { ErrorComponent } from "~/components/error-component";
@@ -12,32 +10,30 @@ import { FormField } from "~/components/ui/form";
 import { Label } from "~/components/ui/label";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { safeRedirect } from "~/lib/utils";
-import { CheckboxSchema } from "~/models/schemas";
+import { checkbox, email, optionalText, text } from "~/schemas/fields";
 import { checkVerificationCode } from "~/services.server/auth";
 import { SessionService } from "~/services.server/session";
 
-const validator = withZod(
-  z.object({
-    email: z.string().min(1, { message: "Email is required" }).email(),
-    verificationCode: z.string().min(1, { message: "Verification code is required" }),
-    remember: CheckboxSchema,
-    redirectTo: z.string().optional(),
-  }),
-);
+const schema = z.object({
+  email: email,
+  verificationCode: text,
+  remember: checkbox,
+  redirectTo: optionalText,
+});
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const user = await SessionService.getUser(request);
+  const userId = await SessionService.getUserId(request);
   const orgId = await SessionService.getOrgId(request);
 
-  if (user && orgId) {
+  if (userId && orgId) {
     return redirect("/");
   }
 
-  return json({});
+  return null;
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
 
   if (result.error) {
     return validationError(result.error);
@@ -85,35 +81,55 @@ export const meta: MetaFunction = () => [{ title: "Verification Code" }];
 
 export default function VerifyPage() {
   const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/";
+  const redirectTo = searchParams.get("redirectTo") ?? "/";
+  const email = searchParams.get("email") ?? "";
 
   return (
     <AuthCard>
       <h1 className="text-3xl font-extrabold">Enter Verification Code</h1>
-      <ValidatedForm validator={validator} method="post" className="mt-4 space-y-4">
-        <FormField
-          label="Email"
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          defaultValue={
-            process.env.NODE_ENV === "development" ? "paulh.morris@gmail.com" : searchParams.get("email") || ""
-          }
-          required
-        />
-        <FormField label="Code" id="code" name="verificationCode" type="text" autoComplete="one-time-code" required />
+      <ValidatedForm
+        schema={schema}
+        method="post"
+        className="mt-4 space-y-4"
+        defaultValues={{
+          email,
+          redirectTo,
+          remember: "",
+          verificationCode: "",
+        }}
+      >
+        {(form) => (
+          <>
+            <FormField
+              label="Email"
+              id="email"
+              scope={form.scope("email")}
+              type="email"
+              autoComplete="email"
+              required
+            />
+            <FormField
+              label="Code"
+              id="code"
+              scope={form.scope("verificationCode")}
+              autoComplete="one-time-code"
+              required
+            />
 
-        <input type="hidden" name="redirectTo" value={redirectTo} />
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Checkbox id="remember" name="remember" aria-label="Remember this device for 7 days" />
-            <Label htmlFor="remember" className="cursor-pointer">
-              Remember this device for 7 days
-            </Label>
-          </div>
-        </div>
-        <SubmitButton className="w-full">Log in</SubmitButton>
+            <input type="hidden" name="redirectTo" value={redirectTo} />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Checkbox id="remember" name="remember" aria-label="Remember this device for 7 days" />
+                <Label htmlFor="remember" className="cursor-pointer">
+                  Remember this device for 7 days
+                </Label>
+              </div>
+            </div>
+            <SubmitButton isSubmitting={form.formState.isSubmitting} className="w-full">
+              Log in
+            </SubmitButton>
+          </>
+        )}
       </ValidatedForm>
     </AuthCard>
   );

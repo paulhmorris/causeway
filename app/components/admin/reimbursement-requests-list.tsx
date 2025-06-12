@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
-import { Link } from "@remix-run/react";
 import dayjs from "dayjs";
+import { Link } from "react-router";
 
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
@@ -43,7 +43,7 @@ export function ReimbursementRequestsList({ requests }: { requests: Array<Reimbu
                   <TableCell>{formatCentsAsDollars(req.amountInCents)}</TableCell>
                   {!user.isMember ? (
                     <TableCell>
-                      <Link to={`/reimbursements/${req.id}`} className="font-medium text-primary">
+                      <Link prefetch="intent" to={`/reimbursements/${req.id}`} className="text-primary font-medium">
                         View
                       </Link>
                     </TableCell>

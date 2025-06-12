@@ -1,6 +1,4 @@
-import { LoaderFunctionArgs } from "@remix-run/node";
-import { MetaFunction } from "@remix-run/react";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
+import { LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
 import { PageContainer } from "~/components/page-container";
@@ -30,11 +28,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
     },
   });
 
-  return typedjson({ requests });
+  return { requests };
 }
 
 export default function ReimbursementRequestsList() {
-  const { requests } = useTypedLoaderData<typeof loader>();
+  const { requests } = useLoaderData<typeof loader>();
   return (
     <>
       <PageHeader title="Reimbursement Requests" />

@@ -1,35 +1,39 @@
-import { Prisma } from "@prisma/client";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useSearchParams, type MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
-import { ValidatedForm, validationError } from "remix-validated-form";
-import { z } from "zod";
+import { parseFormData, useForm, validationError } from "@rvf/react-router";
+import {
+  useLoaderData,
+  useSearchParams,
+  type ActionFunctionArgs,
+  type LoaderFunctionArgs,
+  type MetaFunction,
+} from "react-router";
+import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
 import { ContactDropdown } from "~/components/contacts/contact-dropdown";
 import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
+import { Button } from "~/components/ui/button";
 import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
-import { SubmitButton } from "~/components/ui/submit-button";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType, EngagementType } from "~/lib/constants";
-import { getPrismaErrorText } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { getToday } from "~/lib/utils";
+import { cuid, number, optionalLongText, text } from "~/schemas/fields";
 import { getContactTypes } from "~/services.server/contact";
 import { getEngagementTypes } from "~/services.server/engagement";
 import { SessionService } from "~/services.server/session";
 
-const validator = withZod(
-  z.object({
-    date: z.coerce.date(),
-    description: z.string().optional(),
-    typeId: z.coerce.number().pipe(z.nativeEnum(EngagementType)),
-    contactId: z.string().cuid({ message: "Contact required" }),
-  }),
-);
+const logger = createLogger("Routes.EngagementNew");
+
+const schema = z.object({
+  // This doesn't use date because it needs to be in YYYY-MM-DD format
+  date: text,
+  description: optionalLongText,
+  typeId: number.pipe(z.enum(EngagementType)),
+  contactId: cuid,
+});
 
 export const meta: MetaFunction = () => [{ title: "Add Engagement" }];
 
@@ -55,18 +59,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     getEngagementTypes(orgId),
   ]);
 
-  return typedjson({
+  return {
     contacts,
     contactTypes,
     engagementTypes,
-  });
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await SessionService.requireUser(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -74,52 +78,49 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     const engagement = await db.engagement.create({
       data: {
-        ...result.data,
         orgId,
         userId: user.id,
+        ...result.data,
+        date: new Date(result.data.date),
       },
     });
 
     return Toasts.redirectWithSuccess(`/engagements/${engagement.id}`, {
-      title: "Success",
+      message: "Success",
       description: `Engagement recorded.`,
     });
   } catch (error) {
     Sentry.captureException(error);
-    console.error(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      return Toasts.jsonWithError(
-        { message: getPrismaErrorText(error) },
-        { title: "Database Error", description: getPrismaErrorText(error) },
-      );
-    }
-    return Toasts.jsonWithError(
-      { message: "An unknown error occurred" },
-      { title: "An unknown error occurred", description: error instanceof Error ? error.message : "" },
-    );
+    logger.error(error);
+    return Toasts.dataWithError(null, { message: "An unknown error occurred" });
   }
 };
 
 export default function NewEngagementPage() {
-  const { contacts, contactTypes, engagementTypes } = useTypedLoaderData<typeof loader>();
+  const { contacts, contactTypes, engagementTypes } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
+  const form = useForm({
+    schema,
+    method: "post",
+    defaultValues: {
+      typeId: "",
+      date: getToday(),
+      description: "",
+      contactId: searchParams.get("contactId") ?? "",
+    },
+  });
 
   return (
     <>
       <PageHeader title="Add Engagement" />
       <PageContainer>
-        <ValidatedForm
-          defaultValues={{ contactId: searchParams.get("contactId") ?? undefined }}
-          method="post"
-          validator={validator}
-          className="space-y-4 sm:max-w-md"
-        >
+        <form {...form.getFormProps()} className="space-y-4 sm:max-w-md">
           <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
-            <FormField required name="date" label="Date" type="date" defaultValue={getToday()} />
+            <FormField required label="Date" type="date" scope={form.scope("date")} />
             <FormSelect
               required
-              name="typeId"
               label="Type"
+              scope={form.scope("typeId")}
               placeholder="Select type"
               options={engagementTypes.map((t) => ({
                 value: t.id,
@@ -127,10 +128,16 @@ export default function NewEngagementPage() {
               }))}
             />
           </div>
-          <ContactDropdown types={contactTypes} contacts={contacts} name="contactId" label="Contact" required />
-          <FormTextarea name="description" label="Description" />
-          <SubmitButton>Submit</SubmitButton>
-        </ValidatedForm>
+          <ContactDropdown
+            types={contactTypes}
+            contacts={contacts}
+            scope={form.scope("contactId")}
+            label="Contact"
+            required
+          />
+          <FormTextarea scope={form.scope("description")} label="Description" />
+          <Button>Submit</Button>
+        </form>
       </PageContainer>
     </>
   );

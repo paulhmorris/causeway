@@ -1,7 +1,10 @@
 import { Prisma } from "@prisma/client";
 
 import { Bucket } from "~/integrations/bucket.server";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
+
+const logger = createLogger("ReceiptService");
 
 type ReceiptWithS3Url = Prisma.ReceiptGetPayload<{
   select: { s3Url: true; title: true; s3Key: true; id: true; s3UrlExpiry: true };
@@ -12,7 +15,7 @@ export async function generateS3Urls(receipts: Array<ReceiptWithS3Url>) {
   if (receipts.some((r) => !r.s3Url || isS3Expired(r))) {
     const updatePromises = receipts.map(async (receipt) => {
       if (!receipt.s3Url || isS3Expired(receipt)) {
-        console.info(`Generating url for ${receipt.title}`);
+        logger.info(`Generating url for ${receipt.title}`);
         const url = await Bucket.getGETPresignedUrl(receipt.s3Key);
         updatedReceipts = receipts.map((r) => (r.id === receipt.id ? { ...r, s3Url: url } : r));
         return db.receipt.update({

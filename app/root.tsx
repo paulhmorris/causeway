@@ -1,34 +1,36 @@
 import "@fontsource-variable/dm-sans/wght.css";
-import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
+import { Analytics } from "@vercel/analytics/react";
+import React, { useEffect } from "react";
+import type { LinksFunction, LoaderFunctionArgs } from "react-router";
 import {
+  data,
   Links,
   Meta,
   Outlet,
+  redirect,
   Scripts,
   ScrollRestoration,
   ShouldRevalidateFunctionArgs,
-  useRouteError,
-} from "@remix-run/react";
-import { captureRemixErrorBoundaryError, withSentry } from "@sentry/remix";
-import { Analytics } from "@vercel/analytics/react";
-import { useEffect } from "react";
+  useRouteLoaderData,
+} from "react-router";
 import { PreventFlashOnWrongTheme, ThemeProvider, useTheme } from "remix-themes";
-import { redirect, typedjson, useTypedLoaderData } from "remix-typedjson";
 
 import { ErrorComponent } from "~/components/error-component";
 import { Notifications } from "~/components/notifications";
-import { GlobalLoader } from "~/components/ui/global-loader";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
-import { getToast } from "~/lib/toast.server";
+import { Toasts } from "~/lib/toast.server";
 import { cn } from "~/lib/utils";
 import { SessionService, themeSessionResolver } from "~/services.server/session";
-import stylesheet from "~/tailwind.css?url";
+import tailwindUrl from "~/tailwind.css?url";
 
-// prettier-ignore
-export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: stylesheet, as: "style" },
-];
+// eslint-disable-next-line import/no-unresolved
+import { Route } from "./+types/root";
+
+const logger = createLogger("Routes.Root");
+
+export const links: LinksFunction = () => [{ rel: "stylesheet", href: tailwindUrl, as: "style" }];
 
 export const shouldRevalidate = ({ currentUrl, nextUrl, defaultShouldRevalidate }: ShouldRevalidateFunctionArgs) => {
   // Don't revalidate on searches and pagination
@@ -54,7 +56,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   const org = await SessionService.getOrg(request);
-  const { toast, headers } = await getToast(request);
+  const { toast, headers } = await Toasts.getToast(request);
   const userId = await SessionService.getUserId(request);
   const { getTheme } = await themeSessionResolver(request);
 
@@ -99,12 +101,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
 
     if (!dbUser) {
+      logger.error(`No user found for ${userId}`);
       throw await SessionService.logout(request);
     }
 
     const currentMembership = dbUser.memberships.find((m) => m.orgId === org?.id);
     if (org && !currentMembership) {
-      console.warn("No membership in the current org - logging out...");
+      logger.warn(`User ${dbUser.username} has no memberships for the current org. Logging out.`);
       throw await SessionService.logout(request);
     }
 
@@ -121,7 +124,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     };
   }
 
-  return typedjson(
+  return data(
     {
       user,
       toast,
@@ -135,33 +138,33 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   );
 };
 
-function AppWithProviders() {
-  const { theme } = useTypedLoaderData<typeof loader>();
+export default function App() {
+  return <Outlet />;
+}
+
+export function Layout({ children }: { children: React.ReactNode }) {
+  const data = useRouteLoaderData<typeof loader>("root");
   return (
-    <ThemeProvider specifiedTheme={theme} themeAction="/resources/set-theme">
-      <App />
+    <ThemeProvider specifiedTheme={data?.theme ?? null} themeAction="/resources/set-theme">
+      <InnerLayout ssrTheme={Boolean(data?.theme)}>{children}</InnerLayout>
     </ThemeProvider>
   );
 }
 
-export default withSentry(AppWithProviders);
-
-function App() {
-  const data = useTypedLoaderData<typeof loader>();
+function InnerLayout({ ssrTheme, children }: { ssrTheme: boolean; children: React.ReactNode }) {
+  const data = useRouteLoaderData<typeof loader>("root");
   const [theme] = useTheme();
-  const user = data.user;
 
-  // Set the Sentry user context
   useEffect(() => {
-    if (!user) {
+    if (!data?.user) {
       Sentry.setUser(null);
       return;
     }
-    Sentry.setUser({ id: user.id, username: user.username });
-  }, [user]);
+    Sentry.setUser({ id: data.user.id, username: data.user.username });
+  }, [data?.user]);
 
   return (
-    <html lang="en" className={cn("h-full", theme || "light")}>
+    <html lang="en" className={cn("h-full", theme)}>
       <head>
         <meta charSet="utf-8" />
         <meta name="robots" content="noindex" />
@@ -173,18 +176,17 @@ function App() {
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="manifest" href="/site.webmanifest" />
         <Meta />
-        <PreventFlashOnWrongTheme ssrTheme={Boolean(data.theme)} />
+        <PreventFlashOnWrongTheme ssrTheme={Boolean(ssrTheme)} />
         <Links />
       </head>
-      <body className="h-full min-h-full bg-background font-sans">
-        <Analytics debug={false} />
-        <Outlet />
+      <body className="bg-background h-full min-h-full font-sans">
+        {import.meta.env.PROD && data ? <Analytics debug={false} /> : null}
+        {children}
         <Notifications />
-        <GlobalLoader />
         <ScrollRestoration />
         <script
           dangerouslySetInnerHTML={{
-            __html: `window.ENV = ${JSON.stringify(data.ENV)}`,
+            __html: `window.ENV = ${JSON.stringify(data?.ENV)}`,
           }}
         />
         <Scripts />
@@ -193,28 +195,12 @@ function App() {
   );
 }
 
-export function ErrorBoundary() {
-  const error = useRouteError();
-  captureRemixErrorBoundaryError(error);
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   return (
-    <html lang="en" className="h-full">
-      <head>
-        <title>Oh no!</title>
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="manifest" href="/site.webmanifest" />
-        <Meta />
-        <Links />
-      </head>
-      <body>
-        <div className="grid min-h-full place-items-center px-6 py-24 sm:py-32 lg:px-8">
-          <div className="-mb-10">
-            <ErrorComponent />
-          </div>
-        </div>
-        <Scripts />
-      </body>
-    </html>
+    <main className="grid min-h-full place-items-center px-6 py-24 sm:py-32 lg:px-8">
+      <div className="-mb-10">
+        <ErrorComponent error={error} />
+      </div>
+    </main>
   );
 }

@@ -1,11 +1,8 @@
-import { Pool, neonConfig } from "@neondatabase/serverless";
+import { neonConfig } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
 import invariant from "tiny-invariant";
 import ws from "ws";
-
-// Borrowed & modified from https://github.com/jenseng/abuse-the-platform/blob/main/app/utils/singleton.ts
-// Thanks @jenseng!
 
 export const singleton = <Value>(name: string, valueFactory: () => Value): Value => {
   const g = global as unknown as { __singletons: Record<string, unknown> };
@@ -28,17 +25,16 @@ function getPrismaClient() {
         },
       },
     });
-    // connect eagerly
     void client.$connect();
 
     return client;
   }
 
   neonConfig.webSocketConstructor = ws;
-  const pool = new Pool({ connectionString: DATABASE_URL, ...neonConfig });
-  const adapter = new PrismaNeon(pool);
-  const client = new PrismaClient({ adapter });
-  void client.$connect();
+  const adapter = new PrismaNeon({ connectionString: `${DATABASE_URL}` });
+  const client = new PrismaClient({
+    adapter,
+  });
   return client;
 }
 

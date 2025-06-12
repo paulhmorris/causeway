@@ -1,6 +1,9 @@
 /* eslint-disable prefer-const */
 import { Prisma } from "@prisma/client";
-import { TypedJsonResponse, redirect, typedjson } from "remix-typedjson";
+import { data, redirect } from "react-router";
+
+import { logger } from "~/integrations/logger.server";
+import { Sentry } from "~/integrations/sentry";
 
 /**
  * Create a response receiving a JSON object with the status code 201.
@@ -10,8 +13,8 @@ import { TypedJsonResponse, redirect, typedjson } from "remix-typedjson";
  *   return created(result);
  * }
  */
-export function created<Data = unknown>(data: Data, init?: Omit<ResponseInit, "status">) {
-  return typedjson(data, { ...init, status: 201 });
+export function created<Data>(_data: Data | null = null, init?: Omit<ResponseInit, "status">) {
+  return data(_data, { ...init, status: 201 });
 }
 
 /**
@@ -40,8 +43,8 @@ export function redirectBack(request: Request, { fallback, ...init }: ResponseIn
  *   throw badRequest<BoundaryData>({ user });
  * }
  */
-export function badRequest<Data = unknown>(data: Data, init?: Omit<ResponseInit, "status">) {
-  return typedjson<Data>(data, { ...init, status: 400 });
+export function badRequest<Data>(_data: Data | null = null, init?: Omit<ResponseInit, "status">) {
+  return data(_data, { ...init, status: 400 });
 }
 
 /**
@@ -52,8 +55,8 @@ export function badRequest<Data = unknown>(data: Data, init?: Omit<ResponseInit,
  *   throw unauthorized<BoundaryData>({ user });
  * }
  */
-export function unauthorized<Data = unknown>(data: Data, init?: Omit<ResponseInit, "status">) {
-  return typedjson<Data>(data, { ...init, status: 401 });
+export function unauthorized<Data>(_data: Data | null = null, init?: Omit<ResponseInit, "status">) {
+  return data(_data, { ...init, status: 401 });
 }
 
 /**
@@ -64,8 +67,8 @@ export function unauthorized<Data = unknown>(data: Data, init?: Omit<ResponseIni
  *   if (!user.idAdmin) throw forbidden<BoundaryData>({ user });
  * }
  */
-export function forbidden<Data = unknown>(data: Data, init?: Omit<ResponseInit, "status">) {
-  return typedjson<Data>(data, { ...init, status: 403 });
+export function forbidden<Data>(_data: Data | null = null, init?: Omit<ResponseInit, "status">) {
+  return data(_data, { ...init, status: 403 });
 }
 
 /**
@@ -76,8 +79,8 @@ export function forbidden<Data = unknown>(data: Data, init?: Omit<ResponseInit, 
  *   if (!db.exists(params.id)) throw notFound<BoundaryData>({ user });
  * }
  */
-export function notFound<Data = unknown>(data: Data, init?: Omit<ResponseInit, "status">) {
-  return typedjson<Data>(data, { ...init, status: 404 });
+export function notFound<Data>(_data: Data | null = null, init?: Omit<ResponseInit, "status">) {
+  return data(_data, { ...init, status: 404 });
 }
 
 /**
@@ -88,8 +91,8 @@ export function notFound<Data = unknown>(data: Data, init?: Omit<ResponseInit, "
  *   throw unprocessableEntity<BoundaryData>({ user });
  * }
  */
-export function unprocessableEntity<Data = unknown>(data: Data, init?: Omit<ResponseInit, "status">) {
-  return typedjson<Data>(data, { ...init, status: 422 });
+export function unprocessableEntity<Data>(_data: Data | null = null, init?: Omit<ResponseInit, "status">) {
+  return data(_data, { ...init, status: 422 });
 }
 
 /**
@@ -100,8 +103,8 @@ export function unprocessableEntity<Data = unknown>(data: Data, init?: Omit<Resp
  *   throw conflict<BoundaryData>({ user });
  * }
  */
-export function conflict<Data = unknown>(data: Data, init?: Omit<ResponseInit, "status">) {
-  return typedjson<Data>(data, { ...init, status: 409 });
+export function conflict<Data>(_data: Data | null = null, init?: Omit<ResponseInit, "status">) {
+  return data(_data, { ...init, status: 409 });
 }
 
 /**
@@ -112,8 +115,8 @@ export function conflict<Data = unknown>(data: Data, init?: Omit<ResponseInit, "
  *   throw serverError<BoundaryData>({ user });
  * }
  */
-export function serverError<Data = unknown>(data: Data, init?: Omit<ResponseInit, "status">) {
-  return typedjson<Data>(data, { ...init, status: 500 });
+export function serverError<Data>(_data: Data | null = null, init?: Omit<ResponseInit, "status">) {
+  return data(_data, { ...init, status: 500 });
 }
 
 /**
@@ -317,202 +320,28 @@ export function image(
   });
 }
 
-export function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): TypedJsonResponse<string> {
-  switch (error.code) {
-    case "P1000":
-      throw unauthorized("Access denied.");
-    case "P1001":
-    case "P1002":
-      throw serverError("Server is unreachable or timed out.");
-    case "P1003":
-      throw notFound("Requested item does not exist.");
-    case "P1008":
-      throw serverError("Operation timed out.");
-    case "P1009":
-      throw conflict("Item already exists.");
-    case "P1010":
-      throw unauthorized("Access denied.");
-    case "P1011":
-      throw serverError("Connection error.");
-    case "P1012":
-      throw badRequest("Validation error.");
-    case "P1013":
-      throw badRequest("Invalid input.");
-    case "P1014":
-      throw notFound("Requested item does not exist.");
-    case "P1015":
-      throw badRequest("Unsupported features.");
-    case "P1016":
-      throw badRequest("Incorrect parameters.");
-    case "P1017":
-      throw serverError("Connection closed by server.");
-    case "P2000":
-      throw badRequest("Input is too long.");
-    case "P2001":
-      throw notFound("Requested item does not exist.");
-    case "P2002":
-      throw conflict("Conflict with existing item.");
-    case "P2003":
-      throw conflict("Conflict with existing item.");
-    case "P2004":
-      throw conflict("Conflict with existing item.");
-    case "P2005":
-      throw badRequest("Invalid input.");
-    case "P2006":
-      throw badRequest("Invalid input.");
-    case "P2007":
-      throw badRequest("Validation error.");
-    case "P2008":
-      throw badRequest("Query error.");
-    case "P2009":
-      throw badRequest("Query error.");
-    case "P2010":
-      throw serverError("Query error.");
-    case "P2011":
-      throw badRequest("Null constraint violation.");
-    case "P2012":
-      throw badRequest("Missing required value.");
-    case "P2013":
-      throw badRequest("Missing required argument.");
-    case "P2014":
-      throw conflict("Conflict with existing relation.");
-    case "P2015":
-      throw notFound("Related item not found.");
-    case "P2016":
-      throw badRequest("Query interpretation error.");
-    case "P2017":
-      throw notFound("Related items not connected.");
-    case "P2018":
-      throw notFound("Required connected items not found.");
-    case "P2019":
-      throw badRequest("Input error.");
-    case "P2020":
-      throw badRequest("Value out of range.");
-    case "P2021":
-      throw notFound("Table does not exist.");
-    case "P2022":
-      throw notFound("Column does not exist.");
-    case "P2023":
-      throw badRequest("Inconsistent data.");
-    case "P2024":
-      throw serverError("Connection timeout.");
-    case "P2025":
-      throw notFound("Required items not found.");
-    case "P2026":
-      throw badRequest("Unsupported feature.");
-    case "P2027":
-      throw serverError("Multiple errors occurred.");
-    case "P2028":
-      throw serverError("Transaction error.");
-    case "P2030":
-      throw badRequest("Fulltext index not found.");
-    case "P2031":
-      throw serverError("Transaction requirement error.");
-    case "P2033":
-      throw badRequest("Number out of range.");
-    case "P2034":
-      throw serverError("Transaction conflict.");
-    default:
-      throw serverError("An unknown error occurred.");
+export function handleLoaderError(e: unknown, request?: Request): never {
+  if (e instanceof Error && request) {
+    logger.error(`Loader error at path ${new URL(request.url).pathname}: ${e.message}`);
+  } else {
+    logger.error(e);
   }
-}
+  Sentry.captureException(e);
 
-export function getPrismaErrorText(error: Prisma.PrismaClientKnownRequestError) {
-  switch (error.code) {
-    case "P1000":
-      return "Access denied.";
-    case "P1001":
-    case "P1002":
-      return "Server is unreachable or timed out.";
-    case "P1003":
-      return "Requested item does not exist.";
-    case "P1008":
-      return "Operation timed out.";
-    case "P1009":
-      return "Item already exists.";
-    case "P1010":
-      return "Access denied.";
-    case "P1011":
-      return "Connection error.";
-    case "P1012":
-      return "Validation error.";
-    case "P1013":
-      return "Invalid input.";
-    case "P1014":
-      return "Requested item does not exist.";
-    case "P1015":
-      return "Unsupported features.";
-    case "P1016":
-      return "Incorrect parameters.";
-    case "P1017":
-      return "Connection closed by server.";
-    case "P2000":
-      return "Input is too long.";
-    case "P2001":
-      return "Requested item does not exist.";
-    case "P2002":
-      return "Conflict with existing item.";
-    case "P2003":
-      return "Conflict with existing item.";
-    case "P2004":
-      return "Conflict with existing item.";
-    case "P2005":
-      return "Invalid input.";
-    case "P2006":
-      return "Invalid input.";
-    case "P2007":
-      return "Validation error.";
-    case "P2008":
-      return "Query error.";
-    case "P2009":
-      return "Query error.";
-    case "P2010":
-      return "Query error.";
-    case "P2011":
-      return "Null constraint violation.";
-    case "P2012":
-      return "Missing required value.";
-    case "P2013":
-      return "Missing required argument.";
-    case "P2014":
-      return "Conflict with existing relation.";
-    case "P2015":
-      return "Related item not found.";
-    case "P2016":
-      return "Query interpretation error.";
-    case "P2017":
-      return "Related items not connected.";
-    case "P2018":
-      return "Required connected items not found.";
-    case "P2019":
-      return "Input error.";
-    case "P2020":
-      return "Value out of range.";
-    case "P2021":
-      return "Table does not exist.";
-    case "P2022":
-      return "Column does not exist.";
-    case "P2023":
-      return "Inconsistent data.";
-    case "P2024":
-      return "Connection timeout.";
-    case "P2025":
-      return "Required items not found.";
-    case "P2026":
-      return "Unsupported feature.";
-    case "P2027":
-      return "Multiple errors occurred.";
-    case "P2028":
-      return "Transaction error.";
-    case "P2030":
-      return "Fulltext index not found.";
-    case "P2031":
-      return "Transaction requirement error.";
-    case "P2033":
-      return "Number out of range.";
-    case "P2034":
-      return "Transaction conflict.";
-    default:
-      return "An unknown error occurred.";
+  // Handle Prisma Errors
+  if (e instanceof Prisma.PrismaClientKnownRequestError) {
+    switch (e.code) {
+      case "P2001": // No record found for where condition
+      case "P2015": // Related record not found
+      case "P2025": // No record found
+        throw notFound();
+
+      default: {
+        throw serverError();
+      }
+    }
   }
+
+  // Unknown error
+  throw serverError();
 }

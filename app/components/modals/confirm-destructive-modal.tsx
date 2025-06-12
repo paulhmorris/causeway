@@ -1,9 +1,10 @@
-import { useFetcher } from "@remix-run/react";
-import { IconAlertTriangleFilled, IconLoader } from "@tabler/icons-react";
+import { IconAlertTriangleFilled } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
+import { useFetcher } from "react-router";
 
 import { Button } from "~/components/ui/button";
 import { DrawerDialog, DrawerDialogFooter } from "~/components/ui/drawer-dialog";
+import { SubmitButton } from "~/components/ui/submit-button";
 
 export function ConfirmDestructiveModal({ description }: { description: string }) {
   const [open, setOpen] = useState(false);
@@ -23,7 +24,7 @@ export function ConfirmDestructiveModal({ description }: { description: string }
         type="submit"
         name="_action"
         value="delete"
-        className="w-min hover:border-destructive hover:bg-destructive hover:text-destructive-foreground"
+        className="hover:border-destructive hover:bg-destructive hover:text-destructive-foreground w-min"
         onClick={() => setOpen(true)}
       >
         Delete
@@ -33,24 +34,22 @@ export function ConfirmDestructiveModal({ description }: { description: string }
         setOpen={setOpen}
         title="Are you absolutely sure?"
         description={description}
-        icon={<IconAlertTriangleFilled className="mb-2 h-8 w-8 self-center text-destructive" />}
+        icon={<IconAlertTriangleFilled className="text-destructive size-8" />}
       >
         <DrawerDialogFooter className="gap-2 sm:space-x-0">
           <Button variant="outline" type="submit" onClick={() => setOpen(false)} disabled={isSubmitting}>
             Cancel
           </Button>
           <fetcher.Form method="delete">
-            <Button
+            <SubmitButton
               className="w-full sm:w-auto"
               variant="destructive"
               name="_action"
               value="delete"
-              type="submit"
-              disabled={isSubmitting}
+              isSubmitting={isSubmitting}
             >
-              {isSubmitting ? <IconLoader className="size-4 animate-spin" /> : null}
-              <span>Confirm</span>
-            </Button>
+              Confirm
+            </SubmitButton>
           </fetcher.Form>
         </DrawerDialogFooter>
       </DrawerDialog>

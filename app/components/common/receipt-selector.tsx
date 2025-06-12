@@ -50,18 +50,18 @@ export function ReceiptSelector({
                     <span className="-my-1 max-w-[calc(100dvw-60px)] truncate py-1">{r.title}</span>
                   </div>
                   <div className={cn("whitespace-nowrap md:text-right", user.isMember ? "col-span-2" : "col-span-3")}>
-                    <span className="ml-6 text-xs text-muted-foreground sm:ml-auto">
+                    <span className="text-muted-foreground ml-6 text-xs sm:ml-auto">
                       {dayjs(r.createdAt).format("M/D/YY h:mma")}
                     </span>
                     {!user.isMember ? (
-                      <span className="text-xs text-muted-foreground"> by {r.user.contact.email}</span>
+                      <span className="text-muted-foreground text-xs"> by {r.user.contact.email}</span>
                     ) : null}
                   </div>
                 </Label>
               );
             })
           ) : (
-            <div className="flex items-center gap-2 rounded-md bg-muted p-2 text-sm text-muted-foreground">
+            <div className="bg-muted text-muted-foreground flex items-center gap-2 rounded-md p-2 text-sm">
               <IconReceipt2 className="size-5" />
               <p>Upload receipts to get started.</p>
             </div>

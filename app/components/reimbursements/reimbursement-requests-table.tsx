@@ -1,8 +1,8 @@
 import { Prisma, ReimbursementRequestStatus } from "@prisma/client";
-import { Link } from "@remix-run/react";
 import { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { Link } from "react-router";
 dayjs.extend(utc);
 
 import { Badge } from "~/components/ui/badge";
@@ -31,7 +31,7 @@ const columns: Array<ColumnDef<ReimbursementRequest>> = [
     id: "action",
     header: () => <span className="sr-only">Action</span>,
     cell: ({ row }) => (
-      <Link to={`/reimbursements/${row.original.id}`} className="font-medium text-primary">
+      <Link prefetch="intent" to={`/reimbursements/${row.original.id}`} className="text-primary font-medium">
         View
       </Link>
     ),

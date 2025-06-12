@@ -1,8 +1,7 @@
 import { Prisma } from "@prisma/client";
-import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { Link } from "@remix-run/react";
 import { IconPlus } from "@tabler/icons-react";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
+import type { LoaderFunctionArgs, MetaFunction } from "react-router";
+import { Link, useLoaderData } from "react-router";
 
 import { AccountsTable } from "~/components/accounts/accounts-table";
 import { PageHeader } from "~/components/common/page-header";
@@ -10,7 +9,7 @@ import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
 import { db } from "~/integrations/prisma.server";
-import { Sentry } from "~/integrations/sentry";
+import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
 
 export const meta: MetaFunction = () => [{ title: "Accounts" }];
@@ -46,22 +45,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return { ...account, balance };
     });
 
-    return typedjson({ accounts: accountsWithBalance });
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    throw error;
+    return { accounts: accountsWithBalance };
+  } catch (e) {
+    handleLoaderError(e);
   }
 }
 
 export default function AccountsIndexPage() {
-  const { accounts } = useTypedLoaderData<typeof loader>();
+  const { accounts } = useLoaderData<typeof loader>();
   return (
     <>
       <PageHeader title="Accounts">
         <Button asChild>
-          <Link to="/accounts/new">
-            <IconPlus className="mr-2 h-5 w-5" />
+          <Link to="/accounts/new" prefetch="intent">
+            <IconPlus className="mr-2 size-5" />
             <span>New Account</span>
           </Link>
         </Button>

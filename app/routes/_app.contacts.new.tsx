@@ -1,31 +1,22 @@
-import { MembershipRole, Prisma } from "@prisma/client";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import type { MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { useState } from "react";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
-import { ValidatedForm, validationError } from "remix-validated-form";
+import { MembershipRole } from "@prisma/client";
+import { parseFormData, validationError } from "@rvf/react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import { useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
-import { AddressForm } from "~/components/contacts/address-fields";
-import { ContactFields } from "~/components/contacts/contact-fields";
 import { ErrorComponent } from "~/components/error-component";
+import { NewContactForm, newContactSchema } from "~/components/forms/new-contact-form";
 import { PageContainer } from "~/components/page-container";
-import { Button } from "~/components/ui/button";
-import { Checkbox } from "~/components/ui/checkbox";
-import { Label } from "~/components/ui/label";
-import { Separator } from "~/components/ui/separator";
-import { SubmitButton } from "~/components/ui/submit-button";
 import { useUser } from "~/hooks/useUser";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
-import { getPrismaErrorText, handlePrismaError, serverError } from "~/lib/responses.server";
+import { handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
-import { NewContactSchema } from "~/models/schemas";
 import { SessionService } from "~/services.server/session";
 
-const NewContactValidator = withZod(NewContactSchema);
+const logger = createLogger("Routes.ContactNew");
 
 export const meta: MetaFunction = () => [{ title: "New Contact" }];
 
@@ -64,17 +55,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       },
     });
 
-    return typedjson({
+    return {
       contactTypes,
       usersWhoCanBeAssigned,
-    });
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      throw handlePrismaError(error);
-    }
-    throw serverError("An error occurred while loading the page. Please try again.");
+    };
+  } catch (e) {
+    handleLoaderError(e);
   }
 };
 
@@ -82,13 +68,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   await SessionService.requireUser(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await NewContactValidator.validate(await request.formData());
+  const result = await parseFormData(request, newContactSchema);
   if (result.error) {
     return validationError(result.error);
   }
 
   const { address, assignedUserIds, ...formData } = result.data;
-
   try {
     // Verify email is unique
     if (formData.email) {
@@ -122,77 +107,29 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     return Toasts.redirectWithSuccess(`/contacts/${contact.id}`, {
-      title: "Contact created",
+      message: "Contact created",
       description: `${contact.firstName} ${contact.lastName} was created successfully.`,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      const message = getPrismaErrorText(error);
-      return Toasts.jsonWithError(
-        { message: `An error occurred: ${message}` },
-        { description: message, title: "Error creating contact" },
-      );
-    }
-    throw serverError("An error occurred while creating the contact. Please try again.");
+    return Toasts.dataWithError(null, { message: "Error", description: "An unknown error occurred." });
   }
 };
 
 export default function NewContactPage() {
-  const sessionUser = useUser();
-  const { contactTypes, usersWhoCanBeAssigned } = useTypedLoaderData<typeof loader>();
-  const [addressEnabled, setAddressEnabled] = useState(false);
+  const data = useLoaderData<typeof loader>();
+  const user = useUser();
 
   return (
     <>
       <PageHeader title="New Contact" />
       <PageContainer>
-        <ValidatedForm validator={NewContactValidator} method="post" className="space-y-4 sm:max-w-md">
-          <ContactFields contactTypes={contactTypes} />
-          {!addressEnabled ? (
-            <Button type="button" variant="outline" onClick={() => setAddressEnabled(true)}>
-              Add Address
-            </Button>
-          ) : (
-            <>
-              <Button type="button" variant="outline" onClick={() => setAddressEnabled(false)}>
-                Remove Address
-              </Button>
-              <AddressForm />
-            </>
-          )}
-          <Separator className="my-4" />
-          <fieldset>
-            <legend className="mb-4 text-sm text-muted-foreground">
-              Assigned users will receive regular reminders to engage with this Contact.
-            </legend>
-            <div className="flex flex-col gap-2">
-              {usersWhoCanBeAssigned.map((user) => {
-                return (
-                  <Label key={user.id} className="inline-flex cursor-pointer items-center gap-2">
-                    <Checkbox
-                      name="assignedUserIds"
-                      value={user.id}
-                      aria-label={`${user.contact.firstName} ${user.contact.lastName}`}
-                      defaultChecked={sessionUser.isMember ? user.id === sessionUser.id : false}
-                    />
-                    <span>
-                      {user.contact.firstName} {user.contact.lastName}
-                    </span>
-                  </Label>
-                );
-              })}
-            </div>
-          </fieldset>
-          <Separator className="my-4" />
-          <div className="flex items-center gap-2">
-            <SubmitButton>Create Contact</SubmitButton>
-            <Button type="reset" variant="outline">
-              Reset
-            </Button>
-          </div>
-        </ValidatedForm>
+        <NewContactForm
+          user={user}
+          contactTypes={data.contactTypes}
+          usersWhoCanBeAssigned={data.usersWhoCanBeAssigned}
+        />
       </PageContainer>
     </>
   );

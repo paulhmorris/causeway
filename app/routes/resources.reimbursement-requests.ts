@@ -1,9 +1,7 @@
-import { ActionFunctionArgs } from "@remix-run/node";
-import { z } from "zod";
-import { fromZodError } from "zod-validation-error";
+import { ActionFunctionArgs } from "react-router";
+import { z } from "zod/v4";
 
 import { db } from "~/integrations/prisma.server";
-import { badRequest } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { SessionService } from "~/services.server/session";
 
@@ -13,10 +11,11 @@ export async function action({ request }: ActionFunctionArgs) {
 
   switch (request.method) {
     case "DELETE": {
-      const validator = z.object({ id: z.string().cuid() });
-      const result = validator.safeParse(await request.json());
+      const schema = z.object({ id: z.cuid() });
+      const result = schema.safeParse(await request.json());
       if (!result.success) {
-        return badRequest(fromZodError(result.error).toString());
+        const tree = z.treeifyError(result.error);
+        return new Response(tree.errors.join(", "), { status: 400 });
       }
 
       const receipt = await db.reimbursementRequest.delete({
@@ -26,9 +25,9 @@ export async function action({ request }: ActionFunctionArgs) {
         },
       });
 
-      return Toasts.jsonWithSuccess(
+      return Toasts.dataWithSuccess(
         { receipt },
-        { title: "Reimbursement request deleted", description: "Your request was deleted successfully." },
+        { message: "Reimbursement request deleted", description: "Your request was deleted successfully." },
       );
     }
     default: {

@@ -1,8 +1,7 @@
-import type { LoaderFunctionArgs } from "@remix-run/node";
-import { Link, type MetaFunction } from "@remix-run/react";
+import {} from "@rvf/react-router";
 import { IconCoins, IconExclamationCircle, IconUser } from "@tabler/icons-react";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
-import { setFormDefaults } from "remix-validated-form";
+import type { LoaderFunctionArgs, MetaFunction } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 
 import { AccountTransactionsTable } from "~/components/accounts/account-transactions-table";
@@ -13,17 +12,11 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { AccountBalanceCard } from "~/components/users/balance-card";
 import { db } from "~/integrations/prisma.server";
-import { Sentry } from "~/integrations/sentry";
 import { AccountType } from "~/lib/constants";
-import { unauthorized } from "~/lib/responses.server";
+import { handleLoaderError, unauthorized } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
 
-export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    title: `Account ${data?.account.code}`,
-  },
-];
+export const meta: MetaFunction<typeof loader> = ({ data }) => [{ title: `Account ${data?.account.code}` }];
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const user = await SessionService.requireUser(request);
@@ -92,26 +85,25 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       _sum: { amountInCents: true },
     });
 
-    return typedjson({
+    return {
       total: total._sum.amountInCents,
       account,
-      ...setFormDefaults("account-form", { ...account }),
-    });
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    throw error;
+    };
+  } catch (e) {
+    handleLoaderError(e);
   }
 };
 
 export default function AccountDetailsPage() {
-  const { total, account } = useTypedLoaderData<typeof loader>();
+  const { total, account } = useLoaderData<typeof loader>();
 
   return (
     <>
       <PageHeader title={account.code}>
         <Button variant="outline" asChild>
-          <Link to={`/accounts/${account.id}/edit`}>Edit</Link>
+          <Link to={`/accounts/${account.id}/edit`} prefetch="intent">
+            Edit
+          </Link>
         </Button>
       </PageHeader>
       <div className="mt-4 flex flex-wrap items-center gap-2 sm:mt-1">
@@ -122,7 +114,7 @@ export default function AccountDetailsPage() {
           <span>{account.type.name}</span>
         </Badge>
         {account.user ? (
-          <Link to={`/users/${account.user.id}`}>
+          <Link to={`/users/${account.user.id}`} prefetch="intent">
             <Badge variant="secondary">
               <div>
                 <IconUser className="size-3" />
@@ -131,7 +123,7 @@ export default function AccountDetailsPage() {
             </Badge>
           </Link>
         ) : account.type.id === AccountType.Ministry ? (
-          <Link to={`/accounts/${account.id}/edit`}>
+          <Link to={`/accounts/${account.id}/edit`} prefetch="intent">
             <Badge variant="warning">
               <div>
                 <IconExclamationCircle className="size-3" />

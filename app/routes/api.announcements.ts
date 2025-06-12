@@ -1,46 +1,48 @@
-import { Prisma } from "@prisma/client";
-import { ActionFunctionArgs } from "@remix-run/node";
-import { withZod } from "@remix-validated-form/with-zod";
+import { parseFormData, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { validationError } from "remix-validated-form";
-import { z } from "zod";
-import { zfd } from "zod-form-data";
+import { ActionFunctionArgs } from "react-router";
+import { z } from "zod/v4";
 dayjs.extend(utc);
 
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
-import { getPrismaErrorText } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
+import { number, optionalDate, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
-export const validator = withZod(
-  z.discriminatedUnion("intent", [
-    z.object({
-      intent: z.literal("create"),
-      title: z.string(),
-      content: z.string(),
-      expiresAt: zfd.text(z.coerce.date().optional()),
-    }),
-    z.object({
-      intent: z.literal("update"),
-      id: z.coerce.number(),
-      title: z.string(),
-      content: z.string(),
-      expiresAt: zfd.text(z.coerce.date().optional()),
-    }),
-    z.object({
-      intent: z.literal("expire"),
-      id: z.coerce.number(),
-    }),
-  ]),
-);
+const logger = createLogger("Api.Announcements");
+
+export const schema = z.discriminatedUnion("intent", [
+  z.object({
+    intent: z.literal("create"),
+    id: z.never(),
+    title: text,
+    content: text,
+    expiresAt: optionalDate,
+  }),
+  z.object({
+    intent: z.literal("update"),
+    id: number,
+    title: text,
+    content: text,
+    expiresAt: optionalDate,
+  }),
+  z.object({
+    intent: z.literal("expire"),
+    id: number,
+    title: z.never(),
+    content: z.never(),
+    expiresAt: z.never(),
+  }),
+]);
 
 export async function action({ request }: ActionFunctionArgs) {
   await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -51,7 +53,7 @@ export async function action({ request }: ActionFunctionArgs) {
       const expiry = expiresAt ? dayjs(expiresAt).utc().endOf("day") : undefined;
       const endOfToday = dayjs().utc().endOf("day");
 
-      if (expiry && expiry.isBefore(endOfToday)) {
+      if (expiry?.isBefore(endOfToday)) {
         return validationError({
           fieldErrors: {
             expiresAt: "The expiration date must be in the future.",
@@ -67,11 +69,11 @@ export async function action({ request }: ActionFunctionArgs) {
           expiresAt: expiry?.toDate(),
         },
       });
-      return Toasts.jsonWithSuccess(
+      return Toasts.dataWithSuccess(
         { success: true },
         {
-          title: "Announcement Created",
-          description: `The announcement is now visible to all users and admins${announcement.expiresAt ? " and will expire at " + dayjs(announcement.expiresAt).utc().format("M/D/YY h:mm a") : "."}`,
+          message: "Announcement Created",
+          description: `The announcement is now visible to all users and admins${announcement.expiresAt ? " and will expire on " + dayjs(announcement.expiresAt).utc().format("M/D/YY h:mm a") : "."}`,
         },
       );
     }
@@ -81,7 +83,7 @@ export async function action({ request }: ActionFunctionArgs) {
       const expiry = expiresAt ? dayjs(expiresAt).utc().endOf("day") : undefined;
       const endOfToday = dayjs().utc().endOf("day");
 
-      if (expiry && expiry.isBefore(endOfToday)) {
+      if (expiry?.isBefore(endOfToday)) {
         return validationError({
           fieldErrors: {
             expiresAt: "The expiration date must be in the future.",
@@ -97,11 +99,11 @@ export async function action({ request }: ActionFunctionArgs) {
           expiresAt: expiry ? expiry.toDate() : null,
         },
       });
-      return Toasts.jsonWithSuccess(
+      return Toasts.dataWithSuccess(
         { success: true },
         {
-          title: "Announcement Updated",
-          description: `The announcement is now visible to all users and admins${announcement.expiresAt ? " and will expire at " + dayjs(announcement.expiresAt).utc().format("M/D/YY h:mm a") : "."}`,
+          message: "Announcement Updated",
+          description: `The announcement is now visible to all users and admins${announcement.expiresAt ? " and will expire on " + dayjs(announcement.expiresAt).utc().format("M/D/YY h:mm a") : "."}`,
         },
       );
     }
@@ -115,16 +117,14 @@ export async function action({ request }: ActionFunctionArgs) {
           expiresAt: dayjs().subtract(7, "day").toDate(),
         },
       });
-      return Toasts.jsonWithInfo(
+      return Toasts.dataWithSuccess(
         { success: true },
-        { title: "Announcement Expired", description: "The announcement is no longer visible to users or admins." },
+        { message: "Announcement Expired", description: "The announcement is no longer visible to users or admins." },
       );
     }
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      return Toasts.jsonWithError({ success: false }, { title: "Error", description: getPrismaErrorText(error) });
-    }
+    return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred." });
   }
 }

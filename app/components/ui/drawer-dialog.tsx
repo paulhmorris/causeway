@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { JSX, ReactNode } from "react";
 import { useMediaQuery } from "usehooks-ts";
 
 import {
@@ -36,7 +36,7 @@ export function DrawerDialog(props: Props) {
       <Dialog open={props.open} onOpenChange={props.setOpen}>
         <DialogContent>
           <DialogHeader>
-            {props.icon}
+            {props.icon ? <div className="mb-4 size-8 self-center">{props.icon}</div> : null}
             <DialogTitle>{props.title}</DialogTitle>
             <DialogDescription>{props.description}</DialogDescription>
           </DialogHeader>

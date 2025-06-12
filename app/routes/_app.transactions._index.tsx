@@ -1,9 +1,9 @@
 import { Prisma } from "@prisma/client";
-import type { LoaderFunctionArgs, MetaFunction, SerializeFrom } from "@remix-run/node";
-import { json, Link, useLoaderData } from "@remix-run/react";
 import { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import type { LoaderFunctionArgs, MetaFunction } from "react-router";
+import { Link, useLoaderData } from "react-router";
 dayjs.extend(utc);
 
 import { PageHeader } from "~/components/common/page-header";
@@ -85,7 +85,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       orderBy: [{ date: "desc" }, { account: { code: "asc" } }],
     }),
   ]);
-  return json({ rowCount, transactions });
+  return { rowCount, transactions };
 }
 
 export default function TransactionsIndexPage() {
@@ -104,13 +104,13 @@ export default function TransactionsIndexPage() {
   );
 }
 
-type Transaction = SerializeFrom<Awaited<typeof loader>>["transactions"][number];
+type Transaction = Awaited<ReturnType<typeof loader>>["transactions"][number];
 const columns = [
   {
     id: "view",
     header: () => <span className="sr-only">Action</span>,
     cell: ({ row }) => (
-      <Link to={`/transactions/${row.original.id}`} className="font-medium text-primary">
+      <Link to={`/transactions/${row.original.id}`} prefetch="intent" className="text-primary font-medium">
         View
       </Link>
     ),
@@ -123,7 +123,7 @@ const columns = [
     cell: ({ row }) => {
       return (
         <div className="max-w-[320px] truncate">
-          <Link to={`/accounts/${row.original.account.id}`} className="font-medium text-primary">
+          <Link to={`/accounts/${row.original.account.id}`} prefetch="intent" className="text-primary font-medium">
             {row.getValue("account")}
           </Link>
         </div>
@@ -183,7 +183,8 @@ const columns = [
         <div>
           <Link
             to={`/contacts/${row.original.contact?.id}`}
-            className="max-w-[500px] truncate font-medium text-primary"
+            prefetch="intent"
+            className="text-primary max-w-[500px] truncate font-medium"
           >
             {row.getValue("contact")}
           </Link>

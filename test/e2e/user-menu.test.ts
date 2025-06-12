@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.use({ colorScheme: "light" });
-test.use({ storageState: "playwright/.auth/admin.json" });
+
 test.describe("User menu", () => {
   test("should open and close", async ({ page }) => {
     await page.goto("/dashboards/admin");

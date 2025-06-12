@@ -1,11 +1,8 @@
-import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { Link } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
+import { ActionFunctionArgs, Link, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
-import { z } from "zod";
+import { z } from "zod/v4";
 dayjs.extend(utc);
 
 import { PageHeader } from "~/components/common/page-header";
@@ -14,31 +11,32 @@ import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "~/components/ui/card";
 import { db } from "~/integrations/prisma.server";
-import { notFound } from "~/lib/responses.server";
+import { Sentry } from "~/integrations/sentry";
+import { handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { SessionService } from "~/services.server/session";
 
 export const meta: MetaFunction = () => [{ title: "View Engagement" }];
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+  try {
+    await SessionService.requireUser(request);
+    const orgId = await SessionService.requireOrgId(request);
 
-  invariant(params.engagementId, "engagementId not found");
+    invariant(params.engagementId, "engagementId not found");
 
-  const engagement = await db.engagement.findUnique({
-    where: { id: Number(params.engagementId), orgId },
-    include: {
-      contact: true,
-      type: true,
-    },
-  });
+    const engagement = await db.engagement.findUniqueOrThrow({
+      where: { id: Number(params.engagementId), orgId },
+      include: {
+        contact: true,
+        type: true,
+      },
+    });
 
-  if (!engagement) {
-    throw notFound("Engagement not found");
+    return { engagement };
+  } catch (e) {
+    handleLoaderError(e);
   }
-
-  return typedjson({ engagement });
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
@@ -47,12 +45,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   invariant(params.engagementId, "engagementId not found");
 
-  const validator = withZod(z.object({ _action: z.literal("delete") }));
-  const result = await validator.validate(await request.formData());
+  const schema = z.object({ _action: z.literal("delete") });
+  const result = schema.safeParse(Object.fromEntries(await request.formData()));
   if (result.error) {
-    return Toasts.jsonWithError(
+    return Toasts.dataWithError(
       { success: false },
-      { title: "Error deleting engagement", description: "Invalid request" },
+      { message: "Error deleting engagement", description: "Invalid request" },
     );
   }
 
@@ -65,28 +63,29 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     // Users can only delete their own engagements
     if (user.isMember) {
       if (engagement.userId !== user.id) {
-        return Toasts.jsonWithError(
+        return Toasts.dataWithError(
           { success: false },
-          { title: "Error deleting engagement", description: "You do not have permission to delete this engagement." },
+          {
+            message: "Error deleting engagement",
+            description: "You do not have permission to delete this engagement.",
+          },
         );
       }
     }
 
     await db.engagement.delete({ where: { id: Number(params.engagementId), orgId } });
     return Toasts.redirectWithSuccess("/engagements", {
-      title: "Engagement deleted",
+      message: "Engagement deleted",
       description: "The engagement has been deleted",
     });
   } catch (error) {
-    return Toasts.jsonWithError(
-      { success: false },
-      { title: "Error deleting engagement", description: "An error occurred" },
-    );
+    Sentry.captureException(error);
+    return Toasts.dataWithError(null, { message: "Error", description: "An unknown error occurred." });
   }
 };
 
 export default function EngagementPage() {
-  const { engagement } = useTypedLoaderData<typeof loader>();
+  const { engagement } = useLoaderData<typeof loader>();
 
   return (
     <>
@@ -95,7 +94,7 @@ export default function EngagementPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              <Link to={`/contacts/${engagement.contactId}`} className="text-primary">
+              <Link prefetch="intent" to={`/contacts/${engagement.contactId}`} className="text-primary">
                 {engagement.contact.firstName} {engagement.contact.lastName}
               </Link>
             </CardTitle>
@@ -111,7 +110,9 @@ export default function EngagementPage() {
               } will be permanently deleted. If there are no other engagements with this contact, users will no longer receive notifications to follow up.`}
             />
             <Button asChild variant="outline" className="ml-auto">
-              <Link to={`/engagements/${engagement.id}/edit`}>Edit</Link>
+              <Link to={`/engagements/${engagement.id}/edit`} prefetch="intent">
+                Edit
+              </Link>
             </Button>
           </CardFooter>
         </Card>

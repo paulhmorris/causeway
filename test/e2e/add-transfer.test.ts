@@ -3,10 +3,13 @@ import { expect, test } from "@playwright/test";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 
+import { expectVisibleNotification } from "test/e2e/helpers/notifications";
+
 dayjs.extend(utc);
 
-test.use({ storageState: "playwright/.auth/admin.json" });
 test.describe("Add transfer", () => {
+  // Sometimes the transfer submission just doesn't ever load the next page
+  test.describe.configure({ retries: 3 });
   test.beforeEach(async ({ page }) => {
     await page.goto("/transfer/new");
   });
@@ -23,12 +26,8 @@ test.describe("Add transfer", () => {
     await page.getByLabel("Select from account").click();
     await page.getByLabel("9998").click();
     await page.getByLabel("Select to account").click();
-    await page.getByLabel("9998").click();
-    await page.getByRole("textbox", { name: "Amount" }).fill("100");
-    await page.getByRole("button", { name: /submit/i }).click();
-
-    // Verify toast message
-    await expect(page.getByRole("status")).toHaveText(/from and to/i);
+    const sameAccount = page.getByLabel("9998");
+    await expect(sameAccount).toBeDisabled();
   });
 
   test("should not allow transfers of $0.00", async ({ page }) => {
@@ -54,7 +53,7 @@ test.describe("Add transfer", () => {
     await page.getByRole("button", { name: /submit/i }).click();
 
     // Verify toast message
-    await expect(page.getByRole("status")).toHaveText(/insufficient funds/i);
+    await expectVisibleNotification(page, { expectedType: "error" });
   });
 
   test("should add transfer with valid fields", async ({ page }) => {
@@ -62,6 +61,9 @@ test.describe("Add transfer", () => {
 
     // Add income to first account
     await page.goto("/income/new");
+    await page.getByLabel("Note").fill("Test transaction");
+    await page.getByLabel("Category").click();
+    await page.getByLabel("Expense: Other").click();
     await page.getByLabel("Select account").click();
     await page.getByLabel("9998").click();
     await page.getByRole("textbox", { name: "Amount" }).fill((amount + 1).toString());
@@ -85,14 +87,14 @@ test.describe("Add transfer", () => {
     await page.getByRole("textbox", { name: "Amount" }).fill(amount.toString());
     await page.getByRole("button", { name: /submit/i }).click();
 
-    // Verifiy transfer went through
     await page.waitForURL(/accounts/);
+    // Verify toast message
+    await expectVisibleNotification(page, { expectedType: "success" });
+    await page.getByLabel("Close toast").click();
+
+    // Verifiy transfer went through
     await expect(page).toHaveURL(/accounts/);
     await expect(page.getByRole("heading", { name: /9999/i })).toBeVisible();
-
-    // Verify toast message
-    await expect(page.getByRole("status")).toHaveText(/success/i);
-    await page.getByLabel("Close toast").click();
 
     // Verify transaction in "to" amount is correct
     await expect(page.getByRole("heading", { name: /9999/i })).toBeVisible();

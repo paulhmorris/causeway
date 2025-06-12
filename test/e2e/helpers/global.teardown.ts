@@ -1,8 +1,8 @@
 import { test as teardown } from "@playwright/test";
 
-import db from "test/e2e/helpers/db";
+import db from "./db";
 
-teardown("delete test data", async ({}) => {
+teardown("delete test data", async () => {
   const [memberships, users, contacts, trxItems, trx, accounts, org] = await db.$transaction([
     db.membership.deleteMany({ where: { user: { username: { contains: "e2e-" } } } }),
     db.user.deleteMany({ where: { username: { contains: "e2e-" } } }),

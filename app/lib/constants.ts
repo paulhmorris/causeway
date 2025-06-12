@@ -119,6 +119,8 @@ export const transactionCategories: Array<{ id: TransactionCategory; name: strin
   { id: 24, name: "Expense: Travel (Local)" },
   { id: 25, name: "Expense: Accounting/Compliance" },
   { id: 26, name: "Expense: Travel (Domestic and International)" },
+  { id: 27, name: "Internal: Transfer Gain" },
+  { id: 28, name: "Internal: Transfer Loss " },
 ] as const;
 
 export const transactionItemMethods: Array<{ id: TransactionItemMethod; name: string }> = [
@@ -179,42 +181,33 @@ export const defaultAccounts: Array<Omit<Prisma.AccountUncheckedCreateInput, "or
   { code: "1003", description: "International", typeId: AccountType.Operating },
 ];
 
-export enum LinearTeamID {
-  Alliance = "8349d9bf-176e-4f6a-a841-181c31a4ff9d",
-}
-
-export enum LinearLabelID {
-  Bug = "b97e1140-3f36-4f85-a014-01146171451d",
-  Feature = "25229fd3-a050-443b-9baf-c17acb08ef90",
-  Improvement = "d7b2166a-61dd-4f25-995d-7288f9c162fc",
-}
-
 export interface AppNavLink {
   name: string;
   to: string;
   end: boolean;
   icon: typeof IconCreditCard;
+  prefetch?: boolean;
 }
 
 export const globalNavLinks: ReadonlyArray<AppNavLink> = [
-  { name: "Transactions", to: "/transactions", end: false, icon: IconCreditCard },
-  { name: "Contacts", to: "/contacts", end: false, icon: IconUsers },
-  { name: "Engagements", to: "/engagements", end: true, icon: IconUserHeart },
-  { name: "Reimbursement", to: "/reimbursements/new", end: false, icon: IconCoin },
+  { name: "Transactions", to: "/transactions", end: false, prefetch: false, icon: IconCreditCard },
+  { name: "Contacts", to: "/contacts", end: false, prefetch: false, icon: IconUsers },
+  { name: "Engagements", to: "/engagements", end: true, prefetch: false, icon: IconUserHeart },
+  { name: "Reimbursement", to: "/reimbursements/new", end: false, prefetch: true, icon: IconCoin },
 ] as const;
 
 export const userNavLinks: ReadonlyArray<AppNavLink> = [] as const;
 
 export const adminNavLinks: ReadonlyArray<AppNavLink> = [
-  { name: "Add Income", to: "/income/new", end: false, icon: IconCreditCardRefund },
-  { name: "Add Expense", to: "/expense/new", end: false, icon: IconCreditCardPay },
-  { name: "Add Transfer", to: "/transfer/new", end: false, icon: IconTransfer },
-  { name: "Accounts", to: "/accounts", end: false, icon: IconBuildingBank },
-  { name: "Users", to: "/users", end: false, icon: IconUsersGroup },
-  { name: "Reimbursements", to: "/reimbursements", end: true, icon: IconCoin },
-  // { name: "Receipts", to: "/receipts", end: true, icon: IconReceipt },
-  { name: "Organization", to: "/organization", end: false, icon: IconAffiliate },
-  { name: "Reports", to: "/reports", end: true, icon: IconFileSpreadsheet },
+  { name: "Income", to: "/income/new", end: false, prefetch: true, icon: IconCreditCardRefund },
+  { name: "Expense", to: "/expense/new", end: false, prefetch: true, icon: IconCreditCardPay },
+  { name: "Transfer", to: "/transfer/new", end: false, prefetch: true, icon: IconTransfer },
+  { name: "Accounts", to: "/accounts", end: false, prefetch: false, icon: IconBuildingBank },
+  { name: "Users", to: "/users", end: false, prefetch: false, icon: IconUsersGroup },
+  { name: "Reimbursements", to: "/reimbursements", end: true, prefetch: false, icon: IconCoin },
+  // { name: "Receipts", to: "/receipts", end: true, prefetch: false, icon: IconReceipt },
+  { name: "Organization", to: "/organization", end: false, prefetch: true, icon: IconAffiliate },
+  { name: "Reports", to: "/reports", end: true, prefetch: true, icon: IconFileSpreadsheet },
 ] as const;
 
 export const superAdminNavLinks: ReadonlyArray<AppNavLink> = [] as const;

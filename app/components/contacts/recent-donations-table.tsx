@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
-import { Link } from "@remix-run/react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { Link } from "react-router";
 dayjs.extend(utc);
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
@@ -32,13 +32,13 @@ export function RecentTransactionsTable({ transactions }: { transactions: Array<
             {transactions.map((trx) => (
               <TableRow key={trx.id}>
                 <TableCell>
-                  <Link className="font-medium text-primary" to={`/transactions/${trx.id}`}>
+                  <Link prefetch="intent" className="text-primary font-medium" to={`/transactions/${trx.id}`}>
                     View
                   </Link>
                 </TableCell>
                 <TableCell>{dayjs(trx.date).utc().format("MM/DD/YYYY")}</TableCell>
                 <TableCell>
-                  <Link className="hover:text-primary" to={`/accounts/${trx.accountId}`}>
+                  <Link prefetch="intent" className="hover:text-primary" to={`/accounts/${trx.accountId}`}>
                     {trx.account.code}
                   </Link>
                 </TableCell>

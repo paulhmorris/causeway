@@ -1,11 +1,8 @@
 import { MembershipRole, UserRole } from "@prisma/client";
-import type { ActionFunctionArgs } from "@remix-run/node";
-import { Link } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
-import { useTypedRouteLoaderData } from "remix-typedjson";
-import { ValidatedForm, validationError } from "remix-validated-form";
-import { z } from "zod";
-import { zfd } from "zod-form-data";
+import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
+import type { ActionFunctionArgs } from "react-router";
+import { Link, useRouteLoaderData } from "react-router";
+import { z } from "zod/v4";
 
 import { ErrorComponent } from "~/components/error-component";
 import { Button } from "~/components/ui/button";
@@ -21,29 +18,24 @@ import { db } from "~/integrations/prisma.server";
 import { notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { loader } from "~/routes/_app.users.$userId";
+import { cuid, email, optionalSelect, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
-const validator = withZod(
-  z.object({
-    id: z.string().cuid(),
-    firstName: z.string().min(1, { message: "First name is required" }),
-    lastName: z.string().min(1, { message: "Last name is required" }),
-    username: z.string().email({ message: "Invalid email address" }).optional(),
-    role: z.nativeEnum(UserRole),
-    accountId: z.preprocess((val) => {
-      if (val === "Select an account") {
-        return undefined;
-      }
-    }, z.string().optional()),
-    subscribedAccountIds: zfd.repeatableOfType(zfd.text()).optional(),
-  }),
-);
+const schema = z.object({
+  id: cuid,
+  firstName: text,
+  lastName: text,
+  username: email,
+  role: z.enum(UserRole),
+  accountId: optionalSelect.transform((v) => (v === "Select an account" ? undefined : v)),
+  subscribedAccountIds: z.array(z.string()).optional(),
+});
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const authorizedUser = await SessionService.requireUser(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -58,9 +50,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (authorizedUser.isMember) {
     // Users can only edit themselves
     if (authorizedUser.id !== id) {
-      return Toasts.jsonWithWarning(
-        { message: "You do not have permission to edit this user." },
-        { title: "Permission denied", description: "You do not have permission to edit this user." },
+      return Toasts.dataWithWarning(
+        null,
+        { message: "Permission denied", description: "You do not have permission to edit this user." },
         { status: 403 },
       );
     }
@@ -71,18 +63,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       username !== userToBeUpdated.username ||
       accountId !== userToBeUpdated.accountId
     ) {
-      return Toasts.jsonWithWarning(
-        { message: "You do not have permission to edit this field." },
-        { title: "Permission denied", description: "You do not have permission to edit this field." },
+      return Toasts.dataWithWarning(
+        null,
+        { message: "Permission denied", description: "You do not have permission to edit this field." },
         { status: 403 },
       );
     }
   }
 
   if (authorizedUser.systemRole !== UserRole.SUPERADMIN && role === UserRole.SUPERADMIN) {
-    return Toasts.jsonWithWarning(
-      { message: "You do not have permission to create a Super Admin." },
-      { title: "Permission denied", description: "You do not have permission to create a Super Admin." },
+    return Toasts.dataWithWarning(
+      null,
+      { message: "Permission denied", description: "You do not have permission to create a Super Admin." },
       { status: 403 },
     );
   }
@@ -117,12 +109,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     },
   });
 
-  return Toasts.jsonWithSuccess({ user: updatedUser }, { title: "User updated", description: "Great job." });
+  return Toasts.dataWithSuccess({ user: updatedUser }, { message: "User updated", description: "Great job." });
 };
 
 export default function UserDetailsPage() {
   const authorizedUser = useUser();
-  const layoutData = useTypedRouteLoaderData<typeof loader>("routes/_app.users.$userId");
+  const layoutData = useRouteLoaderData<typeof loader>("routes/_app.users.$userId");
 
   if (!layoutData) {
     throw new Error("Missing layout data");
@@ -133,84 +125,99 @@ export default function UserDetailsPage() {
 
   return (
     <>
-      <ValidatedForm id="user-form" validator={validator} method="post">
-        <div className="space-y-4 sm:max-w-md">
-          <div className="flex gap-2">
-            <FormField label="First name" id="firstName" name="firstName" required />
-            <FormField label="Last name" id="lastName" name="lastName" required />
-          </div>
-          <input type="hidden" name="id" value={user.id} />
-          {!authorizedUser.isMember ? (
-            <>
-              <FormField
-                label="Username"
-                id="username"
-                name="username"
-                disabled={authorizedUser.role === MembershipRole.MEMBER}
-                required
-              />
-              <FormSelect
-                required
-                disabled={isYou}
-                description={isYou ? "You cannot edit your own role." : ""}
-                name="role"
-                label="Role"
-                placeholder="Select a role"
-              >
-                <SelectItem value="USER">User</SelectItem>
-                <SelectItem value="ADMIN">Admin</SelectItem>
-                {authorizedUser.isSuperAdmin ? <SelectItem value="SUPERADMIN">Super Admin</SelectItem> : null}
-              </FormSelect>
-            </>
-          ) : (
-            <>
-              <input type="hidden" name="username" value={user.username} />
-              <input type="hidden" name="role" value={user.role} />
-            </>
-          )}
-          {!authorizedUser.isMember ? (
-            <FormSelect
-              name="accountId"
-              label="Linked Account"
-              placeholder="Select an account"
-              defaultValue={user.account?.id}
-              description="Link this user to an account. They will be able to see this account and all related transactions."
-              options={accounts.map((a) => ({ label: `${a.code} - ${a.description}`, value: a.id }))}
-            />
-          ) : (
-            <input type="hidden" name="accountId" value={user.account?.id} />
-          )}
-        </div>
-        <fieldset className="mt-4 sm:max-w-2xl">
-          <legend className="text-sm font-medium">
-            Account Subscriptions <span className="text-xs text-muted-foreground">(optional)</span>
-          </legend>
-          <p className="text-sm text-muted-foreground">
-            Users can be subscribed to another account. When they log in, they will see it on their dashboard.
-          </p>
-          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {layoutData.accountsThatCanBeSubscribedTo.map((a) => {
-              return (
-                <Label key={a.id} className="inline-flex cursor-pointer items-center gap-2">
-                  <Checkbox
-                    name="subscribedAccountIds"
-                    value={a.id}
-                    defaultChecked={user.contact.accountSubscriptions.some((acc) => acc.accountId === a.id)}
+      <ValidatedForm
+        method="post"
+        schema={schema}
+        defaultValues={{
+          id: user.id,
+          role: user.role,
+          username: user.username,
+          accountId: user.account?.id ?? "",
+          lastName: user.contact.lastName ?? "",
+          firstName: user.contact.firstName ?? "",
+          subscribedAccountIds: user.contact.accountSubscriptions.map((a) => a.accountId),
+        }}
+      >
+        {(form) => (
+          <>
+            <div className="space-y-4 sm:max-w-md">
+              <div className="flex gap-2">
+                <FormField label="First name" scope={form.scope("firstName")} required />
+                <FormField label="Last name" scope={form.scope("lastName")} required />
+              </div>
+              <input type="hidden" name="id" value={user.id} />
+              {!authorizedUser.isMember ? (
+                <>
+                  <FormField
+                    label="Username"
+                    scope={form.scope("username")}
+                    disabled={authorizedUser.role === MembershipRole.MEMBER}
+                    required
                   />
-                  <span>
-                    {a.code} - {a.description}
-                  </span>
-                </Label>
-              );
-            })}
-          </div>
-        </fieldset>
-        <ButtonGroup className="mt-4">
-          <SubmitButton>Save</SubmitButton>
-          <Button type="reset" variant="outline">
-            Reset
-          </Button>
-        </ButtonGroup>
+                  <FormSelect
+                    required
+                    disabled={isYou}
+                    description={isYou ? "You cannot edit your own role." : ""}
+                    scope={form.scope("role")}
+                    label="Role"
+                    placeholder="Select a role"
+                  >
+                    <SelectItem value="USER">User</SelectItem>
+                    <SelectItem value="ADMIN">Admin</SelectItem>
+                    {authorizedUser.isSuperAdmin ? <SelectItem value="SUPERADMIN">Super Admin</SelectItem> : null}
+                  </FormSelect>
+                </>
+              ) : (
+                <>
+                  <input type="hidden" name="username" value={user.username} />
+                  <input type="hidden" name="role" value={user.role} />
+                </>
+              )}
+              {!authorizedUser.isMember ? (
+                <FormSelect
+                  scope={form.scope("accountId")}
+                  label="Linked Account"
+                  placeholder="Select an account"
+                  defaultValue={user.account?.id}
+                  description="Link this user to an account. They will be able to see this account and all related transactions."
+                  options={accounts.map((a) => ({ label: `${a.code} - ${a.description}`, value: a.id }))}
+                />
+              ) : (
+                <input type="hidden" name="accountId" value={user.account?.id} />
+              )}
+            </div>
+            <fieldset className="mt-4 sm:max-w-2xl">
+              <legend className="text-sm font-medium">
+                Account Subscriptions <span className="text-muted-foreground text-xs">(optional)</span>
+              </legend>
+              <p className="text-muted-foreground text-sm">
+                Users can be subscribed to another account. When they log in, they will see it on their dashboard.
+              </p>
+              <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {layoutData.accountsThatCanBeSubscribedTo.map((a) => {
+                  return (
+                    <Label key={a.id} className="inline-flex cursor-pointer items-center gap-2">
+                      <Checkbox
+                        name="subscribedAccountIds"
+                        value={a.id}
+                        defaultChecked={user.contact.accountSubscriptions.some((acc) => acc.accountId === a.id)}
+                      />
+                      <span>
+                        {a.code} - {a.description}
+                      </span>
+                    </Label>
+                  );
+                })}
+              </div>
+            </fieldset>
+            <ButtonGroup className="mt-4">
+              <SubmitButton isSubmitting={form.formState.isSubmitting}>Save</SubmitButton>
+              <Button type="reset" variant="ghost">
+                Reset
+              </Button>
+            </ButtonGroup>
+          </>
+        )}
       </ValidatedForm>
       <div className="mt-4 max-w-lg">
         {user.contactAssignments.length > 0 ? (
@@ -225,7 +232,11 @@ export default function UserDetailsPage() {
               <ul>
                 {user.contactAssignments.map((a) => (
                   <li key={a.id}>
-                    <Link to={`/contacts/${a.contactId}`} className="text-sm font-medium text-primary">
+                    <Link
+                      to={`/contacts/${a.contactId}`}
+                      prefetch="intent"
+                      className="text-primary text-sm font-medium"
+                    >
                       {a.contact.firstName} {a.contact.lastName}
                     </Link>
                   </li>

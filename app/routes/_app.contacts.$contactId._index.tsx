@@ -1,12 +1,10 @@
-import { Engagement, Prisma } from "@prisma/client";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { Link, type MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { Engagement } from "@prisma/client";
 import { IconAddressBook, IconPlus, IconUser } from "@tabler/icons-react";
 import dayjs from "dayjs";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
 import { ContactCard } from "~/components/contacts/contact-card";
@@ -19,13 +17,16 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { useUser } from "~/hooks/useUser";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
-import { forbidden, getPrismaErrorText } from "~/lib/responses.server";
+import { forbidden, handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cn } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Routes.ContactShow");
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const user = await SessionService.requireUser(request);
@@ -70,14 +71,12 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     const shouldHideTransactions = user.isMember && !contact.assignedUsers.some((a) => a.userId === user.id);
 
     if (shouldHideTransactions) {
-      return typedjson({ contact: { ...contact, transactions: [] } });
+      return { contact: { ...contact, transactions: [] } };
     }
 
-    return typedjson({ contact });
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException(error);
-    throw error;
+    return { contact };
+  } catch (e) {
+    handleLoaderError(e);
   }
 };
 
@@ -87,12 +86,12 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
   invariant(params.contactId, "contactId not found");
 
-  const validator = withZod(z.object({ _action: z.enum(["delete"]) }));
-  const result = await validator.validate(await request.formData());
+  const schema = z.object({ _action: z.enum(["delete"]) });
+  const result = schema.safeParse(Object.fromEntries(await request.formData()));
   if (result.error) {
-    return Toasts.jsonWithError(
+    return Toasts.dataWithError(
       { success: false },
-      { title: "Error deleting contact", description: "Invalid request" },
+      { message: "Error deleting contact", description: "Invalid request" },
     );
   }
 
@@ -112,10 +111,10 @@ export async function action({ request, params }: ActionFunctionArgs) {
     }
 
     if (contact.transactions.length > 0) {
-      return Toasts.jsonWithError(
+      return Toasts.dataWithError(
         { success: false },
         {
-          title: "Error deleting contact",
+          message: "Error deleting contact",
           description: "This contact has transactions and cannot be deleted. Check the transactions page.",
         },
       );
@@ -129,34 +128,24 @@ export async function action({ request, params }: ActionFunctionArgs) {
         db.contact.delete({ where: { id: contact.id, orgId } }),
       ]);
       return Toasts.redirectWithSuccess("/contacts", {
-        title: "Contact deleted",
+        message: "Contact deleted",
         description: `${contact.firstName} ${contact.lastName} was deleted successfully.`,
       });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       Sentry.captureException(error);
-      let message = error instanceof Error ? error.message : "An error occurred while deleting the contact.";
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        message = getPrismaErrorText(error);
-      }
-      return Toasts.jsonWithError({ success: false }, { title: "Error deleting contact", description: message });
+      return Toasts.dataWithError({ success: false }, { message: "Error", description: "An unknown error occurred" });
     }
   }
 }
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    title: `${data?.contact.firstName}${
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      data?.contact.lastName ? " " + data?.contact.lastName : ""
-    }`,
-  },
+  { title: `${data?.contact.firstName}${data?.contact.lastName ? " " + data.contact.lastName : ""}` },
 ];
 
 export default function ContactDetailsPage() {
   const user = useUser();
-  const { contact } = useTypedLoaderData<typeof loader>();
+  const { contact } = useLoaderData<typeof loader>();
   const isExternal = contact.typeId !== ContactType.Staff;
   const canDelete =
     !contact.user && contact.transactions.length === 0 && !user.isMember && contact.typeId !== ContactType.Staff;
@@ -166,9 +155,7 @@ export default function ContactDetailsPage() {
       <PageHeader title="View Contact">
         {canDelete ? (
           <ConfirmDestructiveModal
-            description={`This action cannot be undone. This will delete ${contact.firstName} ${
-              contact.lastName ? contact.lastName : ""
-            } and all associated engagements. Assigned users will be unassigned.`}
+            description={`This action cannot be undone. This will delete ${contact.firstName} ${contact.lastName ?? ""} and all associated engagements. Assigned users will be unassigned.`}
           />
         ) : null}
       </PageHeader>
@@ -181,7 +168,7 @@ export default function ContactDetailsPage() {
         </Badge>
         {contact.user ? (
           <Badge variant="secondary">
-            <Link to={`/users/${contact.user.id}`} className="flex items-center gap-1.5">
+            <Link to={`/users/${contact.user.id}`} prefetch="intent" className="flex items-center gap-1.5">
               <div>
                 <IconUser className="size-3" />
               </div>
@@ -190,7 +177,7 @@ export default function ContactDetailsPage() {
           </Badge>
         ) : null}
       </div>
-      <PageContainer className="max-w-screen-md">
+      <PageContainer className="max-w-(--breakpoint-md)">
         <div className="space-y-5">
           {isExternal ? (
             <div className="space-y-2">
@@ -201,8 +188,9 @@ export default function ContactDetailsPage() {
                     pathname: "/engagements/new",
                     search: `?contactId=${contact.id}`,
                   }}
+                  prefetch="intent"
                 >
-                  <IconPlus className="mr-2 h-5 w-5" />
+                  <IconPlus className="mr-2 size-5" />
                   <span>New Engagement</span>
                 </Link>
               </Button>
@@ -220,7 +208,7 @@ export default function ContactDetailsPage() {
                   <ul>
                     {contact.assignedUsers.map((a) => (
                       <li key={a.id}>
-                        <Link to={`/users/${a.userId}`} className="text-sm font-medium text-primary">
+                        <Link to={`/users/${a.userId}`} prefetch="intent" className="text-primary text-sm font-medium">
                           {a.user.contact.firstName} {a.user.contact.lastName}
                         </Link>
                       </li>

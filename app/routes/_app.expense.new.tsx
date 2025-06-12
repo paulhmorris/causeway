@@ -1,33 +1,30 @@
-import { Prisma, TransactionItemTypeDirection } from "@prisma/client";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import type { MetaFunction } from "@remix-run/react";
-import { withZod } from "@remix-validated-form/with-zod";
+import { TransactionItemTypeDirection } from "@prisma/client";
+import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import { IconPlus } from "@tabler/icons-react";
-import { nanoid } from "nanoid";
-import { typedjson, useTypedLoaderData } from "remix-typedjson";
-import { setFormDefaults, useFieldArray, ValidatedForm, validationError } from "remix-validated-form";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import { useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
 import { ReceiptSelector } from "~/components/common/receipt-selector";
+import { TransactionItem } from "~/components/common/transaction-item";
 import { ContactDropdown } from "~/components/contacts/contact-dropdown";
 import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "~/components/ui/card";
 import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
 import { Separator } from "~/components/ui/separator";
 import { SubmitButton } from "~/components/ui/submit-button";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
-import { getPrismaErrorText } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { formatCentsAsDollars, getToday } from "~/lib/utils";
-import { TransactionSchema } from "~/models/schemas";
+import { TransactionSchema } from "~/schemas";
 import { getContactTypes } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
 import { generateTransactionItems, getTransactionItemMethods } from "~/services.server/transaction";
 
-const validator = withZod(TransactionSchema);
+const logger = createLogger("Routes.ExpenseNew");
 
 export const meta: MetaFunction = () => [{ title: "Add Expense" }];
 
@@ -61,7 +58,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }),
     ]);
 
-  return typedjson({
+  return {
     contacts,
     contactTypes,
     accounts,
@@ -69,17 +66,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     transactionItemTypes,
     categories,
     receipts,
-    ...setFormDefaults("expense-form", {
-      transactionItems: [{ id: nanoid() }],
-    }),
-  });
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   await SessionService.requireAdmin(request);
   const orgId = await SessionService.requireOrgId(request);
 
-  const result = await validator.validate(await request.formData());
+  const result = await parseFormData(request, TransactionSchema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -87,13 +81,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   try {
     const { transactionItems: trxItems, totalInCents } = await generateTransactionItems(transactionItems, orgId);
+    const receiptIdArr = typeof receiptIds === "string" ? [receiptIds] : receiptIds?.length ? receiptIds : [];
+
     const transaction = await db.transaction.create({
       data: {
         orgId,
         amountInCents: totalInCents,
-        contactId: contactId || undefined,
+        contactId: contactId ?? undefined,
         transactionItems: { createMany: { data: trxItems } },
-        receipts: receiptIds.length > 0 ? { connect: receiptIds.map((id) => ({ id })) } : undefined,
+        receipts: receiptIdArr.length ? { connect: receiptIdArr.map((id) => ({ id })) } : undefined,
+
         ...rest,
       },
       select: {
@@ -107,39 +104,56 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     return Toasts.redirectWithSuccess(`/accounts/${transaction.account.id}`, {
-      title: "Success",
+      message: "Success",
       description: `Expense of ${formatCentsAsDollars(totalInCents)} charged to account ${transaction.account.code}`,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     Sentry.captureException(error);
-    let description = "An error occurred while creating the expense";
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      description = getPrismaErrorText(error);
-    }
-    return Toasts.jsonWithError({ success: false }, { title: "Error creating expense", description });
+    return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
   }
 };
 
 export default function AddExpensePage() {
   const { contacts, contactTypes, accounts, transactionItemMethods, transactionItemTypes, categories, receipts } =
-    useTypedLoaderData<typeof loader>();
-  const [items, { push, remove }] = useFieldArray("transactionItems", { formId: "expense-form" });
+    useLoaderData<typeof loader>();
+  const form = useForm({
+    schema: TransactionSchema,
+    method: "post",
+    defaultValues: {
+      accountId: "",
+      contactId: "",
+      categoryId: "",
+      description: "",
+      date: getToday(),
+      receiptIds: [],
+      transactionItems: [
+        {
+          methodId: "",
+          typeId: "",
+          amountInCents: "",
+        },
+      ],
+    },
+  });
+
+  let total = 0;
+  form.value().transactionItems.forEach((i) => (total += Number(i.amountInCents) * 100));
 
   return (
     <>
       <PageHeader title="Add Expense" />
       <PageContainer>
-        <ValidatedForm id="expense-form" method="post" validator={validator} className="sm:max-w-xl">
+        <form {...form.getFormProps()} className="sm:max-w-xl">
           <div className="mt-8 space-y-8">
             <div className="space-y-2">
               <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
                 <div className="w-auto">
-                  <FormField required name="date" label="Date" type="date" defaultValue={getToday()} />
+                  <FormField required scope={form.scope("date")} label="Date" type="date" />
                 </div>
                 <FormSelect
                   required
-                  name="categoryId"
+                  scope={form.scope("categoryId")}
                   label="Category"
                   placeholder="Select category"
                   options={categories.map((c) => ({
@@ -150,14 +164,14 @@ export default function AddExpensePage() {
               </div>
               <FormTextarea
                 required
-                name="description"
+                scope={form.scope("description")}
                 label="Note"
                 description="Shown on transaction tables and reports"
                 placeholder="Select description"
               />
               <FormSelect
                 required
-                name="accountId"
+                scope={form.scope("accountId")}
                 label="Account"
                 placeholder="Select account"
                 options={accounts.map((a) => ({
@@ -165,84 +179,47 @@ export default function AddExpensePage() {
                   label: `${a.code} - ${a.description}`,
                 }))}
               />
-              <ContactDropdown types={contactTypes} contacts={contacts} name="contactId" label="Payable To" />
+              <ContactDropdown
+                types={contactTypes}
+                contacts={contacts}
+                scope={form.scope("contactId")}
+                label="Payable To"
+              />
             </div>
             <ul className="flex flex-col gap-4">
-              {items.map(({ key }, index) => {
-                const fieldPrefix = `transactionItems[${index}]`;
+              {form.array("transactionItems").map((key, item, index) => {
+                const prefix = `transactionItems[${index}]`;
                 return (
                   <li key={key}>
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Item {index + 1}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <input type="hidden" name={`${fieldPrefix}.id`} />
-                        <fieldset className="space-y-3">
-                          <div className="grid grid-cols-10 items-start gap-2">
-                            <div className="col-span-3 sm:col-span-2">
-                              <FormField required name={`${fieldPrefix}.amountInCents`} label="Amount" isCurrency />
-                            </div>
-                            <FormSelect
-                              divProps={{ className: "col-span-3 sm:col-span-4" }}
-                              required
-                              name={`${fieldPrefix}.methodId`}
-                              label="Method"
-                              placeholder="Select method"
-                              options={transactionItemMethods.map((t) => ({
-                                value: t.id,
-                                label: t.name,
-                              }))}
-                            />
-                            <FormSelect
-                              divProps={{ className: "col-span-4" }}
-                              required
-                              name={`${fieldPrefix}.typeId`}
-                              label="Type"
-                              placeholder="Select type"
-                              options={transactionItemTypes.map((t) => ({
-                                value: t.id,
-                                label: t.name,
-                              }))}
-                            />
-                          </div>
-                          <FormField
-                            name={`${fieldPrefix}.description`}
-                            label="Description"
-                            description="Will only be shown in transaction details and reports"
-                          />
-                        </fieldset>
-                      </CardContent>
-                      <CardFooter>
-                        <Button
-                          aria-label={`Remove item ${index + 1}`}
-                          onClick={() => remove(index)}
-                          variant="destructive"
-                          type="button"
-                          className="ml-auto"
-                        >
-                          Remove
-                        </Button>
-                      </CardFooter>
-                    </Card>
+                    <TransactionItem
+                      title={`Item ${index + 1}`}
+                      itemScope={item.scope()}
+                      fieldPrefix={prefix}
+                      trxItemTypes={transactionItemTypes}
+                      trxItemMethods={transactionItemMethods}
+                      removeItemHandler={() => form.array("transactionItems").remove(index)}
+                    />
                   </li>
                 );
               })}
             </ul>
             <Button
-              onClick={() => push({ id: nanoid() })}
+              onClick={() => form.array("transactionItems").push({ methodId: "", typeId: "", amountInCents: "" })}
               variant="outline"
               className="flex items-center gap-2"
               type="button"
             >
-              <IconPlus className="h-4 w-4" />
+              <IconPlus className="size-4" />
               <span>Add item</span>
             </Button>
-            <Separator />
+            <Separator className="my-4" />
             <ReceiptSelector receipts={receipts} />
-            <SubmitButton disabled={items.length === 0}>Submit Expense</SubmitButton>
+            <div className="space-y-1">
+              <p className="text-primary text-sm font-bold">Total: {formatCentsAsDollars(total)}</p>
+              <SubmitButton isSubmitting={form.formState.isSubmitting}>Submit Expense</SubmitButton>
+            </div>
           </div>
-        </ValidatedForm>
+        </form>
       </PageContainer>
     </>
   );

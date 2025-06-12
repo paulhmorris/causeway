@@ -1,1 +1,1 @@
-export * as Sentry from "@sentry/remix";
+export * as Sentry from "@sentry/react-router";

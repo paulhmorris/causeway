@@ -17,7 +17,7 @@ export async function sendPasswordResetEmail(args: { email: User["username"]; to
   url.searchParams.set("token", args.token);
   url.searchParams.set("isReset", "true");
 
-  const html = render(<PasswordResetEmail url={url.toString()} />);
+  const html = await render(<PasswordResetEmail url={url.toString()} />);
 
   try {
     const data = await sendEmail({
@@ -49,7 +49,9 @@ export async function sendPasswordSetupEmail({
   const url = new URL("/passwords/new", process.env.BASE_URL);
   url.searchParams.set("token", token);
 
-  const html = render(<WelcomeEmail userFirstname={user.contact.firstName} orgName={org.name} url={url.toString()} />);
+  const html = await render(
+    <WelcomeEmail userFirstname={user.contact.firstName} orgName={org.name} url={url.toString()} />,
+  );
 
   try {
     const data = await sendEmail({

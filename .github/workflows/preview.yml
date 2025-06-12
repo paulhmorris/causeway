@@ -3,18 +3,70 @@ env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
+  workflow_dispatch:
   push:
     branches:
       - staging
 
 jobs:
+  lint:
+    name: ✨ Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: "npm"
+      - run: npm ci
+      - run: npm run typegen
+      - run: npm run lint
+
+  test:
+    name: 🧪 Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: "npm"
+      - run: npm ci
+      - run: npm run test
+
+  typecheck:
+    name: 🧠 Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: "npm"
+      - run: npm ci
+      - run: npm run typegen
+      - run: npm run typecheck
+
   deploy:
     name: 🚧 Deploy Preview
     runs-on: ubuntu-latest
     environment: preview
+    needs: [lint, test, typecheck]
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: "npm"
+
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
@@ -30,8 +82,5 @@ jobs:
       - name: Build Project Artifacts
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Typecheck
-        run: tsc --noEmit
-
       - name: Deploy Project Artifacts to Vercel
-        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --archive=tgz --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
