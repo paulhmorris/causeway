@@ -76,7 +76,7 @@ export async function sendReimbursementRequestUpdateEmail(args: {
 
     const data = await sendEmail({
       to: args.email,
-      subject: `Reimbursement Request ${capitalize(status)}`,
+      subject: `Reimbursement Request ${capitalize(args.status)}`,
       html,
     });
     return { data };
