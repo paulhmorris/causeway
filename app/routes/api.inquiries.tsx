@@ -55,7 +55,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const html = await render(<NewInquiryEmail url={url} username={user.username} {...result.data} />);
 
     const { messageId } = await sendEmail({
-      from: `TODO: <no-reply@${process.env.EMAIL_FROM_DOMAIN}>`,
+      from: `Team Causeway <no-reply@${process.env.EMAIL_FROM_DOMAIN}>`,
       // TODO: remove exclamation after migrations
       to: org.primaryEmail!,
       subject: "New Inquiry",

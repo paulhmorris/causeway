@@ -16,8 +16,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const dbUser = await db.user.findUnique({
     where: { id: userId },
-    include: {
+    select: {
+      id: true,
+      username: true,
+      role: true,
       contactAssignments: true,
+      accountId: true,
       contact: {
         select: {
           id: true,
@@ -40,10 +44,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
         },
       },
       memberships: {
-        include: {
+        select: {
+          role: true,
+          isDefault: true,
+          orgId: true,
           org: {
             select: {
-              id: true,
               name: true,
             },
           },

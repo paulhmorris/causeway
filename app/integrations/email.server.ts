@@ -17,7 +17,7 @@ export type SendEmailInput = {
 };
 export async function sendEmail(props: SendEmailInput) {
   const input: SendEmailCommandInput = {
-    FromEmailAddress: props.from ?? `no-reply@${process.env.EMAIL_FROM_DOMAIN}`,
+    FromEmailAddress: props.from ?? `Team Causeway <no-reply@${process.env.EMAIL_FROM_DOMAIN}`,
     Destination: {
       ToAddresses: Array.isArray(props.to) ? props.to : [props.to],
     },
