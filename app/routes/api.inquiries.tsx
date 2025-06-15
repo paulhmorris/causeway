@@ -51,12 +51,13 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    const url = new URL("/", `https://${org.subdomain ? org.subdomain + "." : ""}${org.host}`).toString();
+    const url = new URL("/", process.env.BASE_URL).toString();
     const html = await render(<NewInquiryEmail url={url} username={user.username} {...result.data} />);
 
     const { messageId } = await sendEmail({
-      from: `${org.name} <${org.replyToEmail}@${org.host}>`,
-      to: `${org.inquiriesEmail}@${org.host}`,
+      from: `Team Causeway <no-reply@${process.env.EMAIL_FROM_DOMAIN}>`,
+      // TODO: remove exclamation after migrations
+      to: org.primaryEmail!,
       subject: "New Inquiry",
       html,
     });

@@ -40,9 +40,9 @@ async function seed() {
   ]);
 
   // TODO: change admin org host
-  const _org = await db.organization.create({ data: { name: "Causeway", host: "causeway.com" } });
-  const org = await db.organization.create({ data: { name: "Alliance 436", host: "alliance436.org" } });
-  const org2 = await db.organization.create({ data: { name: "Moms of Courage", host: "momsofcourage.org" } });
+  const _org = await db.organization.create({ data: { name: "NP Ally", subdomain: "test-np-ally" } });
+  const org = await db.organization.create({ data: { name: "Alliance 436", subdomain: "test-a436" } });
+  const org2 = await db.organization.create({ data: { name: "Moms of Courage", subdomain: "test-moc" } });
 
   await db.$transaction([
     db.transactionCategory.createMany({ data: transactionCategories }),

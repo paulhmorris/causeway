@@ -242,13 +242,13 @@ export default function EditContactPage() {
     },
   });
 
-  const shouldDisableTypeSelection = user.isMember && location.pathname.includes(user.contactId);
+  const shouldDisableTypeSelection = user.isMember && location.pathname.includes(user.contact.id);
 
   return (
     <>
       <PageHeader title="Edit Contact" />
       <div className="mt-1">
-        {user.contactId === contact.id ? (
+        {user.contact.id === contact.id ? (
           <div className="max-w-sm">
             <Callout variant="warning">
               This is your contact information. Changing this email will not affect your login credentials, but may have

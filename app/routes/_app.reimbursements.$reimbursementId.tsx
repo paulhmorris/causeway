@@ -178,7 +178,6 @@ export async function action({ request }: ActionFunctionArgs) {
     await sendReimbursementRequestUpdateEmail({
       email: rr.user.username,
       status: _action,
-      orgId,
     });
     return Toasts.dataWithInfo(
       { reimbursementRequest: rr },
@@ -275,7 +274,6 @@ export async function action({ request }: ActionFunctionArgs) {
       await sendReimbursementRequestUpdateEmail({
         email: rr.user.username,
         status: ReimbursementRequestStatus.APPROVED,
-        orgId,
       });
 
       return Toasts.dataWithSuccess(
@@ -307,7 +305,6 @@ export async function action({ request }: ActionFunctionArgs) {
   await sendReimbursementRequestUpdateEmail({
     email: rr.user.username,
     status: _action,
-    orgId,
   });
   const normalizedAction = _action === ReimbursementRequestStatus.REJECTED ? "rejected" : "voided";
   return Toasts.dataWithSuccess(

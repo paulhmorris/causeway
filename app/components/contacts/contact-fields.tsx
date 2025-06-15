@@ -17,7 +17,7 @@ export function ContactFields({
   const user = useUser();
   const location = useLocation();
   const form = useFormScope(scope);
-  const shouldDisableTypeSelection = user.isMember && location.pathname.includes(user.contactId);
+  const shouldDisableTypeSelection = user.isMember && location.pathname.includes(user.contact.id);
 
   return (
     <>

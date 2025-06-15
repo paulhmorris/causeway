@@ -3,6 +3,8 @@ import { loadEnv } from "vite";
 import { TypeOf, z } from "zod/v4";
 
 const serverEnvValidation = z.object({
+  BASE_URL: z.string().url(),
+  EMAIL_FROM_DOMAIN: z.string(),
   NODE_ENV: z.enum(["development", "production", "test"]),
   // CI
   CI: z.string().optional(),

@@ -1,6 +1,5 @@
 import { FormScope, useForm } from "@rvf/react-router";
 import { useState } from "react";
-import { useLocation } from "react-router";
 import { z } from "zod/v4";
 
 import { AddressFields } from "~/components/contacts/address-fields";
@@ -24,14 +23,14 @@ export const AddressSchema = z.object({
 });
 
 export const newContactSchema = z.object({
-  firstName: optionalText,
+  firstName: text,
   lastName: optionalText,
   organizationName: optionalText,
   email: optionalEmail,
   alternateEmail: optionalEmail,
   phone: optionalPhoneNumber,
   alternatePhone: optionalPhoneNumber,
-  typeId: number.pipe(z.enum(ContactType, { error: "Invalid type" })),
+  typeId: number.pipe(z.enum(ContactType, { error: (e) => (!e.input ? "Required" : "Invalid type") })),
   address: AddressSchema.optional(),
   assignedUserIds: z.array(cuid).optional(),
 });
@@ -53,9 +52,7 @@ type Props = {
 };
 
 export function NewContactForm({ user, contactTypes, usersWhoCanBeAssigned }: Props) {
-  const location = useLocation();
   const [addressEnabled, setAddressEnabled] = useState(false);
-  const shouldDisableTypeSelection = user.isMember && location.pathname.includes(user.contactId);
 
   const form = useForm({
     schema: newContactSchema,
@@ -75,7 +72,7 @@ export function NewContactForm({ user, contactTypes, usersWhoCanBeAssigned }: Pr
   });
 
   return (
-    <form {...form.getFormProps()} className="space-y-4 sm:max-w-md">
+    <form aria-label="New contact" noValidate {...form.getFormProps()} className="space-y-4 sm:max-w-md">
       <>
         <div className="flex items-start gap-2">
           <FormField label="First name" id="firstName" scope={form.scope("firstName")} placeholder="Joe" required />
@@ -93,20 +90,19 @@ export function NewContactForm({ user, contactTypes, usersWhoCanBeAssigned }: Pr
           id="phone"
           scope={form.scope("phone")}
           placeholder="8885909724"
-          inputMode="numeric"
+          inputMode="tel"
           maxLength={10}
         />
         <FormField
           label="Alternate Phone"
-          id="phone"
+          id="alternatePhone"
           scope={form.scope("alternatePhone")}
           placeholder="8885909724"
-          inputMode="numeric"
+          inputMode="tel"
           maxLength={10}
         />
         <FormSelect
           required
-          disabled={shouldDisableTypeSelection}
           label="Type"
           scope={form.scope("typeId")}
           placeholder="Select type"

@@ -11,7 +11,6 @@ import { sendEmail } from "~/integrations/email.server";
 import { createLogger } from "~/integrations/logger.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
-import { constructOrgMailFrom } from "~/lib/utils";
 import { longText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
@@ -39,7 +38,6 @@ export async function action({ request }: ActionFunctionArgs) {
   try {
     await sendEmail({
       to: "paul@paulmorris.dev",
-      from: constructOrgMailFrom(user.org),
       subject: `New ${type}: ${title}`,
       html: `A new ${type} has been submitted by ${user.contact.email}.\n\n${description}`,
     });

@@ -49,8 +49,12 @@ class Session {
       this.logger.debug(`no orgId found in session`);
       return null;
     }
-    this.logger.debug(`orgId in session found, fetching organization`);
-    return db.organization.findUnique({ where: { id: orgId } });
+    const org = await db.organization.findUnique({
+      where: { id: orgId },
+      select: { id: true, name: true, primaryEmail: true },
+    });
+    this.logger.debug(`orgId for ${org?.name} found in session`);
+    return org;
   }
 
   async requireOrgId(request: Request) {
@@ -66,7 +70,6 @@ class Session {
       this.logger.info(`redirecting to ${returnUrl.toString()}`);
       throw redirect(returnUrl.toString());
     }
-    this.logger.debug(`orgId in session found`);
     return orgId;
   }
 

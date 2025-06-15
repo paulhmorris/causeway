@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { useUser } from "~/hooks/useUser";
+import { Sentry } from "~/integrations/sentry";
 
 export function UserMenu() {
   const user = useUser();
@@ -91,7 +92,9 @@ export function UserMenu() {
           <DropdownMenuSeparator />
           <DropdownMenuItem className="px-0 py-0" asChild>
             <Form className="w-full" method="post" action="/logout" navigate={false}>
-              <button className="w-full cursor-pointer px-2 py-1.5 text-left">Log out</button>
+              <button onClick={() => Sentry.setUser(null)} className="w-full cursor-pointer px-2 py-1.5 text-left">
+                Log out
+              </button>
             </Form>
           </DropdownMenuItem>
         </DropdownMenuContent>

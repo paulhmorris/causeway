@@ -9,6 +9,7 @@ export function AddressFields({ scope }: { scope: FormScope<z.infer<typeof Addre
 
   return (
     <fieldset className="space-y-4">
+      <legend className="sr-only">Address fields</legend>
       <FormField label="Street 1" placeholder="1234 Main St." scope={form.scope("street")} required />
       <div className="flex items-start gap-2">
         <FormField label="Street 2" placeholder="Apt 4" scope={form.scope("street2")} />

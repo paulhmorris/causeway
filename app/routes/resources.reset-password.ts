@@ -29,15 +29,10 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   const url = new URL(request.url);
-  let host = url.hostname.split(".").slice(-2).join(".");
-
-  // Local dev
-  if (host === "localhost" && process.env.NODE_ENV === "development") {
-    host = "alliance436.org";
-  }
+  const subdomain = url.hostname.split(".")[0];
 
   try {
-    const org = await db.organization.findUniqueOrThrow({ where: { host } });
+    const org = await db.organization.findUniqueOrThrow({ where: { subdomain }, select: { id: true } });
     const user = await db.user.findUnique({ where: { username: result.data.username } });
     if (!user) {
       return Toasts.dataWithError(null, {
@@ -63,7 +58,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const { data, error } =
       result.data._action === "setup"
         ? await sendPasswordSetupEmail({ email: user.username, token: reset.token, orgId: org.id })
-        : await sendPasswordResetEmail({ email: user.username, token: reset.token, orgId: org.id });
+        : await sendPasswordResetEmail({ email: user.username, token: reset.token });
 
     const isError = Boolean(error) || !data || ("statusCode" in data && data.statusCode !== 200);
 

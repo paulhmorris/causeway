@@ -6,32 +6,22 @@ import { ReimbursementRequestUpdateEmail } from "emails/reimbursement-request-up
 import { sendEmail } from "~/integrations/email.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
-import { capitalize, constructOrgMailFrom, constructOrgURL } from "~/lib/utils";
+import { capitalize } from "~/lib/utils";
 
 import { WelcomeEmail } from "../../emails/welcome";
 
 type OrgId = Organization["id"];
 
-export async function sendPasswordResetEmail({
-  email,
-  token,
-  orgId,
-}: {
-  email: User["username"];
-  token: PasswordReset["token"];
-  orgId: OrgId;
-}) {
-  const org = await db.organization.findUniqueOrThrow({ where: { id: orgId } });
-  const url = constructOrgURL("/passwords/new", org);
-  url.searchParams.set("token", token);
+export async function sendPasswordResetEmail(args: { email: User["username"]; token: PasswordReset["token"] }) {
+  const url = new URL("/passwords/new", process.env.BASE_URL);
+  url.searchParams.set("token", args.token);
   url.searchParams.set("isReset", "true");
 
   const html = await render(<PasswordResetEmail url={url.toString()} />);
 
   try {
     const data = await sendEmail({
-      from: constructOrgMailFrom(org),
-      to: email,
+      to: args.email,
       subject: "Reset Your Password",
       html,
     });
@@ -51,12 +41,12 @@ export async function sendPasswordSetupEmail({
   token: PasswordReset["token"];
   orgId: OrgId;
 }) {
-  const org = await db.organization.findUniqueOrThrow({ where: { id: orgId } });
+  const org = await db.organization.findUniqueOrThrow({ where: { id: orgId }, select: { name: true } });
   const user = await db.user.findUniqueOrThrow({
     where: { username: email },
     select: { contact: { select: { firstName: true } } },
   });
-  const url = constructOrgURL("/passwords/new", org);
+  const url = new URL("/passwords/new", process.env.BASE_URL);
   url.searchParams.set("token", token);
 
   const html = await render(
@@ -65,7 +55,6 @@ export async function sendPasswordSetupEmail({
 
   try {
     const data = await sendEmail({
-      from: constructOrgMailFrom(org),
       to: email,
       subject: "Setup Your Password",
       html,
@@ -77,25 +66,17 @@ export async function sendPasswordSetupEmail({
   }
 }
 
-export async function sendReimbursementRequestUpdateEmail({
-  email,
-  status,
-  orgId,
-}: {
+export async function sendReimbursementRequestUpdateEmail(args: {
   email: User["username"];
   status: ReimbursementRequestStatus;
-  orgId: OrgId;
-  note?: string;
 }) {
   try {
-    const org = await db.organization.findUniqueOrThrow({ where: { id: orgId } });
-    const url = constructOrgURL("/", org).toString();
-    const html = await render(<ReimbursementRequestUpdateEmail status={status} url={url} />);
+    const url = new URL("/", process.env.BASE_URL).toString();
+    const html = await render(<ReimbursementRequestUpdateEmail status={args.status} url={url} />);
 
     const data = await sendEmail({
-      from: constructOrgMailFrom(org),
-      to: email,
-      subject: `Reimbursement Request ${capitalize(status)}`,
+      to: args.email,
+      subject: `Reimbursement Request ${capitalize(args.status)}`,
       html,
     });
     return { data };

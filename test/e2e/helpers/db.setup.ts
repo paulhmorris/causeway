@@ -9,13 +9,13 @@ setup("setup db", async () => {
     db.transaction.deleteMany({ where: { account: { description: { contains: "E2E" } } } }),
     db.transactionItem.deleteMany({ where: { description: { contains: "E2E" } } }),
     db.account.deleteMany({ where: { description: { contains: "E2E" } } }),
-    db.membership.deleteMany({ where: { org: { host: "E2E-Test.org" } } }),
-    db.organization.deleteMany({ where: { host: "E2E-Test.org" } }),
+    db.membership.deleteMany({ where: { org: { subdomain: "e2e-test" } } }),
+    db.organization.deleteMany({ where: { subdomain: "e2e-test" } }),
   ]);
 
   const org = await db.organization.create({
     data: {
-      host: "E2E-Test.org",
+      subdomain: "e2e-test",
       name: "E2E-Test Organization",
     },
   });
