@@ -6,6 +6,7 @@ export const MOCK_DATA = {
     username: "test@example.com",
     role: MembershipRole.ADMIN,
     systemRole: UserRole.ADMIN,
+    accountId: "1234567890abcdef",
     contactAssignments: [],
     contact: {
       id: "cmagnqeog0005t21kq9mv4vvb",
@@ -49,6 +50,7 @@ export const MOCK_DATA = {
     org: {
       id: "cmagnqem30001t21kfdciyqta",
       name: "Test Org 1",
+      primaryEmail: "org@example.com",
     },
     isMember: false,
     isAdmin: true,
