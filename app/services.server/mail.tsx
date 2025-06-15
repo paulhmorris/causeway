@@ -39,9 +39,12 @@ export async function sendPasswordSetupEmail({
 }: {
   email: User["username"];
   token: PasswordReset["token"];
-  orgId: OrgId;
+  orgId?: OrgId;
 }) {
-  const org = await db.organization.findUniqueOrThrow({ where: { id: orgId }, select: { name: true } });
+  let org = null;
+  if (orgId) {
+    org = await db.organization.findUniqueOrThrow({ where: { id: orgId }, select: { name: true } });
+  }
   const user = await db.user.findUniqueOrThrow({
     where: { username: email },
     select: { contact: { select: { firstName: true } } },
@@ -50,7 +53,7 @@ export async function sendPasswordSetupEmail({
   url.searchParams.set("token", token);
 
   const html = await render(
-    <WelcomeEmail userFirstname={user.contact.firstName} orgName={org.name} url={url.toString()} />,
+    <WelcomeEmail userFirstname={user.contact.firstName} orgName={org?.name} url={url.toString()} />,
   );
 
   try {

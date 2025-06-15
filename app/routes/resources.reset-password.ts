@@ -10,6 +10,7 @@ import { Toasts } from "~/lib/toast.server";
 import { email } from "~/schemas/fields";
 import { sendPasswordResetEmail, sendPasswordSetupEmail } from "~/services.server/mail";
 import { deletePasswordReset, generatePasswordReset, getPasswordResetByUserId } from "~/services.server/password";
+import { SessionService } from "~/services.server/session";
 
 const logger = createLogger("Routes.ResetPassword");
 
@@ -23,16 +24,14 @@ export async function action({ request }: ActionFunctionArgs) {
     throw new Response("Method not allowed", { status: 405 });
   }
 
+  const orgId = await SessionService.getOrgId(request);
+
   const result = await parseFormData(request, passwordResetSchema);
   if (result.error) {
     return validationError(result.error);
   }
 
-  const url = new URL(request.url);
-  const subdomain = url.hostname.split(".")[0];
-
   try {
-    const org = await db.organization.findUniqueOrThrow({ where: { subdomain }, select: { id: true } });
     const user = await db.user.findUnique({ where: { username: result.data.username } });
     if (!user) {
       return Toasts.dataWithError(null, {
@@ -57,7 +56,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const reset = await generatePasswordReset(user.username);
     const { data, error } =
       result.data._action === "setup"
-        ? await sendPasswordSetupEmail({ email: user.username, token: reset.token, orgId: org.id })
+        ? await sendPasswordSetupEmail({ email: user.username, token: reset.token, orgId })
         : await sendPasswordResetEmail({ email: user.username, token: reset.token });
 
     const isError = Boolean(error) || !data || ("statusCode" in data && data.statusCode !== 200);

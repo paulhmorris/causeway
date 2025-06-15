@@ -2,15 +2,15 @@ import { Body, Button, Container, Head, Html, Preview, Section, Text } from "@re
 
 interface Props {
   url: string;
-  orgName: string;
   userFirstname: string | null;
+  orgName?: string;
 }
 
 export function WelcomeEmail({ userFirstname, orgName, url }: Props) {
   return (
     <Html>
       <Head />
-      <Preview>You&apos;re invited to join the {orgName} portal</Preview>
+      <Preview>You&apos;re invited to join {orgName ? `the ${orgName}` : "Team Causeway"} portal</Preview>
       <Body style={main}>
         <Container style={container}>
           <Text style={paragraph}>Hi{userFirstname ? " " + userFirstname : ""},</Text>

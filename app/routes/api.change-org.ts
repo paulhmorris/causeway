@@ -40,7 +40,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
         const newOrg = await db.organization.findUniqueOrThrow({
           where: { id: orgId },
-          select: { subdomain: true, name: true },
+          select: { name: true },
         });
 
         logger.info(`User ${membership.user.username} changed orgs to ${newOrg.name}.`);

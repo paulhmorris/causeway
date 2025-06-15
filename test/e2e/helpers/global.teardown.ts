@@ -10,7 +10,7 @@ teardown("delete test data", async () => {
     db.transactionItem.deleteMany({ where: { transaction: { account: { description: { contains: "E2E" } } } } }),
     db.transaction.deleteMany({ where: { account: { description: { contains: "E2E" } } } }),
     db.account.deleteMany({ where: { description: { contains: "E2E" } } }),
-    db.organization.deleteMany({ where: { host: { contains: "E2E-Test" } } }),
+    db.organization.deleteMany({ where: { primaryEmail: { contains: "e2e-test" } } }),
   ]);
 
   console.info("Deleted test data:", {

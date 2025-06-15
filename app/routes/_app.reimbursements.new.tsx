@@ -115,7 +115,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         org: {
           select: {
             name: true,
-            subdomain: true,
             primaryEmail: true,
           },
         },

@@ -9,13 +9,13 @@ import { optionalText, text } from "~/schemas/fields";
 
 export const orgSettingsSchema = z.object({
   name: text,
-  administratorEmail: optionalText,
+  primaryEmail: optionalText,
 });
 
 type Props = {
   org: {
     name: string;
-    administratorEmail: string | null;
+    primaryEmail: string | null;
   };
 };
 
@@ -25,7 +25,7 @@ export function OrgSettingsForm({ org }: Props) {
       schema={orgSettingsSchema}
       defaultValues={{
         name: org.name,
-        administratorEmail: org.administratorEmail ?? "",
+        primaryEmail: org.primaryEmail ?? "",
       }}
       className="space-y-4 sm:max-w-md"
       method="post"
@@ -36,7 +36,7 @@ export function OrgSettingsForm({ org }: Props) {
             <FormField required label="Organization Name" scope={form.scope("name")} defaultValue={org.name} />
             <FormField
               label="Administrator Email"
-              scope={form.scope("administratorEmail")}
+              scope={form.scope("primaryEmail")}
               description="Receives all email communications"
             />
           </div>
