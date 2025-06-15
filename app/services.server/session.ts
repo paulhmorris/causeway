@@ -49,7 +49,10 @@ class Session {
       this.logger.debug(`no orgId found in session`);
       return null;
     }
-    const org = await db.organization.findUnique({ where: { id: orgId } });
+    const org = await db.organization.findUnique({
+      where: { id: orgId },
+      select: { id: true, name: true, primaryEmail: true },
+    });
     this.logger.debug(`orgId for ${org?.name} found in session`);
     return org;
   }
