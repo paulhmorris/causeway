@@ -68,14 +68,7 @@ enum MembershipRole {
 model Organization {
   id           String  @id @default(cuid())
   name         String
-  subdomain    String? @unique
   primaryEmail String?
-
-  // Deprecated
-  host               String?
-  replyToEmail       String  @default("no-reply")
-  administratorEmail String?
-  inquiriesEmail     String?
 
   accounts               Account[]
   memberships            Membership[]
@@ -97,8 +90,6 @@ model Organization {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@index([subdomain])
 }
 
 model Password {
