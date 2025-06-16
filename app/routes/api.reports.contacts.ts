@@ -72,7 +72,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
     .column("Alternate Phone", { key: "alternatePhone" })
     .column("Organization Name", { key: "organizationName" })
     .column("Accounts Donated To", { key: "accounts" })
-
     .build();
 
   const file = ExcelBuilder.create()
