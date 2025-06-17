@@ -1,0 +1,12 @@
+diff --git a/node_modules/@chronicstone/typed-xlsx/dist/index.mjs b/node_modules/@chronicstone/typed-xlsx/dist/index.mjs
+index 8fd9a95..1ff366c 100644
+--- a/node_modules/@chronicstone/typed-xlsx/dist/index.mjs
++++ b/node_modules/@chronicstone/typed-xlsx/dist/index.mjs
+@@ -1,5 +1,6 @@
+-import XLSX, { utils } from 'xlsx-js-style';
+ import { deepmerge } from 'deepmerge-ts';
++import XLSX from 'xlsx-js-style';
++const { utils } = XLSX;
+ 
+ const THIN_BORDER_STYLE = {
+   top: { style: "thin", color: { rgb: "000000" } },
