@@ -21,11 +21,9 @@ export const optionalCheckbox = checkbox.optional();
 export const checkboxGroup = z.array(z.coerce.string()).or(z.string());
 export const optionalCheckboxGroup = checkboxGroup.optional().transform((v) => (v === "" ? undefined : v));
 
-export const select = z.coerce
-  .string()
-  .min(1, { error: "Required" })
-  .max(255, { error: "Must be 255 characters or less" });
-export const optionalSelect = select.optional().transform((v) => (v === "" ? undefined : v));
+export const _select = z.coerce.string().max(255, { error: "Must be 255 characters or less" }).trim();
+export const select = _select.min(1, { error: "Required" });
+export const optionalSelect = _select.optional().transform((v) => (v === "" ? undefined : v));
 
 export const cuid = z.cuid({ error: (e) => (!e.input ? "Required" : "Invalid ID") }).max(255);
 export const email = z.email({ error: (e) => (!e.input ? "Required" : "Invalid email address") }).max(255);
