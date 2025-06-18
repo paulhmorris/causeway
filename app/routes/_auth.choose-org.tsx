@@ -1,18 +1,24 @@
+import {} from "@clerk/react-router/";
 import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import { IconChevronRight } from "@tabler/icons-react";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
-import { redirect, useLoaderData, useSearchParams } from "react-router";
+import { useLoaderData, useSearchParams } from "react-router";
 import { z } from "zod/v4";
 
 import { AuthCard } from "~/components/auth/auth-card";
+import { ErrorComponent } from "~/components/error-component";
 import { BigButton } from "~/components/ui/big-button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Label } from "~/components/ui/label";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
+import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
 import { normalizeEnum } from "~/lib/utils";
 import { checkbox, optionalText, text } from "~/schemas/fields";
-import { SessionService, sessionStorage } from "~/services.server/session";
+import { SessionService } from "~/services.server/session";
+
+const logger = createLogger("Routes.ChooseOrg");
 
 const schema = z.object({
   orgId: text,
@@ -20,9 +26,9 @@ const schema = z.object({
   rememberSelection: checkbox,
 });
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const userId = await SessionService.requireUserId(request);
-  const session = await SessionService.getSession(request);
+export const loader = async (args: LoaderFunctionArgs) => {
+  const userId = await SessionService.requireUserId(args);
+  const session = await SessionService.getSession(args);
 
   const user = await db.user.findUnique({
     where: { id: userId },
@@ -41,28 +47,44 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   });
 
   if (!user) {
-    throw await SessionService.logout(request);
+    throw await SessionService.logout(session.sessionId);
   }
 
-  if (!user.memberships.length) {
-    return Toasts.redirectWithError(
-      "/login",
-      { message: "Error", description: "You are not a member of any organizations." },
-      {
-        headers: {
-          "Set-Cookie": await sessionStorage.destroySession(session),
-        },
-      },
-    );
+  if (user.memberships.length === 0) {
+    logger.warn(`User ${userId} has no memberships, logging them out.`);
+    await SessionService.logout(session.sessionId);
+    return Toasts.redirectWithError("/login", {
+      message: "Error",
+      description: "You are not a member of any organizations.",
+    });
   }
-  return {
-    orgs: user.memberships.map((m) => ({ id: m.org.id, name: m.org.name, role: m.role, isDefault: m.isDefault })),
-  };
+
+  if (user.memberships.length === 1) {
+    logger.info(`User ${userId} has only one membership, redirecting to that organization.`);
+    const orgId = user.memberships[0].org.id;
+    return SessionService.createOrgSession({ fnArgs: args, redirectTo: "/", orgId });
+  }
+
+  const defaultMembership = user.memberships.find((m) => m.isDefault);
+  if (defaultMembership) {
+    logger.info(`User ${userId} has a default membership, redirecting to that organization.`);
+    const orgId = defaultMembership.org.id;
+    return SessionService.createOrgSession({ fnArgs: args, redirectTo: "/", orgId });
+  }
+
+  const orgs = user.memberships.map((m) => ({
+    id: m.org.id,
+    name: m.org.name,
+    role: normalizeEnum(m.role),
+    isDefault: m.isDefault,
+  }));
+  console.log(orgs);
+  return { orgs };
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const userId = await SessionService.requireUserId(request);
-  const result = await parseFormData(request, schema);
+export const action = async (args: ActionFunctionArgs) => {
+  const userId = await SessionService.requireUserId(args);
+  const result = await parseFormData(args.request, schema);
 
   if (result.error) {
     return validationError(result.error);
@@ -70,43 +92,42 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   const { orgId, redirectTo, rememberSelection } = result.data;
 
-  // Ensure the user is a member of the selected organization
-  await db.membership.findUniqueOrThrow({ where: { userId_orgId: { userId, orgId } }, select: { id: true } });
+  try {
+    // Ensure the user is a member of the selected organization
+    await db.membership.findUniqueOrThrow({ where: { userId_orgId: { userId, orgId } }, select: { id: true } });
 
-  // Skip this screen on future logins
-  if (rememberSelection) {
-    await db.membership.update({
-      data: { isDefault: true },
-      where: {
-        userId_orgId: {
-          orgId,
-          userId,
+    // Skip this screen on future logins
+    if (rememberSelection) {
+      await db.membership.update({
+        data: { isDefault: true },
+        where: {
+          userId_orgId: { orgId, userId },
         },
-      },
-    });
-  } else {
-    await db.membership.updateMany({
-      where: { userId },
-      data: { isDefault: false },
+      });
+    } else {
+      await db.membership.updateMany({
+        where: { userId },
+        data: { isDefault: false },
+      });
+    }
+
+    const url = new URL(args.request.url);
+    const redirectUrl = new URL(redirectTo ?? "/", url.origin);
+
+    return SessionService.createOrgSession({ fnArgs: args, redirectTo: redirectUrl.toString(), orgId });
+  } catch (error) {
+    Sentry.captureException(error, { tags: { userId, orgId } });
+    logger.error(`Error selecting organization for user ${userId}:`, error);
+    return Toasts.dataWithError(null, {
+      message: "Error",
+      description: "You are not a member of this organization.",
     });
   }
-
-  const session = await SessionService.getSession(request);
-  session.set(SessionService.ORGANIZATION_SESSION_KEY, orgId);
-
-  const url = new URL(request.url);
-  const redirectUrl = new URL(redirectTo ?? "/", url.origin);
-
-  return redirect(redirectUrl.toString(), {
-    headers: {
-      "Set-Cookie": await SessionService.commitSession(session),
-    },
-  });
 };
 
 export const meta: MetaFunction = () => [{ title: "Choose Organization" }];
 
-export default function LoginPage() {
+export default function ChooseOrgPage() {
   const { orgs } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/";
@@ -150,4 +171,8 @@ export default function LoginPage() {
       </ValidatedForm>
     </AuthCard>
   );
+}
+
+export function ErrorBoundary() {
+  return <ErrorComponent />;
 }

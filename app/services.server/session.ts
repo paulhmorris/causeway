@@ -1,6 +1,7 @@
 import { getAuth } from "@clerk/react-router/ssr.server";
 import { MembershipRole, Organization, UserRole } from "@prisma/client";
 import {
+  ActionFunctionArgs,
   LoaderFunctionArgs,
   Session as RemixSession,
   SessionData,
@@ -9,6 +10,7 @@ import {
 } from "react-router";
 import { createThemeSessionResolver } from "remix-themes";
 
+import { AuthService } from "~/integrations/auth.server";
 import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { unauthorized } from "~/lib/responses.server";
@@ -19,17 +21,18 @@ class Session {
 
   private logger = createLogger("SessionService");
 
-  async logout(request: Request) {
-    const session = await this.getSession(request);
-    this.logger.info("Logging out session");
-    return redirect("/login", {
-      headers: {
-        "Set-Cookie": await sessionStorage.destroySession(session),
-      },
-    });
+  async logout(sessionId: string | null) {
+    if (sessionId) {
+      await AuthService.revokeSession(sessionId);
+    }
+    return redirect("/login");
   }
 
-  async getSession(request: Request) {
+  async getSession(args: LoaderFunctionArgs | ActionFunctionArgs) {
+    return getAuth(args);
+  }
+
+  async getOrgSession(request: Request) {
     const cookie = request.headers.get("Cookie");
     return sessionStorage.getSession(cookie);
   }
@@ -38,18 +41,23 @@ class Session {
     return sessionStorage.commitSession(session);
   }
 
-  async getUserId(args: LoaderFunctionArgs): Promise<string | null> {
+  async getAuth(args: LoaderFunctionArgs | ActionFunctionArgs) {
+    return getAuth(args);
+  }
+
+  async getUserId(args: LoaderFunctionArgs | ActionFunctionArgs): Promise<string | null> {
     const { userId } = await getAuth(args);
     return userId;
   }
 
   async getOrgId(request: Request): Promise<Organization["id"] | undefined> {
-    const session = await this.getSession(request);
+    const session = await this.getOrgSession(request);
     const orgId = session.get(this.ORGANIZATION_SESSION_KEY) as Organization["id"] | undefined;
     return orgId;
   }
 
-  async getOrg(request: Request) {
+  async getOrg(args: Request | LoaderFunctionArgs | ActionFunctionArgs) {
+    const request = args instanceof Request ? args : args.request;
     const orgId = await this.getOrgId(request);
     if (!orgId) {
       this.logger.debug(`no orgId found in session`);
@@ -63,7 +71,8 @@ class Session {
     return org;
   }
 
-  async requireOrgId(request: Request) {
+  async requireOrgId(args: Request | LoaderFunctionArgs | ActionFunctionArgs) {
+    const request = args instanceof Request ? args : args.request;
     const orgId = await this.getOrgId(request);
     if (!orgId) {
       this.logger.info(`no orgId found in session`);
@@ -80,22 +89,27 @@ class Session {
   }
 
   async requireUserId(args: LoaderFunctionArgs, redirectTo: string = new URL(args.request.url).pathname) {
-    const userId = await this.getUserId(args);
-    if (!userId) {
+    const sessionUserId = await this.getUserId(args);
+    if (!sessionUserId) {
       const searchParams = new URLSearchParams([["redirectTo", redirectTo]]);
       this.logger.info(`no userId found in session, redirecting to /login?${searchParams.toString()}`);
       throw redirect(`/login?${searchParams.toString()}`);
     }
-    return userId;
+    const user = await db.user.findUnique({ where: { clerkId: sessionUserId }, select: { id: true } });
+    if (!user) {
+      this.logger.error(`User with clerkId ${sessionUserId} not found in database`);
+      throw Error("User not found");
+    }
+    return user.id;
   }
 
   public async requireUser(args: LoaderFunctionArgs, allowedRoles?: Array<MembershipRole>) {
     const defaultAllowedRoles: Array<MembershipRole> = [MembershipRole.MEMBER, MembershipRole.ADMIN];
-    const clerkId = await this.requireUserId(args);
-    // const orgId = await this.requireOrgId(args.request);
+    const userId = await this.requireUserId(args);
+    const orgId = await this.requireOrgId(args.request);
 
     const user = await db.user.findUnique({
-      where: { clerkId },
+      where: { id: userId },
       include: {
         contact: {
           select: {
@@ -105,9 +119,9 @@ class Session {
             lastName: true,
             typeId: true,
             accountSubscriptions: {
-              // where: {
-              //   account: { orgId },
-              // },
+              where: {
+                account: { orgId },
+              },
               select: {
                 accountId: true,
               },
@@ -124,13 +138,12 @@ class Session {
 
     // User does not exist
     if (!user) {
-      this.logger.warn(`user with ID ${clerkId} not found in database - throwing unauthorized`);
+      this.logger.warn(`user with ID ${userId} not found in database - throwing unauthorized`);
       throw unauthorized({ user });
     }
 
     // User is not a member of the current organization
-    // const currentMembership = user.memberships.find((m) => m.orgId === orgId);
-    const currentMembership = user.memberships.at(0);
+    const currentMembership = user.memberships.find((m) => m.orgId === orgId);
     if (!currentMembership) {
       this.logger.warn("No membership in the current org - throwing unauthorized");
       throw unauthorized({ user });
@@ -192,33 +205,18 @@ class Session {
     return this.requireUser(args, ["ADMIN"]);
   }
 
-  async createUserSession({
-    request,
-    userId,
-    remember,
-    redirectTo,
-    orgId,
-  }: {
-    request: Request;
-    userId: string;
-    remember: boolean;
-    redirectTo: string;
-    orgId?: string;
+  async createOrgSession(args: {
+    fnArgs: LoaderFunctionArgs | ActionFunctionArgs;
+    orgId: string;
+    redirectTo?: string;
   }) {
-    const session = await this.getSession(request);
-    session.set(this.USER_SESSION_KEY, userId);
-    this.logger.info(`Creating session for userId ${userId}`);
-    if (orgId) {
-      this.logger.info(`Adding orgId ${orgId} to session for userId ${userId}`);
-      session.set(this.ORGANIZATION_SESSION_KEY, orgId);
-    }
-    return redirect(redirectTo, {
-      status: 201,
+    const session = await this.getOrgSession(args.fnArgs.request);
+    this.logger.info(`Adding orgId ${args.orgId} to session for user`);
+    session.set(this.ORGANIZATION_SESSION_KEY, args.orgId);
+    return redirect(args.redirectTo ?? "/", {
       headers: {
         "Set-Cookie": await sessionStorage.commitSession(session, {
-          maxAge: remember
-            ? 60 * 60 * 24 * 7 // 7 days
-            : undefined,
+          maxAge: 60 * 60 * 24 * 365, // 1 year
         }),
       },
     });

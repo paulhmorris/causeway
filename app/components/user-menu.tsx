@@ -1,6 +1,7 @@
+import { SignOutButton } from "@clerk/react-router";
 import { IconArrowRight, IconChevronUp, IconMoon, IconSun } from "@tabler/icons-react";
 import { useState } from "react";
-import { Form, Link } from "react-router";
+import { Link } from "react-router";
 import { Theme, useTheme } from "remix-themes";
 
 import { NewInquiryModal } from "~/components/modals/inquiry-modal";
@@ -90,12 +91,12 @@ export function UserMenu() {
             </button>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="px-0 py-0" asChild>
-            <Form className="w-full" method="post" action="/logout" navigate={false}>
+          <DropdownMenuItem className="w-full cursor-pointer" asChild>
+            <SignOutButton redirectUrl="/login">
               <button onClick={() => Sentry.setUser(null)} className="w-full cursor-pointer px-2 py-1.5 text-left">
                 Log out
               </button>
-            </Form>
+            </SignOutButton>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

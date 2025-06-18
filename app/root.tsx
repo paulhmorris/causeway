@@ -20,7 +20,9 @@ import { PreventFlashOnWrongTheme, Theme, ThemeProvider, useTheme } from "remix-
 
 import { ErrorComponent } from "~/components/error-component";
 import { Notifications } from "~/components/notifications";
+import { Toasts } from "~/lib/toast.server";
 import { cn } from "~/lib/utils";
+import { themeSessionResolver } from "~/services.server/session";
 import tailwindUrl from "~/tailwind.css?url";
 
 // eslint-disable-next-line import/no-unresolved
@@ -50,21 +52,21 @@ export async function loader(args: LoaderFunctionArgs) {
   if (process.env.MAINTENANCE_MODE && new URL(args.request.url).pathname !== "/maintenance") {
     return redirect("/maintenance", { status: 307 });
   }
-  // const { getTheme } = await themeSessionResolver(args.request);
-  // const { toast, headers } = await Toasts.getToast(args.request);
-  // const theme = getTheme();
+  const { getTheme } = await themeSessionResolver(args.request);
+  const { toast, headers } = await Toasts.getToast(args.request);
+  const theme = getTheme();
 
   return rootAuthLoader(args, () => {
     return data(
       {
-        // toast,
-        // theme,
+        toast,
+        theme,
         ENV: {
           VERCEL_URL: process.env.VERCEL_URL,
           VERCEL_ENV: process.env.VERCEL_ENV,
         },
       },
-      // { headers },
+      { headers },
     );
   });
 }
@@ -78,8 +80,8 @@ export default function App({ loaderData }: Route.ComponentProps) {
       publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
       afterSignOutUrl="/login"
       telemetry={{ disabled: true }}
-      signInFallbackRedirectUrl="/dashboards/staff"
-      signUpFallbackRedirectUrl="/dashboards/staff"
+      signInFallbackRedirectUrl="/choose-org"
+      signUpFallbackRedirectUrl="/choose-org"
     >
       <Outlet />
     </ClerkProvider>

@@ -19,12 +19,12 @@ export const meta: MetaFunction = () => [{ title: "Home" }];
 export async function loader(args: LoaderFunctionArgs) {
   try {
     const user = await SessionService.requireUser(args);
-    // const orgId = await SessionService.requireOrgId(request);
+    const orgId = await SessionService.requireOrgId(args.request);
 
     const [total, reimbursementRequests, announcement, accountSubscriptions] = await Promise.all([
       db.transaction.aggregate({
         where: {
-          // orgId,
+          orgId,
           account: {
             user: { id: user.id },
           },
@@ -33,7 +33,7 @@ export async function loader(args: LoaderFunctionArgs) {
       }),
       db.reimbursementRequest.findMany({
         where: {
-          // orgId,
+          orgId,
           userId: user.id,
           status: "PENDING",
         },
@@ -49,7 +49,7 @@ export async function loader(args: LoaderFunctionArgs) {
       }),
       db.announcement.findFirst({
         where: {
-          // orgId,
+          orgId,
           OR: [
             {
               expiresAt: { gt: dayjs().utc().toDate() },
@@ -63,7 +63,7 @@ export async function loader(args: LoaderFunctionArgs) {
       }),
       db.account.findMany({
         where: {
-          // orgId,
+          orgId,
           id: { in: user.contact.accountSubscriptions.map((s) => s.accountId) },
         },
         include: {
