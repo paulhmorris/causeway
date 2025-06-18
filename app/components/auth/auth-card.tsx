@@ -6,7 +6,7 @@ export function AuthCard({ children, className, ...props }: HTMLAttributes<HTMLD
   return (
     <div
       className={cn(
-        "dark:bg-card sm:bg-background mx-auto w-full max-w-lg px-6 sm:rounded-xl sm:border sm:px-12 sm:py-12 sm:shadow-sm",
+        "dark:sm:bg-card sm:bg-background mx-auto w-full max-w-lg px-6 sm:rounded-xl sm:border sm:px-12 sm:py-12 sm:shadow-sm",
         className,
       )}
       {...props}

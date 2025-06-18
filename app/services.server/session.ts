@@ -1,5 +1,12 @@
-import { MembershipRole, Organization, User, UserRole } from "@prisma/client";
-import { Session as RemixSession, SessionData, createCookieSessionStorage, redirect } from "react-router";
+import { getAuth } from "@clerk/react-router/ssr.server";
+import { MembershipRole, Organization, UserRole } from "@prisma/client";
+import {
+  LoaderFunctionArgs,
+  Session as RemixSession,
+  SessionData,
+  createCookieSessionStorage,
+  redirect,
+} from "react-router";
 import { createThemeSessionResolver } from "remix-themes";
 
 import { createLogger } from "~/integrations/logger.server";
@@ -31,9 +38,8 @@ class Session {
     return sessionStorage.commitSession(session);
   }
 
-  async getUserId(request: Request): Promise<User["id"] | undefined> {
-    const session = await this.getSession(request);
-    const userId = session.get(this.USER_SESSION_KEY) as User["id"] | undefined;
+  async getUserId(args: LoaderFunctionArgs): Promise<string | null> {
+    const { userId } = await getAuth(args);
     return userId;
   }
 
@@ -73,24 +79,23 @@ class Session {
     return orgId;
   }
 
-  async requireUserId(request: Request, redirectTo: string = new URL(request.url).pathname) {
-    const userId = await this.getUserId(request);
+  async requireUserId(args: LoaderFunctionArgs, redirectTo: string = new URL(args.request.url).pathname) {
+    const userId = await this.getUserId(args);
     if (!userId) {
       const searchParams = new URLSearchParams([["redirectTo", redirectTo]]);
       this.logger.info(`no userId found in session, redirecting to /login?${searchParams.toString()}`);
       throw redirect(`/login?${searchParams.toString()}`);
     }
-    this.logger.debug(`userId found in session`);
     return userId;
   }
 
-  public async requireUser(request: Request, allowedRoles?: Array<MembershipRole>) {
+  public async requireUser(args: LoaderFunctionArgs, allowedRoles?: Array<MembershipRole>) {
     const defaultAllowedRoles: Array<MembershipRole> = [MembershipRole.MEMBER, MembershipRole.ADMIN];
-    const userId = await this.requireUserId(request);
-    const orgId = await this.requireOrgId(request);
+    const clerkId = await this.requireUserId(args);
+    // const orgId = await this.requireOrgId(args.request);
 
     const user = await db.user.findUnique({
-      where: { id: userId },
+      where: { clerkId },
       include: {
         contact: {
           select: {
@@ -100,9 +105,9 @@ class Session {
             lastName: true,
             typeId: true,
             accountSubscriptions: {
-              where: {
-                account: { orgId },
-              },
+              // where: {
+              //   account: { orgId },
+              // },
               select: {
                 accountId: true,
               },
@@ -119,12 +124,13 @@ class Session {
 
     // User does not exist
     if (!user) {
-      this.logger.warn(`user with ID ${userId} not found in database - throwing unauthorized`);
+      this.logger.warn(`user with ID ${clerkId} not found in database - throwing unauthorized`);
       throw unauthorized({ user });
     }
 
     // User is not a member of the current organization
-    const currentMembership = user.memberships.find((m) => m.orgId === orgId);
+    // const currentMembership = user.memberships.find((m) => m.orgId === orgId);
+    const currentMembership = user.memberships.at(0);
     if (!currentMembership) {
       this.logger.warn("No membership in the current org - throwing unauthorized");
       throw unauthorized({ user });
@@ -182,8 +188,8 @@ class Session {
     throw unauthorized({ user });
   }
 
-  async requireAdmin(request: Request) {
-    return this.requireUser(request, ["ADMIN"]);
+  async requireAdmin(args: LoaderFunctionArgs) {
+    return this.requireUser(args, ["ADMIN"]);
   }
 
   async createUserSession({
@@ -223,7 +229,7 @@ export const SessionService = new Session();
 
 export const sessionStorage = createCookieSessionStorage({
   cookie: {
-    name: "__session",
+    name: "__causeway_session",
     httpOnly: true,
     path: "/",
     sameSite: "lax",

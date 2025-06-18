@@ -1,3 +1,6 @@
+import { ClerkProvider } from "@clerk/react-router";
+import { rootAuthLoader } from "@clerk/react-router/ssr.server";
+import { dark } from "@clerk/themes";
 import "@fontsource-variable/dm-sans/wght.css";
 import { Analytics } from "@vercel/analytics/react";
 import React from "react";
@@ -13,13 +16,11 @@ import {
   ShouldRevalidateFunctionArgs,
   useRouteLoaderData,
 } from "react-router";
-import { PreventFlashOnWrongTheme, ThemeProvider, useTheme } from "remix-themes";
+import { PreventFlashOnWrongTheme, Theme, ThemeProvider, useTheme } from "remix-themes";
 
 import { ErrorComponent } from "~/components/error-component";
 import { Notifications } from "~/components/notifications";
-import { Toasts } from "~/lib/toast.server";
 import { cn } from "~/lib/utils";
-import { themeSessionResolver } from "~/services.server/session";
 import tailwindUrl from "~/tailwind.css?url";
 
 // eslint-disable-next-line import/no-unresolved
@@ -45,29 +46,44 @@ export const shouldRevalidate = ({ currentUrl, nextUrl, defaultShouldRevalidate 
   return defaultShouldRevalidate;
 };
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  if (process.env.MAINTENANCE_MODE && new URL(request.url).pathname !== "/maintenance") {
+export async function loader(args: LoaderFunctionArgs) {
+  if (process.env.MAINTENANCE_MODE && new URL(args.request.url).pathname !== "/maintenance") {
     return redirect("/maintenance", { status: 307 });
   }
+  // const { getTheme } = await themeSessionResolver(args.request);
+  // const { toast, headers } = await Toasts.getToast(args.request);
+  // const theme = getTheme();
 
-  const { getTheme } = await themeSessionResolver(request);
-  const { toast, headers } = await Toasts.getToast(request);
-
-  return data(
-    {
-      toast,
-      theme: getTheme(),
-      ENV: {
-        VERCEL_URL: process.env.VERCEL_URL,
-        VERCEL_ENV: process.env.VERCEL_ENV,
+  return rootAuthLoader(args, () => {
+    return data(
+      {
+        // toast,
+        // theme,
+        ENV: {
+          VERCEL_URL: process.env.VERCEL_URL,
+          VERCEL_ENV: process.env.VERCEL_ENV,
+        },
       },
-    },
-    { headers },
-  );
-};
+      // { headers },
+    );
+  });
+}
 
-export default function App() {
-  return <Outlet />;
+export default function App({ loaderData }: Route.ComponentProps) {
+  const [theme] = useTheme();
+  return (
+    <ClerkProvider
+      loaderData={loaderData}
+      appearance={{ baseTheme: theme === Theme.DARK ? dark : undefined }}
+      publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
+      afterSignOutUrl="/login"
+      telemetry={{ disabled: true }}
+      signInFallbackRedirectUrl="/dashboards/staff"
+      signUpFallbackRedirectUrl="/dashboards/staff"
+    >
+      <Outlet />
+    </ClerkProvider>
+  );
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {

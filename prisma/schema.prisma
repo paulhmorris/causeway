@@ -11,6 +11,7 @@ generator client {
 
 model User {
   id        String    @id @default(cuid())
+  clerkId   String?   @unique
   username  String    @unique
   password  Password?
   role      UserRole  @default(USER)
