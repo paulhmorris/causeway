@@ -41,10 +41,6 @@ class Session {
     return sessionStorage.commitSession(session);
   }
 
-  async getAuth(args: LoaderFunctionArgs | ActionFunctionArgs) {
-    return getAuth(args);
-  }
-
   async getUserId(args: LoaderFunctionArgs | ActionFunctionArgs): Promise<string | null> {
     const { userId } = await getAuth(args);
     return userId;

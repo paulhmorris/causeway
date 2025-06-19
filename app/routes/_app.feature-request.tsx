@@ -22,13 +22,10 @@ const schema = z.object({
   description: longText,
 });
 
-export async function action({ request }: ActionFunctionArgs) {
-  const user = await SessionService.requireUser(request);
-  if (request.method !== "POST") {
-    return new Response(null, { status: 405 });
-  }
+export async function action(args: ActionFunctionArgs) {
+  const user = await SessionService.requireUser(args);
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }

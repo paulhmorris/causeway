@@ -19,14 +19,15 @@ export const passwordResetSchema = z.object({
   _action: z.enum(["reset", "setup"]),
 });
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function action(args: ActionFunctionArgs) {
+  const { request } = args;
   if (request.method !== "POST") {
     throw new Response("Method not allowed", { status: 405 });
   }
 
   const orgId = await SessionService.getOrgId(request);
 
-  const result = await parseFormData(request, passwordResetSchema);
+  const result = await parseFormData(args.request, passwordResetSchema);
   if (result.error) {
     return validationError(result.error);
   }

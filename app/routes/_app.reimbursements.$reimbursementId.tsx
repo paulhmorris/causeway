@@ -2,7 +2,7 @@ import { ReimbursementRequestStatus } from "@prisma/client";
 import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import { IconExternalLink } from "@tabler/icons-react";
 import dayjs from "dayjs";
-import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
+import { ActionFunctionArgs, MetaFunction, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod/v4";
 
@@ -70,9 +70,10 @@ const schema = z.discriminatedUnion("_action", [
   }),
 ]);
 
-export async function loader({ request, params }: LoaderFunctionArgs) {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export async function loader(args: ActionFunctionArgs) {
+  const { params } = args;
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   invariant(params.reimbursementId, "reimbursementId not found");
 
@@ -150,11 +151,11 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   return { reimbursementRequest: rr, accounts, transactionCategories, relatedTrx };
 }
 
-export async function action({ request }: ActionFunctionArgs) {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export async function action(args: ActionFunctionArgs) {
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
 
   if (result.error) {
     return validationError(result.error);

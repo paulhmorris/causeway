@@ -14,9 +14,10 @@ import { cn } from "~/lib/utils";
 import { passwordResetSchema } from "~/routes/resources.reset-password";
 import { SessionService } from "~/services.server/session";
 
-export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  const authorizedUser = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const loader = async (args: LoaderFunctionArgs) => {
+  const { params } = args;
+  const authorizedUser = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   invariant(params.userId, "userId not found");
 

@@ -31,11 +31,11 @@ const schema = z.object({
   subscribedAccountIds: z.array(z.string()).optional(),
 });
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const authorizedUser = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const action = async (args: ActionFunctionArgs) => {
+  const authorizedUser = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }

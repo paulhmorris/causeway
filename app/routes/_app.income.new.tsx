@@ -36,9 +36,9 @@ const schema = TransactionSchema.extend({ shouldNotifyUser: checkbox });
 
 export const meta: MetaFunction = () => [{ title: "Add Income" }];
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const user = await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const loader = async (args: LoaderFunctionArgs) => {
+  const user = await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   const [contacts, contactTypes, accounts, transactionItemMethods, transactionItemTypes, categories, receipts] =
     await db.$transaction([
@@ -89,11 +89,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   };
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const action = async (args: ActionFunctionArgs) => {
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }

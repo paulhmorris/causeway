@@ -20,9 +20,9 @@ const logger = createLogger("Routes.ContactNew");
 
 export const meta: MetaFunction = () => [{ title: "New Contact" }];
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const user = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const loader = async (args: LoaderFunctionArgs) => {
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   try {
     const contactTypes = await db.contactType.findMany({
@@ -64,11 +64,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const action = async (args: ActionFunctionArgs) => {
+  await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, newContactSchema);
+  const result = await parseFormData(args.request, newContactSchema);
   if (result.error) {
     return validationError(result.error);
   }

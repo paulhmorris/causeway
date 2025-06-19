@@ -31,9 +31,9 @@ const schema = z.object({
 
 export const meta: MetaFunction = () => [{ title: "Add Transfer" }];
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const loader = async (args: LoaderFunctionArgs) => {
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   const [accounts, transactionItemMethods] = await Promise.all([
     db.account.findMany({ where: { orgId }, orderBy: { code: "asc" } }),
@@ -46,11 +46,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   };
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const action = async (args: ActionFunctionArgs) => {
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }

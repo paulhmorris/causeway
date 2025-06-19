@@ -33,8 +33,9 @@ const schema = z
     }
   });
 
-export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  const userId = await SessionService.requireUserId(request);
+export const loader = async (args: LoaderFunctionArgs) => {
+  const { params } = args;
+  const userId = await SessionService.requireUserId(args);
   invariant(params.userId, "userId not found");
 
   if (userId !== params.userId) {
@@ -44,15 +45,16 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   return null;
 };
 
-export async function action({ params, request }: ActionFunctionArgs) {
-  const user = await SessionService.requireUser(request);
+export async function action(args: ActionFunctionArgs) {
+  const { params } = args;
+  const user = await SessionService.requireUser(args);
   invariant(params.userId, "userId not found");
 
   if (user.id !== params.userId) {
     throw unauthorized("You do not have permission to change this user's password");
   }
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }

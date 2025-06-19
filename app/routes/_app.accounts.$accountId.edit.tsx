@@ -32,10 +32,11 @@ const schema = z.object({
   userId: optionalSelect.transform((v) => (v === "Select user" ? undefined : v)),
 });
 
-export const loader = async ({ params, request }: LoaderFunctionArgs) => {
+export const loader = async (args: LoaderFunctionArgs) => {
+  const { params } = args;
   try {
-    await SessionService.requireAdmin(request);
-    const orgId = await SessionService.requireOrgId(request);
+    await SessionService.requireAdmin(args);
+    const orgId = await SessionService.requireOrgId(args);
 
     invariant(params.accountId, "accountId not found");
 
@@ -72,11 +73,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [{ title: `Edit Account ${data?.account.code}` }];
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const action = async (args: ActionFunctionArgs) => {
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }

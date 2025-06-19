@@ -10,9 +10,10 @@ const schema = z.object({
   contentType: text,
 });
 
-export async function action({ request }: ActionFunctionArgs) {
-  const userId = await SessionService.requireUserId(request);
-  await SessionService.requireOrgId(request);
+export async function action(args: ActionFunctionArgs) {
+  const { request } = args;
+  const userId = await SessionService.requireUserId(args);
+  await SessionService.requireOrgId(args);
 
   if (request.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });

@@ -38,11 +38,11 @@ export const schema = z.discriminatedUnion("intent", [
   }),
 ]);
 
-export async function action({ request }: ActionFunctionArgs) {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export async function action(args: ActionFunctionArgs) {
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }

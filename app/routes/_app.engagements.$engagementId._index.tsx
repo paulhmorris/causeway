@@ -18,10 +18,11 @@ import { SessionService } from "~/services.server/session";
 
 export const meta: MetaFunction = () => [{ title: "View Engagement" }];
 
-export const loader = async ({ params, request }: LoaderFunctionArgs) => {
+export const loader = async (args: LoaderFunctionArgs) => {
+  const { params } = args;
   try {
-    await SessionService.requireUser(request);
-    const orgId = await SessionService.requireOrgId(request);
+    await SessionService.requireUser(args);
+    const orgId = await SessionService.requireOrgId(args);
 
     invariant(params.engagementId, "engagementId not found");
 
@@ -39,9 +40,10 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   }
 };
 
-export const action = async ({ request, params }: ActionFunctionArgs) => {
-  const user = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const action = async (args: ActionFunctionArgs) => {
+  const { request, params } = args;
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   invariant(params.engagementId, "engagementId not found");
 

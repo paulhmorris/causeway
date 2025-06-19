@@ -22,9 +22,10 @@ export const schema = z.object({
   message: longText,
 });
 
-export async function action({ request }: ActionFunctionArgs) {
-  const user = await SessionService.requireUser(request);
+export async function action(args: ActionFunctionArgs) {
+  const { request } = args;
   const org = await SessionService.getOrg(request);
+  const user = await SessionService.requireUser(args);
 
   if (!org) {
     throw data({ success: false, message: "Organization not found" }, { status: 400 });
@@ -34,7 +35,7 @@ export async function action({ request }: ActionFunctionArgs) {
     throw data({ success: false, message: "Method Not Allowed" }, { status: 405 });
   }
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }

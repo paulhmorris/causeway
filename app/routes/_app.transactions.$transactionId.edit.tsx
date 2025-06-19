@@ -31,10 +31,11 @@ const schema = z.object({
   description: optionalText,
 });
 
-export const loader = async ({ params, request }: LoaderFunctionArgs) => {
+export const loader = async (args: LoaderFunctionArgs) => {
+  const { params } = args;
   invariant(params.transactionId, "transactionId not found");
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   const transaction = await db.transaction.findUnique({
     where: { id: params.transactionId, orgId },
@@ -60,11 +61,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
 export const meta: MetaFunction = () => [{ title: "Transaction Edit" }];
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const action = async (args: ActionFunctionArgs) => {
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }

@@ -23,10 +23,11 @@ import { SessionService } from "~/services.server/session";
 
 const schema = z.object({ _action: z.literal("delete") });
 
-export const loader = async ({ params, request }: LoaderFunctionArgs) => {
+export const loader = async (args: LoaderFunctionArgs) => {
+  const { params } = args;
   invariant(params.transactionId, "transactionId not found");
-  const user = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   try {
     const transaction = await db.transaction.findUniqueOrThrow({
@@ -104,16 +105,16 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
 export const meta: MetaFunction = () => [{ title: "Transaction Details" }];
 
-export const action = async ({ params, request }: ActionFunctionArgs) => {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const action = async (args: ActionFunctionArgs) => {
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }
 
-  const { transactionId } = params;
+  const { transactionId } = args.params;
 
   const trx = await db.transaction.delete({ where: { id: transactionId, orgId }, include: { account: true } });
   return Toasts.redirectWithSuccess("/transactions", {
