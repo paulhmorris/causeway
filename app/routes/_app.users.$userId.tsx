@@ -11,7 +11,7 @@ import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
 import { forbidden, handleLoaderError } from "~/lib/responses.server";
 import { cn } from "~/lib/utils";
-import { passwordResetSchema } from "~/routes/resources.reset-password";
+import { passwordResetSchema } from "~/routes/api.reset-password";
 import { SessionService } from "~/services.server/session";
 
 export const loader = async (args: LoaderFunctionArgs) => {
@@ -138,7 +138,7 @@ export default function UserDetailsLayout() {
             fetcher={fetcher}
             schema={passwordResetSchema}
             method="post"
-            action="/resources/reset-password"
+            action="/api/reset-password"
             defaultValues={{ username: user.username, _action: hasPassword ? "reset" : "setup" }}
           >
             {(form) => (

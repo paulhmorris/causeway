@@ -91,7 +91,7 @@ export default function App({ loaderData }: Route.ComponentProps) {
 export function Layout({ children }: { children: React.ReactNode }) {
   const data = useRouteLoaderData<typeof loader>("root");
   return (
-    <ThemeProvider specifiedTheme={data?.theme ?? null} themeAction="/resources/set-theme">
+    <ThemeProvider specifiedTheme={data?.theme ?? null} themeAction="/api/set-theme">
       <InnerLayout ssrTheme={Boolean(data?.theme)}>{children}</InnerLayout>
     </ThemeProvider>
   );

@@ -31,7 +31,7 @@ export function FileUploader() {
       // Get presigned URL
       let uploadedFilesCount = 0;
       for (const file of files) {
-        const response = await fetch("/resources/get-upload-url", {
+        const response = await fetch("/api/get-upload-url", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fileName: file.name, contentType: file.type }),
@@ -56,7 +56,7 @@ export function FileUploader() {
         }
 
         // Save receipt to database
-        const receiptUpload = await fetch("/resources/receipts", {
+        const receiptUpload = await fetch("/api/receipts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: file.name, s3Key }),
