@@ -178,7 +178,6 @@ export default function UserDetailsPage() {
                   scope={form.scope("accountId")}
                   label="Linked Account"
                   placeholder="Select an account"
-                  defaultValue={user.account?.id}
                   description="Link this user to an account. They will be able to see this account and all related transactions."
                   options={accounts.map((a) => ({ label: `${a.code} - ${a.description}`, value: a.id }))}
                 />

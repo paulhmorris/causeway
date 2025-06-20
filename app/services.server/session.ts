@@ -10,10 +10,10 @@ import {
 } from "react-router";
 import { createThemeSessionResolver } from "remix-themes";
 
-import { AuthService } from "~/integrations/auth.server";
 import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { unauthorized } from "~/lib/responses.server";
+import { AuthService } from "~/services.server/auth";
 
 class Session {
   public USER_SESSION_KEY = "userId";
