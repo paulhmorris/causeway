@@ -85,17 +85,22 @@ class Session {
   }
 
   async requireUserId(args: LoaderFunctionArgs, redirectTo: string = new URL(args.request.url).pathname) {
-    const sessionUserId = await this.getUserId(args);
-    if (!sessionUserId) {
-      const searchParams = new URLSearchParams([["redirectTo", redirectTo]]);
+    const { userId, sessionId } = await this.getSession(args);
+    const searchParams = new URLSearchParams([["redirectTo", redirectTo]]);
+
+    if (!userId) {
       this.logger.info(`no userId found in session, redirecting to /login?${searchParams.toString()}`);
+      await this.logout(sessionId);
       throw redirect(`/login?${searchParams.toString()}`);
     }
-    const user = await db.user.findUnique({ where: { clerkId: sessionUserId }, select: { id: true } });
+
+    const user = await db.user.findUnique({ where: { clerkId: userId }, select: { id: true } });
     if (!user) {
-      this.logger.error(`User with clerkId ${sessionUserId} not found in database`);
-      throw Error("User not found");
+      this.logger.error(`User with clerkId ${userId} not found in database`);
+      await this.logout(sessionId);
+      throw redirect(`/login?${searchParams.toString()}`);
     }
+
     return user.id;
   }
 

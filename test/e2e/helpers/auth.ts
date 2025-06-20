@@ -3,6 +3,7 @@ import { MembershipRole, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 import prisma from "test/e2e/helpers/db";
+import { clerkClient } from "~/integrations/clerk.server";
 import { ContactType } from "~/lib/constants";
 
 export async function createAdmin() {
@@ -19,13 +20,26 @@ export async function createAdmin() {
       name: "E2E Test Organization",
     },
   });
+  const passwordHash = await bcrypt.hash(user.password, 10);
+  const clerkUser = await clerkClient.users.createUser({
+    externalId: faker.string.uuid(),
+    passwordDigest: passwordHash,
+    passwordHasher: "bcrypt",
+    emailAddress: [user.username],
+    lastName: user.lastName,
+    firstName: user.firstName,
+    privateMetadata: {
+      isTest: true,
+    },
+  });
   const createdUser = await prisma.user.create({
     data: {
+      clerkId: clerkUser.id,
       role: UserRole.USER,
       username: user.username,
       password: {
         create: {
-          hash: await bcrypt.hash(user.password, 10),
+          hash: passwordHash,
         },
       },
       memberships: {

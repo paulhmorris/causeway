@@ -20,8 +20,6 @@ import { ContactType } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
 import { checkbox, email, number, optionalSelect, optionalText, text } from "~/schemas/fields";
 import { getContactTypes } from "~/services.server/contact";
-import { sendPasswordSetupEmail } from "~/services.server/mail";
-import { generatePasswordReset } from "~/services.server/password";
 import { SessionService } from "~/services.server/session";
 
 const logger = createLogger("Routes.UserNew");
@@ -119,11 +117,6 @@ export const action = async (args: ActionFunctionArgs) => {
       });
     }
 
-    if (sendPasswordSetup) {
-      const { token } = await generatePasswordReset(user.username);
-      await sendPasswordSetupEmail({ email: user.username, token, orgId });
-    }
-
     return Toasts.redirectWithSuccess(`/users/${user.id}/profile`, {
       message: "User created",
       description: sendPasswordSetup
@@ -169,7 +162,12 @@ export default function NewUserPage() {
             <>
               <FormField label="First name" scope={form.scope("firstName")} placeholder="Sally" required />
               <FormField label="Last name" scope={form.scope("lastName")} placeholder="Jones" />
-              <FormField required label="Username" scope={form.scope("username")} placeholder="sally@alliance436.org" />
+              <FormField
+                required
+                label="Username"
+                scope={form.scope("username")}
+                placeholder="sally@teamcauseway.org"
+              />
               <FormSelect
                 required
                 scope={form.scope("typeId")}

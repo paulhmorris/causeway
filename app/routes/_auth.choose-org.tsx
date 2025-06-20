@@ -78,7 +78,6 @@ export const loader = async (args: LoaderFunctionArgs) => {
     role: normalizeEnum(m.role),
     isDefault: m.isDefault,
   }));
-  console.log(orgs);
   return { orgs };
 };
 
