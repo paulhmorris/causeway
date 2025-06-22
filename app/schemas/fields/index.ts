@@ -10,7 +10,6 @@ export const optionalLongText = _longText.optional().transform((v) => (v === "" 
 
 export const number = z.coerce.number({ error: (e) => (!e.input ? "Required" : "Must be a number") });
 export const optionalNumber = number.optional();
-export const positiveNumber = z.number({ error: (e) => (!e.input ? "Required" : "Must be a number") }).positive();
 
 export const date = z.coerce.date({ error: (e) => (!e.input ? "Required" : "Invalid date") });
 export const optionalDate = date.optional();

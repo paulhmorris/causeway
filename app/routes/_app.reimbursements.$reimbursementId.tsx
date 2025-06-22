@@ -22,7 +22,7 @@ import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod, TransactionItemType } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
 import { capitalize, formatCentsAsDollars } from "~/lib/utils";
-import { cuid, currency, optionalLongText, optionalText, positiveNumber } from "~/schemas/fields";
+import { cuid, currency, number, optionalLongText, optionalText } from "~/schemas/fields";
 import { sendReimbursementRequestUpdateEmail } from "~/services.server/mail";
 import { generateS3Urls } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
@@ -40,7 +40,7 @@ const schema = z.discriminatedUnion("_action", [
     _action: z.literal(ReimbursementRequestStatus.APPROVED),
     id: cuid,
     amount: currency,
-    categoryId: positiveNumber,
+    categoryId: number,
     accountId: optionalText.nullable(),
     approverNote: optionalLongText.nullable(),
   }),
