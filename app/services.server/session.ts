@@ -96,7 +96,7 @@ class Session {
 
     const user = await db.user.findUnique({ where: { clerkId: userId }, select: { id: true } });
     if (!user) {
-      this.logger.error(`User with clerkId ${userId} not found in database`);
+      this.logger.error(`User with clerkId ${userId} not found in database, logging out...`);
       await this.logout(sessionId);
       throw redirect(`/login?${searchParams.toString()}`);
     }
