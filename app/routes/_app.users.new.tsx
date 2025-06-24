@@ -1,6 +1,6 @@
 import { UserRole } from "@prisma/client";
 import { parseFormData, validationError } from "@rvf/react-router";
-import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
 import { ErrorComponent } from "~/components/error-component";
@@ -15,8 +15,6 @@ import { SessionService } from "~/services.server/session";
 import { UserService } from "~/services.server/user";
 
 const logger = createLogger("Routes.UserNew");
-
-export const meta: MetaFunction = () => [{ title: "New User" }];
 
 export const loader = async (args: LoaderFunctionArgs) => {
   await SessionService.requireAdmin(args);
@@ -76,6 +74,7 @@ export default function NewUserPage() {
   const { contactTypes, accounts } = useLoaderData<typeof loader>();
   return (
     <>
+      <title>New User</title>
       <PageHeader
         title="New User"
         description="Users can log in to this portal, request reimbursements, view transactions for a linked account, and view assigned contacts."
