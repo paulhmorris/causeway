@@ -64,7 +64,7 @@ export const action = async (args: ActionFunctionArgs) => {
     logger.error(error);
     Sentry.captureException(error);
     return Toasts.dataWithError(null, {
-      message: "Unexpected error",
+      message: "Error",
       description: "An unexpected error occurred. Please try again.",
     });
   }

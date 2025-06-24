@@ -1,4 +1,3 @@
-import { UserRole } from "@prisma/client";
 import { z } from "zod/v4";
 
 import { newUserSchema } from "~/components/forms/new-user-form";
@@ -7,13 +6,13 @@ import { db } from "~/integrations/prisma.server";
 
 export const UserService = {
   async create(data: z.infer<typeof newUserSchema> & { orgId: string }) {
-    const { role, username, accountId, orgId, ...contact } = data;
-    const clerkUser = await this.invite(username);
+    const { role, username, accountId, orgId, systemRole, ...contact } = data;
+
     const user = await db.user.create({
+      select: { id: true, contactId: true },
       data: {
         username,
-        clerkId: clerkUser.id,
-        role: UserRole.USER,
+        role: systemRole,
         memberships: {
           create: { orgId, role },
         },
@@ -43,6 +42,11 @@ export const UserService = {
       });
     }
 
+    const clerkUser = await this.invite(username);
+    await db.user.update({
+      where: { id: user.id },
+      data: { clerkId: clerkUser.id },
+    });
     return user;
   },
 
