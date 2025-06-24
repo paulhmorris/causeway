@@ -1,3 +1,4 @@
+import { EnumLike } from "zod";
 import { z } from "zod/v4";
 
 const _text = z.string().max(255, "Must be 255 characters or less").trim();
@@ -23,6 +24,9 @@ export const optionalCheckboxGroup = checkboxGroup.optional().transform((v) => (
 export const _select = z.coerce.string().max(255, { error: "Must be 255 characters or less" }).trim();
 export const select = _select.min(1, { error: "Required" });
 export const optionalSelect = _select.optional().transform((v) => (v === "" ? undefined : v));
+export const selectEnum = <T extends EnumLike>(enumValue: T) => {
+  return z.enum(enumValue, { error: (e) => (!e.input ? "Required" : "Invalid option") });
+};
 
 export const cuid = z.cuid({ error: (e) => (!e.input ? "Required" : "Invalid ID") }).max(255);
 export const email = z.email({ error: (e) => (!e.input ? "Required" : "Invalid email address") }).max(255);

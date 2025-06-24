@@ -2,12 +2,10 @@ import { screen } from "@testing-library/dom";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { MOCK_DATA } from "test/mock-data";
-import { renderWithBlankStub } from "test/test-utils";
+import { mockUseUser, renderWithBlankStub } from "test/test-utils";
 import { NewContactForm } from "~/components/forms/new-contact-form";
 
 const mockFormProps = {
-  user: MOCK_DATA.user,
   contactTypes: [
     { id: 1, name: "Type 1" },
     { id: 2, name: "Type 2" },
@@ -18,9 +16,13 @@ const mockFormProps = {
   ],
 };
 
+vi.mock("~/hooks/useUser");
+
 describe("New Contact Form", () => {
+  beforeEach(() => mockUseUser());
+
   it("renders the form fields correctly", async () => {
-    renderWithBlankStub(NewContactForm, mockFormProps);
+    renderWithBlankStub({ component: NewContactForm, props: mockFormProps });
 
     const firstName = await screen.findByLabelText<HTMLInputElement>(/first name/i);
     const lastName = await screen.findByLabelText<HTMLInputElement>(/last name/i);
@@ -56,12 +58,12 @@ describe("New Contact Form", () => {
   });
 
   it("should not render address fields by default", () => {
-    renderWithBlankStub(NewContactForm, mockFormProps);
+    renderWithBlankStub({ component: NewContactForm, props: mockFormProps });
     expect(screen.queryByRole("group", { name: /address fields/i })).not.toBeInTheDocument();
   });
 
   it("should render address fields when add address is clicked", async () => {
-    renderWithBlankStub(NewContactForm, mockFormProps);
+    renderWithBlankStub({ component: NewContactForm, props: mockFormProps });
 
     const addressCheckbox = await screen.findByRole("button", { name: /add address/i });
     act(() => addressCheckbox.click());
@@ -78,7 +80,7 @@ describe("New Contact Form", () => {
   });
 
   it("should remove address fields when remove address is clicked", async () => {
-    renderWithBlankStub(NewContactForm, mockFormProps);
+    renderWithBlankStub({ component: NewContactForm, props: mockFormProps });
 
     const addAddressButton = await screen.findByRole("button", { name: /add address/i });
     act(() => addAddressButton.click());
@@ -90,7 +92,7 @@ describe("New Contact Form", () => {
   });
 
   it("should show an error when required fields are not filled", async () => {
-    renderWithBlankStub(NewContactForm, mockFormProps);
+    renderWithBlankStub({ component: NewContactForm, props: mockFormProps });
 
     const submitButton = await screen.findByRole("button", { name: /create contact/i });
     act(() => submitButton.click());
@@ -100,10 +102,10 @@ describe("New Contact Form", () => {
   });
 
   it("should be valid with minimum required fields", async () => {
-    renderWithBlankStub(NewContactForm, mockFormProps);
+    renderWithBlankStub({ component: NewContactForm, props: mockFormProps });
     const user = userEvent.setup();
 
-    await user.type(await screen.findByLabelText(/first name/i), "John");
+    await user.type(await screen.findByLabelText(/first name/i), "J");
     await user.click(await screen.findByRole("combobox", { name: /type/i }));
     await user.click(await screen.findByRole("option", { name: "Type 1" }));
 
@@ -113,7 +115,7 @@ describe("New Contact Form", () => {
 
   it("should require address fields when address is added", async () => {
     const user = userEvent.setup();
-    renderWithBlankStub(NewContactForm, mockFormProps);
+    renderWithBlankStub({ component: NewContactForm, props: mockFormProps });
 
     await user.click(await screen.findByRole("button", { name: /add address/i }));
     await user.click(await screen.findByRole("button", { name: /create contact/i }));
@@ -124,17 +126,32 @@ describe("New Contact Form", () => {
   });
 
   it("should not require address fields when address is added then removed", async () => {
+    const action = vi.fn();
     const user = userEvent.setup();
-    renderWithBlankStub(NewContactForm, mockFormProps);
+    renderWithBlankStub({ component: NewContactForm, props: mockFormProps, actionMock: action });
 
-    await user.type(await screen.findByLabelText(/first name/i), "John");
+    await user.type(await screen.findByLabelText(/first name/i), "J");
     await user.click(await screen.findByRole("combobox", { name: /type/i }));
     await user.click(await screen.findByRole("option", { name: "Type 1" }));
 
     await user.click(await screen.findByRole("button", { name: /add address/i }));
     await user.click(await screen.findByRole("button", { name: /remove address/i }));
+    await user.click(await screen.findByRole("button", { name: /create contact/i }));
 
-    const form = await screen.findByRole<HTMLFormElement>("form", { name: /new contact/i });
-    expect(form.checkValidity()).toBe(true);
+    expect(action).toHaveBeenCalledTimes(1);
+  });
+
+  it("should submit the form with valid data", async () => {
+    const action = vi.fn();
+    const user = userEvent.setup();
+    renderWithBlankStub({ component: NewContactForm, props: mockFormProps, actionMock: action });
+
+    await user.type(await screen.findByLabelText(/first name/i), "J");
+    await user.click(await screen.findByRole("combobox", { name: /type/i }));
+    await user.click(await screen.findByRole("option", { name: "Type 1" }));
+    await user.click(await screen.findByRole("checkbox", { name: /alice smith/i }));
+    await user.click(await screen.findByRole("button", { name: /create contact/i }));
+
+    expect(action).toHaveBeenCalledTimes(1);
   });
 });

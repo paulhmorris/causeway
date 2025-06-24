@@ -8,7 +8,7 @@ import { SelectItem } from "~/components/ui/select";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useUser } from "~/hooks/useUser";
 import { ContactType } from "~/lib/constants";
-import { email, number, optionalSelect, optionalText, text } from "~/schemas/fields";
+import { email, number, optionalSelect, optionalText, selectEnum, text } from "~/schemas/fields";
 
 type Props = {
   contactTypes: Array<{
@@ -26,9 +26,9 @@ export const newUserSchema = z.object({
   firstName: text,
   lastName: optionalText,
   username: email,
-  role: z.enum(MembershipRole),
-  systemRole: z.enum(UserRole),
-  typeId: number.pipe(z.enum(ContactType)),
+  role: selectEnum(MembershipRole),
+  systemRole: selectEnum(UserRole),
+  typeId: number.pipe(selectEnum(ContactType)),
   accountId: optionalSelect.transform((v) => (v === "Select an account" ? undefined : v)),
 });
 
@@ -49,6 +49,7 @@ export function NewUserForm({ accounts, contactTypes }: Props) {
       }}
       method="post"
       className="space-y-4 sm:max-w-md"
+      noValidate
     >
       {(form) => (
         <>
