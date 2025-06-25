@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 import { newUserSchema } from "~/components/forms/new-user-form";
 import { clerkClient } from "~/integrations/clerk.server";
 import { db } from "~/integrations/prisma.server";
+import { CONFIG } from "~/lib/env.server";
 
 export const UserService = {
   async create(data: z.infer<typeof newUserSchema> & { orgId: string }) {
@@ -42,15 +43,14 @@ export const UserService = {
       });
     }
 
-    const clerkUser = await this.invite(username);
-    await db.user.update({
-      where: { id: user.id },
-      data: { clerkId: clerkUser.id },
-    });
+    await this.invite(username);
     return user;
   },
 
   invite(emailAddress: string) {
-    return clerkClient.invitations.createInvitation({ emailAddress });
+    return clerkClient.invitations.createInvitation({
+      emailAddress,
+      redirectUrl: new URL("/sign-up", CONFIG.baseUrl).toString(),
+    });
   },
 };
