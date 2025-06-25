@@ -4,11 +4,13 @@ import invariant from "tiny-invariant";
 import { AccountLinkBadge } from "~/components/common/account-link-badge";
 import { ContactLinkBadge } from "~/components/common/contact-link-badge";
 import { ContactTypeBadge } from "~/components/common/contact-type-badge";
+import { InvitationStatusBadge } from "~/components/common/invitation-status-badge";
 import { PageHeader } from "~/components/common/page-header";
 import { RoleBadge } from "~/components/common/role-badge";
 import { PageContainer } from "~/components/page-container";
 import { db } from "~/integrations/prisma.server";
 import { forbidden, handleLoaderError } from "~/lib/responses.server";
+import { AuthService } from "~/services.server/auth";
 import { SessionService } from "~/services.server/session";
 
 export const loader = async (args: LoaderFunctionArgs) => {
@@ -23,7 +25,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   }
 
   try {
-    const [accounts, user, accountsThatCanBeSubscribedTo] = await Promise.all([
+    const [accounts, user, accountsThatCanBeSubscribedTo] = await db.$transaction([
       db.account.findMany({
         where: {
           orgId,
@@ -98,7 +100,15 @@ export const loader = async (args: LoaderFunctionArgs) => {
       }),
     ]);
 
+    const existingInvitations = await AuthService.getInvitationsByEmail(user.username);
+    const latestInvitation =
+      existingInvitations.length === 0
+        ? null
+        : existingInvitations.length === 1
+          ? existingInvitations[0]
+          : existingInvitations.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
     return {
+      latestInvitation,
       user,
       accounts,
       accountsThatCanBeSubscribedTo,
@@ -109,7 +119,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
 };
 
 export default function UserDetailsLayout() {
-  const { user } = useLoaderData<typeof loader>();
+  const { user, latestInvitation } = useLoaderData<typeof loader>();
 
   return (
     <>
@@ -117,6 +127,7 @@ export default function UserDetailsLayout() {
       <PageHeader title={`${user.contact.firstName}${user.contact.lastName ? " " + user.contact.lastName : ""}`} />
 
       <div className="mt-4 flex flex-wrap items-center gap-2 sm:mt-1">
+        {latestInvitation ? <InvitationStatusBadge status={latestInvitation.status} /> : null}
         <ContactTypeBadge type={user.contact.type.name.toLowerCase()} />
         <RoleBadge role={user.role.toLowerCase()} />
         <ContactLinkBadge contact={user.contact} />
