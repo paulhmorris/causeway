@@ -12,8 +12,9 @@ setup("authenticate as admin", async ({ page }) => {
   // Login as admin
   await page.goto("/login");
   await page.getByLabel("Email").fill(user.username);
+  await page.waitForURL(/factor-one/i);
   await page.getByLabel("Password").fill(user.password);
-  await page.getByRole("button", { name: /log/i }).click();
+  await page.getByRole("button", { name: /continue/i }).click();
 
   await page.waitForURL(/dashboards/i);
   await page.context().storageState({ path: authFile });

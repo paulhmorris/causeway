@@ -15,12 +15,13 @@ const logger = createLogger("Api.ChangeOrg");
 
 const schema = z.object({ orgId: text });
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async (args: ActionFunctionArgs) => {
+  const { request } = args;
   try {
     switch (request.method.toLowerCase()) {
       case "post": {
-        const userId = await SessionService.requireUserId(request);
-        const result = await parseFormData(request, schema);
+        const userId = await SessionService.requireUserId(args);
+        const result = await parseFormData(args.request, schema);
 
         if (result.error) {
           return validationError(result.error);
@@ -34,7 +35,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           select: { id: true, user: { select: { username: true } } },
         });
 
-        const session = await SessionService.getSession(request);
+        const session = await SessionService.getOrgSession(request);
         logger.debug(`Setting session orgId to ${orgId}`);
         session.set(SessionService.ORGANIZATION_SESSION_KEY, orgId);
 

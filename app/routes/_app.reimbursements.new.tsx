@@ -19,6 +19,7 @@ import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod } from "~/lib/constants";
+import { CONFIG } from "~/lib/env.server";
 import { Toasts } from "~/lib/toast.server";
 import { cuid, currency, date, number, optionalLongText, optionalText } from "~/schemas/fields";
 import { generateS3Urls } from "~/services.server/receipt";
@@ -39,9 +40,9 @@ const schema = z.object({
 
 export const meta: MetaFunction = () => [{ title: "New Reimbursement Request" }];
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const user = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const loader = async (args: LoaderFunctionArgs) => {
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   const [receipts, methods, accounts] = await Promise.all([
     db.receipt.findMany({
@@ -64,11 +65,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return { receipts, methods, accounts };
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const user = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const action = async (args: ActionFunctionArgs) => {
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -130,7 +131,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       subject: "New Reimbursement Request",
       html: await render(
         <ReimbursementRequestEmail
-          url={process.env.BASE_URL}
+          url={CONFIG.baseUrl}
           accountName={rr.account.code}
           amountInCents={rr.amountInCents}
           requesterName={`${contact.firstName} ${contact.lastName}`}

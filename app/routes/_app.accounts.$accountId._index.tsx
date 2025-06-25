@@ -18,9 +18,10 @@ import { SessionService } from "~/services.server/session";
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [{ title: `Account ${data?.account.code}` }];
 
-export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  const user = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const loader = async (args: LoaderFunctionArgs) => {
+  const { params } = args;
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   invariant(params.accountId, "accountId not found");
 

@@ -10,28 +10,29 @@ generator client {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  username  String    @unique
-  password  Password?
-  role      UserRole  @default(USER)
-  contact   Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  contactId String    @unique
-  account   Account?  @relation(fields: [accountId], references: [id])
-  accountId String?   @unique
-  isActive  Boolean   @default(true)
+  id        String   @id @default(cuid())
+  clerkId   String?  @unique
+  username  String   @unique
+  role      UserRole @default(USER)
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId String   @unique
+  account   Account? @relation(fields: [accountId], references: [id])
+  accountId String?  @unique
+  isActive  Boolean  @default(true)
 
-  // Auth
+  // Depcreated
+  password               Password?
   verificationCode       String?
   verificationCodeExpiry DateTime?
-  loginAttempts          Int       @default(0)
+  loginAttempts          Int             @default(0)
   lastLoginAttempt       DateTime?
   lastLogin              DateTime?
   lockoutExpiration      DateTime?
+  passwordResets         PasswordReset[]
 
   receipts              Receipt[]
   memberships           Membership[]
   engagements           Engagement[]
-  passwordResets        PasswordReset[]
   contactAssignments    ContactAssigment[]
   reimbursementRequests ReimbursementRequest[]
 

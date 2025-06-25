@@ -36,7 +36,6 @@ export const newContactSchema = z.object({
 });
 
 type Props = {
-  user: ReturnType<typeof useUser>;
   contactTypes: Array<{
     id: number;
     name: string;
@@ -51,12 +50,13 @@ type Props = {
   }>;
 };
 
-export function NewContactForm({ user, contactTypes, usersWhoCanBeAssigned }: Props) {
+export function NewContactForm({ contactTypes, usersWhoCanBeAssigned }: Props) {
+  const user = useUser();
   const [addressEnabled, setAddressEnabled] = useState(false);
 
   const form = useForm({
     schema: newContactSchema,
-    method: "put",
+    method: "POST",
     defaultValues: {
       phone: "",
       email: "",

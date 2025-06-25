@@ -7,9 +7,9 @@ import { handleLoaderError } from "~/lib/responses.server";
 import { cn } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
 
-export async function loader({ request }: LoaderFunctionArgs) {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export async function loader(args: LoaderFunctionArgs) {
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   try {
     const org = await db.organization.findUniqueOrThrow({ where: { id: orgId } });

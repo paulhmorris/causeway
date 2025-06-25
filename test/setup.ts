@@ -1,5 +1,7 @@
-// ./test/setup.ts
 import "@testing-library/jest-dom";
+import { URLSearchParams } from "url";
+
+global.URLSearchParams = URLSearchParams as unknown as typeof global.URLSearchParams;
 
 const MockResizeObserver = vi.fn(() => ({
   observe: vi.fn(),

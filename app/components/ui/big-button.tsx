@@ -8,7 +8,7 @@ export function BigButton({ children, className, ...props }: Props) {
   return (
     <button
       className={cn(
-        "hover:bg-secondary flex w-full items-center justify-between gap-2 rounded-md border p-6 text-left",
+        "hover:bg-secondary flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border p-6 text-left",
         className,
       )}
       {...props}

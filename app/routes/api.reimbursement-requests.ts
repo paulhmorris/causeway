@@ -5,9 +5,10 @@ import { db } from "~/integrations/prisma.server";
 import { Toasts } from "~/lib/toast.server";
 import { SessionService } from "~/services.server/session";
 
-export async function action({ request }: ActionFunctionArgs) {
-  await SessionService.requireUserId(request);
-  const orgId = await SessionService.requireOrgId(request);
+export async function action(args: ActionFunctionArgs) {
+  const { request } = args;
+  await SessionService.requireUserId(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   switch (request.method) {
     case "DELETE": {

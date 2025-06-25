@@ -4,6 +4,7 @@ import { nanoid } from "nanoid";
 
 import { createLogger } from "~/integrations/logger.server";
 import { Sentry } from "~/integrations/sentry";
+import { CONFIG } from "~/lib/env.server";
 import { Prettify } from "~/lib/utils";
 
 const logger = createLogger("EmailService");
@@ -43,7 +44,7 @@ export async function sendEmail(props: SendEmailInput) {
     },
   };
 
-  if (process.env.NODE_ENV === "production") {
+  if (CONFIG.isProd || CONFIG.isPreview) {
     try {
       const command = new SendEmailCommand(input);
       const response = await client.send(command);

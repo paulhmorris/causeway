@@ -28,9 +28,10 @@ import { SessionService } from "~/services.server/session";
 
 const logger = createLogger("Routes.ContactShow");
 
-export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  const user = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const loader = async (args: LoaderFunctionArgs) => {
+  const { params } = args;
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   invariant(params.contactId, "contactId not found");
 
@@ -80,9 +81,10 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   }
 };
 
-export async function action({ request, params }: ActionFunctionArgs) {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export async function action(args: ActionFunctionArgs) {
+  const { request, params } = args;
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   invariant(params.contactId, "contactId not found");
 

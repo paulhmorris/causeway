@@ -7,7 +7,6 @@ import { PageHeader } from "~/components/common/page-header";
 import { ErrorComponent } from "~/components/error-component";
 import { NewContactForm, newContactSchema } from "~/components/forms/new-contact-form";
 import { PageContainer } from "~/components/page-container";
-import { useUser } from "~/hooks/useUser";
 import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
@@ -20,9 +19,9 @@ const logger = createLogger("Routes.ContactNew");
 
 export const meta: MetaFunction = () => [{ title: "New Contact" }];
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const user = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const loader = async (args: LoaderFunctionArgs) => {
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   try {
     const contactTypes = await db.contactType.findMany({
@@ -64,11 +63,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const action = async (args: ActionFunctionArgs) => {
+  await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, newContactSchema);
+  const result = await parseFormData(args.request, newContactSchema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -119,17 +118,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function NewContactPage() {
   const data = useLoaderData<typeof loader>();
-  const user = useUser();
 
   return (
     <>
       <PageHeader title="New Contact" />
       <PageContainer>
-        <NewContactForm
-          user={user}
-          contactTypes={data.contactTypes}
-          usersWhoCanBeAssigned={data.usersWhoCanBeAssigned}
-        />
+        <NewContactForm contactTypes={data.contactTypes} usersWhoCanBeAssigned={data.usersWhoCanBeAssigned} />
       </PageContainer>
     </>
   );

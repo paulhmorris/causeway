@@ -13,11 +13,11 @@ import { db } from "~/integrations/prisma.server";
 import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
 
-export async function loader({ request }: LoaderFunctionArgs) {
-  const user = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export async function loader(args: LoaderFunctionArgs) {
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const onlyMine = new URL(request.url).searchParams.get("mine") === "true";
+  const onlyMine = new URL(args.request.url).searchParams.get("mine") === "true";
 
   // Only show a user's assigned contacts
   try {

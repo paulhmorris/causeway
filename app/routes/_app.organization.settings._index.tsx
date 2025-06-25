@@ -12,11 +12,11 @@ import { SessionService } from "~/services.server/session";
 
 const logger = createLogger("Routes.OrganizationSettings");
 
-export async function action({ request }: ActionFunctionArgs) {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export async function action(args: ActionFunctionArgs) {
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, orgSettingsSchema);
+  const result = await parseFormData(args.request, orgSettingsSchema);
   if (result.error) {
     return validationError(result.error);
   }

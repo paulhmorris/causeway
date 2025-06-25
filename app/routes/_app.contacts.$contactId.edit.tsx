@@ -30,10 +30,11 @@ import { SessionService } from "~/services.server/session";
 
 const logger = createLogger("Routes.ContactEdit");
 
-export const loader = async ({ params, request }: LoaderFunctionArgs) => {
+export const loader = async (args: LoaderFunctionArgs) => {
+  const { params } = args;
   try {
-    const user = await SessionService.requireUser(request);
-    const orgId = await SessionService.requireOrgId(request);
+    const user = await SessionService.requireUser(args);
+    const orgId = await SessionService.requireOrgId(args);
 
     invariant(params.contactId, "contactId not found");
 
@@ -105,11 +106,11 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => [
   { title: `Edit ${data?.contact.firstName}${data?.contact.lastName ? " " + data.contact.lastName : ""}` },
 ];
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const user = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const action = async (args: ActionFunctionArgs) => {
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, UpdateContactSchema);
+  const result = await parseFormData(args.request, UpdateContactSchema);
   if (result.error) {
     return validationError(result.error);
   }

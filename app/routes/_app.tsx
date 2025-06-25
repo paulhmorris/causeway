@@ -10,11 +10,12 @@ import { SessionService } from "~/services.server/session";
 
 const logger = createLogger("Routes.AppLayout");
 
-export async function loader({ request }: LoaderFunctionArgs) {
-  const currentOrg = await SessionService.getOrg(request);
-  const userId = await SessionService.requireUserId(request);
+export async function loader(args: LoaderFunctionArgs) {
+  const { sessionId } = await SessionService.getSession(args);
+  const currentOrg = await SessionService.getOrg(args);
+  const userId = await SessionService.requireUserId(args);
 
-  const dbUser = await db.user.findUnique({
+  const dbUser = await db.user.findUniqueOrThrow({
     where: { id: userId },
     select: {
       id: true,
@@ -58,18 +59,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
     },
   });
 
-  if (!dbUser) {
-    logger.error(`No user found for ${userId}`);
-    throw await SessionService.logout(request);
-  }
-
   const currentMembership = dbUser.memberships.find((m) => m.orgId === currentOrg?.id);
   if (currentOrg && !currentMembership) {
     logger.warn(`User ${dbUser.username} has no memberships for the current org. Logging out.`);
-    throw await SessionService.logout(request);
+    throw await SessionService.logout(sessionId);
   }
 
-  const { pathname } = new URL(request.url);
+  const { pathname } = new URL(args.request.url);
   if (!currentMembership && !pathname.includes("/choose-org")) {
     return redirect("/choose-org");
   }

@@ -12,9 +12,9 @@ import { SessionService } from "~/services.server/session";
 
 export const meta: MetaFunction = () => [{ title: "Users" }];
 
-export async function loader({ request }: LoaderFunctionArgs) {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export async function loader(args: LoaderFunctionArgs) {
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   const users = await db.user.findMany({
     where: {
