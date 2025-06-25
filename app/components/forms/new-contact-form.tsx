@@ -10,8 +10,7 @@ import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useUser } from "~/hooks/useUser";
-import { ContactType } from "~/lib/constants";
-import { cuid, number, optionalEmail, optionalPhoneNumber, optionalText, text } from "~/schemas/fields";
+import { number, optionalEmail, optionalPhoneNumber, optionalText, text } from "~/schemas/fields";
 
 export const AddressSchema = z.object({
   street: text,
@@ -30,9 +29,9 @@ export const newContactSchema = z.object({
   alternateEmail: optionalEmail,
   phone: optionalPhoneNumber,
   alternatePhone: optionalPhoneNumber,
-  typeId: number.pipe(z.enum(ContactType, { error: (e) => (!e.input ? "Required" : "Invalid type") })),
+  typeId: number.positive(),
   address: AddressSchema.optional(),
-  assignedUserIds: z.array(cuid).optional(),
+  assignedUserIds: z.array(z.string()).optional(),
 });
 
 type Props = {
