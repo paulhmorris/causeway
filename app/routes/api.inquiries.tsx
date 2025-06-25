@@ -7,6 +7,7 @@ import { NewInquiryEmail } from "emails/new-inquiry";
 import { sendEmail } from "~/integrations/email.server";
 import { createLogger } from "~/integrations/logger.server";
 import { Sentry } from "~/integrations/sentry";
+import { CONFIG } from "~/lib/env.server";
 import { Toasts } from "~/lib/toast.server";
 import { longText, optionalEmail, optionalPhoneNumber, optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
@@ -52,11 +53,10 @@ export async function action(args: ActionFunctionArgs) {
   }
 
   try {
-    const url = new URL("/", process.env.BASE_URL).toString();
+    const url = new URL("/", CONFIG.baseUrl).toString();
     const html = await render(<NewInquiryEmail url={url} username={user.username} {...result.data} />);
 
     const { messageId } = await sendEmail({
-      from: `Team Causeway <no-reply@${process.env.EMAIL_FROM_DOMAIN}>`,
       // TODO: remove exclamation after migrations
       to: org.primaryEmail!,
       subject: "New Inquiry",

@@ -34,7 +34,7 @@ export function UserMenu() {
             <span className="sr-only">Open User Menu</span>
             <div className="flex flex-col space-y-1 text-left">
               <p className="text-base leading-none font-medium md:text-sm">
-                {`${user.contact.firstName} ${user.contact.lastName}`}
+                {`${user.contact.firstName}${user.contact.lastName ? ` ${user.contact.lastName}` : ""}`}
               </p>
               <p className="text-muted-foreground text-sm leading-none md:text-xs">{user.contact.email}</p>
             </div>

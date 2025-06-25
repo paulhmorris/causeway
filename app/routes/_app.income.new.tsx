@@ -22,6 +22,7 @@ import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionItemType } from "~/lib/constants";
+import { CONFIG } from "~/lib/env.server";
 import { Toasts } from "~/lib/toast.server";
 import { formatCentsAsDollars, getToday } from "~/lib/utils";
 import { TransactionSchema } from "~/schemas";
@@ -146,7 +147,7 @@ export const action = async (args: ActionFunctionArgs) => {
         subject: "You have new income!",
         html: await render(
           <IncomeNotificationEmail
-            url={process.env.BASE_URL}
+            url={CONFIG.baseUrl}
             accountName={transaction.account.code}
             amountInCents={transaction.amountInCents}
             userFirstname={transaction.account.user?.contact.firstName ?? "User"}

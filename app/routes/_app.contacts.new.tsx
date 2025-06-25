@@ -7,7 +7,6 @@ import { PageHeader } from "~/components/common/page-header";
 import { ErrorComponent } from "~/components/error-component";
 import { NewContactForm, newContactSchema } from "~/components/forms/new-contact-form";
 import { PageContainer } from "~/components/page-container";
-import { useUser } from "~/hooks/useUser";
 import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
@@ -119,17 +118,12 @@ export const action = async (args: ActionFunctionArgs) => {
 
 export default function NewContactPage() {
   const data = useLoaderData<typeof loader>();
-  const user = useUser();
 
   return (
     <>
       <PageHeader title="New Contact" />
       <PageContainer>
-        <NewContactForm
-          user={user}
-          contactTypes={data.contactTypes}
-          usersWhoCanBeAssigned={data.usersWhoCanBeAssigned}
-        />
+        <NewContactForm contactTypes={data.contactTypes} usersWhoCanBeAssigned={data.usersWhoCanBeAssigned} />
       </PageContainer>
     </>
   );

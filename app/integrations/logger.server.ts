@@ -1,8 +1,10 @@
 import pino from "pino";
 
-const isDev = process.env.NODE_ENV !== "production";
+import { CONFIG } from "~/lib/env.server";
 
-const transport: pino.LoggerOptions["transport"] = isDev
+const shouldBeVerbose = CONFIG.isDev || CONFIG.isTest;
+
+const transport: pino.LoggerOptions["transport"] = shouldBeVerbose
   ? {
       target: "pino-pretty",
       options: {
@@ -14,7 +16,7 @@ const transport: pino.LoggerOptions["transport"] = isDev
 
 const baseLogger = pino({
   transport,
-  level: isDev ? "debug" : (process.env.LOG_LEVEL ?? "info"),
+  level: shouldBeVerbose ? "debug" : (process.env.LOG_LEVEL ?? "info"),
   name: "Global",
 });
 
