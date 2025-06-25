@@ -85,7 +85,7 @@ class Session {
   }
 
   async requireUserId(args: LoaderFunctionArgs, redirectTo: string = new URL(args.request.url).pathname) {
-    const { userId, sessionId } = await this.getSession(args);
+    const { userId, sessionId, sessionClaims } = await this.getSession(args);
     const searchParams = new URLSearchParams([["redirectTo", redirectTo]]);
 
     if (!userId) {
@@ -94,11 +94,23 @@ class Session {
       throw redirect(`/login?${searchParams.toString()}`);
     }
 
-    const user = await db.user.findUnique({ where: { clerkId: userId }, select: { id: true } });
+    let user = await db.user.findUnique({ where: { clerkId: userId }, select: { id: true } });
     if (!user) {
-      this.logger.error(`User with clerkId ${userId} not found in database, logging out...`);
-      await this.logout(sessionId);
-      throw redirect(`/login?${searchParams.toString()}`);
+      this.logger.error(`User with clerkId ${userId} authenticated but not found in database, attempting to link...`);
+      if (sessionClaims.pem) {
+        try {
+          user = await AuthService.linkOAuthUserToExistingUser(sessionClaims.pem, userId);
+          this.logger.info(`Successfully linked user with ID ${user.id}`);
+        } catch (error) {
+          this.logger.error("Failed to link user: ", error);
+          await this.logout(sessionId);
+          throw redirect(`/login?${searchParams.toString()}`);
+        }
+      } else {
+        this.logger.error("No PEM claim found in session, cannot link user");
+        await this.logout(sessionId);
+        throw redirect(`/login?${searchParams.toString()}`);
+      }
     }
 
     return user.id;
