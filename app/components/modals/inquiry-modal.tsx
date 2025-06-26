@@ -36,7 +36,6 @@ export function NewInquiryModal({ open, onOpenChange }: { open: boolean; onOpenC
       setOpen={onOpenChange}
     >
       <ValidatedForm
-        id="inquiry-form"
         method="post"
         action="/api/inquiries"
         fetcher={fetcher}

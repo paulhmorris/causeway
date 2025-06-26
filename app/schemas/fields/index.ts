@@ -18,8 +18,19 @@ export const optionalDate = date.optional();
 export const checkbox = z.coerce.boolean();
 export const optionalCheckbox = checkbox.optional();
 
-export const checkboxGroup = z.array(z.coerce.string()).or(z.string());
-export const optionalCheckboxGroup = checkboxGroup.optional().transform((v) => (v === "" ? undefined : v));
+export const _checkboxGroup = z
+  .array(z.coerce.string({ error: (e) => (!e.input ? "Required" : "Invalid") }))
+  .or(z.string({ error: "Required" }));
+export const checkboxGroup = _checkboxGroup.transform((v) => {
+  if (Array.isArray(v)) {
+    return v;
+  }
+  if (typeof v === "string" && v !== "") {
+    return [v];
+  }
+  return [];
+});
+export const optionalCheckboxGroup = checkboxGroup.optional();
 
 export const _select = z.coerce.string().max(255, { error: "Must be 255 characters or less" }).trim();
 export const select = _select.min(1, { error: "Required" });

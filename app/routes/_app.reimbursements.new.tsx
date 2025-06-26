@@ -21,7 +21,7 @@ import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod } from "~/lib/constants";
 import { CONFIG } from "~/lib/env.server";
 import { Toasts } from "~/lib/toast.server";
-import { cuid, currency, date, number, optionalLongText, optionalText } from "~/schemas/fields";
+import { checkboxGroup, cuid, currency, date, number, optionalLongText, optionalText } from "~/schemas/fields";
 import { generateS3Urls } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
 import { getTransactionItemMethods } from "~/services.server/transaction";
@@ -34,7 +34,7 @@ const schema = z.object({
   description: optionalLongText,
   amountInCents: currency,
   accountId: cuid,
-  receiptIds: z.array(cuid, "Receipt required"),
+  receiptIds: checkboxGroup,
   methodId: number.pipe(z.enum(TransactionItemMethod, { message: "Invalid method" })),
 });
 
