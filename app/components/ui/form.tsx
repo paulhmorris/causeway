@@ -9,6 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~
 import { Textarea } from "~/components/ui/textarea";
 import { cn } from "~/lib/utils";
 
+export function GenericFieldError({ error }: { error?: string | null }) {
+  if (!error) return null;
+  return (
+    <p aria-live="polite" role="alert" className="text-destructive mt-1 ml-1 text-xs font-medium">
+      {error ? <span>{error}</span> : null}
+    </p>
+  );
+}
+
 function FieldError({ id, error }: { id: string; error?: string | null }) {
   if (!error) return null;
   return (

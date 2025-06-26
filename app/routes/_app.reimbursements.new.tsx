@@ -12,7 +12,7 @@ import { ReceiptSelector } from "~/components/common/receipt-selector";
 import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
 import { Callout } from "~/components/ui/callout";
-import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
+import { FormField, FormSelect, FormTextarea, GenericFieldError } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { sendEmail } from "~/integrations/email.server";
 import { createLogger } from "~/integrations/logger.server";
@@ -34,7 +34,7 @@ const schema = z.object({
   description: optionalLongText,
   amountInCents: currency,
   accountId: cuid,
-  receiptIds: z.array(cuid.optional()),
+  receiptIds: z.array(cuid, "Receipt required"),
   methodId: number.pipe(z.enum(TransactionItemMethod, { message: "Invalid method" })),
 });
 
@@ -158,6 +158,7 @@ export default function NewReimbursementPage() {
       <PageHeader title="New Reimbursement Request" />
       <PageContainer>
         <ValidatedForm
+          noValidate
           method="post"
           defaultValues={{
             vendor: "",
@@ -212,6 +213,7 @@ export default function NewReimbursementPage() {
                 />
               </div>
               <ReceiptSelector receipts={receipts} />
+              <GenericFieldError error={form.error("receiptIds")} />
               <Callout variant="warning">
                 High quality images of itemized receipts are required. Please allow two weeks for processing.
               </Callout>
