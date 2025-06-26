@@ -45,7 +45,7 @@ export const action = async (args: ActionFunctionArgs) => {
         });
 
         logger.info(`User ${membership.user.username} changed orgs to ${newOrg.name}.`);
-        return redirect("request.url", {
+        return redirect("/", {
           status: 303,
           headers: {
             "Set-Cookie": await SessionService.commitSession(session),
