@@ -52,11 +52,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
 
   if (user.memberships.length === 0) {
     logger.warn(`User ${userId} has no memberships, logging them out.`);
-    await SessionService.logout(session.sessionId);
-    return Toasts.redirectWithError("/login", {
-      message: "Error",
-      description: "You are not a member of any organizations.",
-    });
+    throw await SessionService.logout(session.sessionId);
   }
 
   if (user.memberships.length === 1) {

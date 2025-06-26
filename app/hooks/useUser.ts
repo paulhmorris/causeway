@@ -1,14 +1,14 @@
+import { useClerk } from "@clerk/react-router";
 import { MembershipRole, UserRole } from "@prisma/client";
-import { useNavigate } from "react-router";
 
 import { useOptionalUser } from "~/hooks/useOptionalUser";
 
 export function useUser() {
+  const { signOut } = useClerk();
   const maybeUser = useOptionalUser();
-  const navigate = useNavigate();
 
   if (!maybeUser) {
-    void navigate("/login");
+    void signOut();
     return undefined as never;
   }
 

@@ -25,7 +25,7 @@ export const schema = z.object({
 
 export async function action(args: ActionFunctionArgs) {
   const { request } = args;
-  const org = await SessionService.getOrg(request);
+  const org = await SessionService.getOrg(args);
   const user = await SessionService.requireUser(args);
 
   if (!org) {

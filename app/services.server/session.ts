@@ -25,7 +25,6 @@ class Session {
     if (sessionId) {
       await AuthService.revokeSession(sessionId);
     }
-    return redirect("/login");
   }
 
   async getSession(args: LoaderFunctionArgs | ActionFunctionArgs) {
@@ -46,15 +45,14 @@ class Session {
     return userId;
   }
 
-  async getOrgId(request: Request): Promise<Organization["id"] | undefined> {
+  async getOrgId({ request }: LoaderFunctionArgs | ActionFunctionArgs): Promise<Organization["id"] | undefined> {
     const session = await this.getOrgSession(request);
     const orgId = session.get(this.ORGANIZATION_SESSION_KEY) as Organization["id"] | undefined;
     return orgId;
   }
 
-  async getOrg(args: Request | LoaderFunctionArgs | ActionFunctionArgs) {
-    const request = args instanceof Request ? args : args.request;
-    const orgId = await this.getOrgId(request);
+  async getOrg(args: LoaderFunctionArgs | ActionFunctionArgs) {
+    const orgId = await this.getOrgId(args);
     if (!orgId) {
       this.logger.debug(`no orgId found in session`);
       return null;
@@ -67,14 +65,15 @@ class Session {
     return org;
   }
 
-  async requireOrgId(args: Request | LoaderFunctionArgs | ActionFunctionArgs) {
-    const request = args instanceof Request ? args : args.request;
-    const orgId = await this.getOrgId(request);
+  async requireOrgId(args: LoaderFunctionArgs | ActionFunctionArgs) {
+    const { sessionId } = await this.getSession(args);
+    const orgId = await this.getOrgId(args);
     if (!orgId) {
       this.logger.info(`no orgId found in session`);
-      const originURL = new URL(request.url);
+      const originURL = new URL(args.request.url);
       if (originURL.pathname === "/") {
-        throw redirect("/login");
+        await this.logout(sessionId);
+        throw redirect("/logout");
       }
       const returnUrl = new URL("/choose-org", originURL.origin);
       returnUrl.searchParams.set("redirectTo", originURL.pathname);
@@ -84,14 +83,13 @@ class Session {
     return orgId;
   }
 
-  async requireUserId(args: LoaderFunctionArgs, redirectTo: string = new URL(args.request.url).pathname) {
+  async requireUserId(args: LoaderFunctionArgs) {
     const { userId, sessionId, sessionClaims } = await this.getSession(args);
-    const searchParams = new URLSearchParams([["redirectTo", redirectTo]]);
 
     if (!userId) {
-      this.logger.info(`no userId found in session, redirecting to /login?${searchParams.toString()}`);
+      this.logger.info(`no userId found in session, logging out...`);
       await this.logout(sessionId);
-      throw redirect(`/login?${searchParams.toString()}`);
+      throw redirect("/logout");
     }
 
     let user = await db.user.findUnique({ where: { clerkId: userId }, select: { id: true } });
@@ -104,12 +102,12 @@ class Session {
         } catch (error) {
           this.logger.error("Failed to link user: ", error);
           await this.logout(sessionId);
-          throw redirect(`/login?${searchParams.toString()}`);
+          throw redirect("/logout");
         }
       } else {
         this.logger.error("No PEM claim found in session, cannot link user");
         await this.logout(sessionId);
-        throw redirect(`/login?${searchParams.toString()}`);
+        throw redirect("/logout");
       }
     }
 
@@ -119,7 +117,7 @@ class Session {
   public async requireUser(args: LoaderFunctionArgs, allowedRoles?: Array<MembershipRole>) {
     const defaultAllowedRoles: Array<MembershipRole> = [MembershipRole.MEMBER, MembershipRole.ADMIN];
     const userId = await this.requireUserId(args);
-    const orgId = await this.requireOrgId(args.request);
+    const orgId = await this.requireOrgId(args);
 
     const user = await db.user.findUnique({
       where: { id: userId },

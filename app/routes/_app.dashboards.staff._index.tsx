@@ -19,7 +19,7 @@ export const meta: MetaFunction = () => [{ title: "Home" }];
 export async function loader(args: LoaderFunctionArgs) {
   try {
     const user = await SessionService.requireUser(args);
-    const orgId = await SessionService.requireOrgId(args.request);
+    const orgId = await SessionService.requireOrgId(args);
 
     const [total, reimbursementRequests, announcement, accountSubscriptions] = await Promise.all([
       db.transaction.aggregate({

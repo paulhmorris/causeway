@@ -92,7 +92,7 @@ export function UserMenu() {
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem className="w-full cursor-pointer" asChild>
-            <SignOutButton redirectUrl="/login">
+            <SignOutButton>
               <button onClick={() => Sentry.setUser(null)} className="w-full cursor-pointer px-2 py-1.5 text-left">
                 Log out
               </button>
