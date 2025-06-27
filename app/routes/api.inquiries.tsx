@@ -7,6 +7,7 @@ import { NewInquiryEmail } from "emails/new-inquiry";
 import { sendEmail } from "~/integrations/email.server";
 import { createLogger } from "~/integrations/logger.server";
 import { Sentry } from "~/integrations/sentry";
+import { CONFIG } from "~/lib/env.server";
 import { Toasts } from "~/lib/toast.server";
 import { longText, optionalEmail, optionalPhoneNumber, optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
@@ -22,9 +23,10 @@ export const schema = z.object({
   message: longText,
 });
 
-export async function action({ request }: ActionFunctionArgs) {
-  const user = await SessionService.requireUser(request);
-  const org = await SessionService.getOrg(request);
+export async function action(args: ActionFunctionArgs) {
+  const { request } = args;
+  const org = await SessionService.getOrg(args);
+  const user = await SessionService.requireUser(args);
 
   if (!org) {
     throw data({ success: false, message: "Organization not found" }, { status: 400 });
@@ -34,7 +36,7 @@ export async function action({ request }: ActionFunctionArgs) {
     throw data({ success: false, message: "Method Not Allowed" }, { status: 405 });
   }
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -51,12 +53,12 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    const url = new URL("/", `https://${org.subdomain ? org.subdomain + "." : ""}${org.host}`).toString();
+    const url = new URL("/", CONFIG.baseUrl).toString();
     const html = await render(<NewInquiryEmail url={url} username={user.username} {...result.data} />);
 
     const { messageId } = await sendEmail({
-      from: `${org.name} <${org.replyToEmail}@${org.host}>`,
-      to: `${org.inquiriesEmail}@${org.host}`,
+      // TODO: remove exclamation after migrations
+      to: org.primaryEmail!,
       subject: "New Inquiry",
       html,
     });

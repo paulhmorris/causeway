@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 import { faker } from "@faker-js/faker";
 import { MembershipRole, PrismaClient, UserRole } from "@prisma/client";
-import bcrypt from "bcryptjs";
 import dayjs from "dayjs";
 
 import {
@@ -40,9 +39,9 @@ async function seed() {
   ]);
 
   // TODO: change admin org host
-  const _org = await db.organization.create({ data: { name: "Causeway", host: "causeway.com" } });
-  const org = await db.organization.create({ data: { name: "Alliance 436", host: "alliance436.org" } });
-  const org2 = await db.organization.create({ data: { name: "Moms of Courage", host: "momsofcourage.org" } });
+  const _org = await db.organization.create({ data: { name: "NP Ally" } });
+  const org = await db.organization.create({ data: { name: "Alliance 436" } });
+  const org2 = await db.organization.create({ data: { name: "Moms of Courage" } });
 
   await db.$transaction([
     db.transactionCategory.createMany({ data: transactionCategories }),
@@ -55,8 +54,6 @@ async function seed() {
 
   const email = "paulh.morris@gmail.com";
 
-  const hashedPassword = await bcrypt.hash("password", 10);
-
   await db.user.create({
     data: {
       username: email,
@@ -68,11 +65,6 @@ async function seed() {
           email,
           typeId: ContactType.Outreach,
           orgId: org.id,
-        },
-      },
-      password: {
-        create: {
-          hash: hashedPassword,
         },
       },
       memberships: {
@@ -109,11 +101,6 @@ async function seed() {
         create: {
           orgId: org.id,
           role: MembershipRole.MEMBER,
-        },
-      },
-      password: {
-        create: {
-          hash: hashedPassword,
         },
       },
     },

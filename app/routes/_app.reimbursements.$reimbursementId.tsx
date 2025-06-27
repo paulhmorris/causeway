@@ -1,20 +1,21 @@
+/* eslint-disable react/jsx-no-leaked-render */
 import { ReimbursementRequestStatus } from "@prisma/client";
 import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import { IconExternalLink } from "@tabler/icons-react";
 import dayjs from "dayjs";
-import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
+import { ActionFunctionArgs, MetaFunction, useLoaderData, useNavigation } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
 import { PageContainer } from "~/components/page-container";
 import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
 import { Callout } from "~/components/ui/callout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "~/components/ui/card";
 import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
 import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
+import { SubmitButton } from "~/components/ui/submit-button";
 import { Textarea } from "~/components/ui/textarea";
 import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
@@ -22,7 +23,7 @@ import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod, TransactionItemType } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
 import { capitalize, formatCentsAsDollars } from "~/lib/utils";
-import { cuid, currency, optionalLongText, optionalText, positiveNumber } from "~/schemas/fields";
+import { cuid, currency, number, optionalLongText, optionalText } from "~/schemas/fields";
 import { sendReimbursementRequestUpdateEmail } from "~/services.server/mail";
 import { generateS3Urls } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
@@ -40,39 +41,40 @@ const schema = z.discriminatedUnion("_action", [
     _action: z.literal(ReimbursementRequestStatus.APPROVED),
     id: cuid,
     amount: currency,
-    categoryId: positiveNumber,
+    categoryId: number,
     accountId: optionalText.nullable(),
     approverNote: optionalLongText.nullable(),
   }),
   z.object({
     _action: z.literal(ReimbursementRequestStatus.VOID),
     id: cuid,
-    amount: z.never(),
-    categoryId: z.never(),
-    accountId: z.never(),
-    approverNote: z.never(),
+    amount: z.undefined(),
+    categoryId: z.undefined(),
+    accountId: z.undefined(),
+    approverNote: z.undefined(),
   }),
   z.object({
     _action: z.literal(ReimbursementRequestStatus.PENDING),
     id: cuid,
-    amount: z.never(),
-    categoryId: z.never(),
-    accountId: z.never(),
-    approverNote: z.never(),
+    amount: z.undefined(),
+    categoryId: z.undefined(),
+    accountId: z.undefined(),
+    approverNote: z.undefined(),
   }),
   z.object({
     _action: z.literal(ReimbursementRequestStatus.REJECTED),
     id: cuid,
-    amount: z.never(),
-    categoryId: z.never(),
-    accountId: z.never(),
-    approverNote: z.never(),
+    amount: z.undefined(),
+    categoryId: z.undefined(),
+    accountId: z.undefined(),
+    approverNote: z.undefined(),
   }),
 ]);
 
-export async function loader({ request, params }: LoaderFunctionArgs) {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export async function loader(args: ActionFunctionArgs) {
+  const { params } = args;
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   invariant(params.reimbursementId, "reimbursementId not found");
 
@@ -150,11 +152,11 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   return { reimbursementRequest: rr, accounts, transactionCategories, relatedTrx };
 }
 
-export async function action({ request }: ActionFunctionArgs) {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export async function action(args: ActionFunctionArgs) {
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
 
   if (result.error) {
     return validationError(result.error);
@@ -164,6 +166,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   // Reopen
   if (_action === ReimbursementRequestStatus.PENDING) {
+    logger.info("Reopening reimbursement request...");
     const rr = await db.reimbursementRequest.update({
       where: { id, orgId },
       data: { status: ReimbursementRequestStatus.PENDING },
@@ -175,29 +178,26 @@ export async function action({ request }: ActionFunctionArgs) {
         },
       },
     });
-    await sendReimbursementRequestUpdateEmail({
-      email: rr.user.username,
-      status: _action,
-      orgId,
+    await sendReimbursementRequestUpdateEmail({ email: rr.user.username, status: _action });
+    return Toasts.dataWithInfo(null, {
+      message: "Success",
+      description: "The reimbursement request has been reopened and the requester will be notified.",
     });
-    return Toasts.dataWithInfo(
-      { reimbursementRequest: rr },
-      {
-        message: "The reimbursement request has been reopened and the requester will be notified.",
-        description: "",
-      },
-    );
   }
 
   // Approved
   if (_action === ReimbursementRequestStatus.APPROVED) {
+    logger.info("Processing reimbursement request approval...");
     const { amount, categoryId, accountId, approverNote } = result.data;
     if (!accountId) {
-      return validationError({
-        fieldErrors: {
-          accountId: "Account is required for approvals.",
+      return validationError(
+        {
+          fieldErrors: {
+            accountId: "Account is required for approvals",
+          },
         },
-      });
+        result.submittedData,
+      );
     }
 
     try {
@@ -215,7 +215,7 @@ export async function action({ request }: ActionFunctionArgs) {
       });
 
       // Verify the account has enough funds
-      const account = await db.account.findUnique({
+      const account = await db.account.findUniqueOrThrow({
         where: { id: accountId, orgId },
         select: {
           code: true,
@@ -227,16 +227,11 @@ export async function action({ request }: ActionFunctionArgs) {
         },
       });
 
-      if (!account) {
-        return validationError({
-          fieldErrors: {
-            accountId: "Account not found.",
-          },
-        });
-      }
-
       const balance = account.transactions.reduce((acc, t) => acc + t.amountInCents, 0);
       if (balance < amount) {
+        logger.warn(
+          `Insufficient funds for account ${account.code} (balance: ${formatCentsAsDollars(balance)}, requested: ${formatCentsAsDollars(amount)})`,
+        );
         return Toasts.dataWithWarning(null, {
           message: "Insufficient Funds",
           description: `The reimbursement request couldn't be completed because account ${
@@ -275,26 +270,19 @@ export async function action({ request }: ActionFunctionArgs) {
       await sendReimbursementRequestUpdateEmail({
         email: rr.user.username,
         status: ReimbursementRequestStatus.APPROVED,
-        orgId,
       });
 
-      return Toasts.dataWithSuccess(
-        { reimbursementRequest: rr },
-        {
-          message: "Reimbursement Request Approved",
-          description: `The reimbursement request has been approved and account ${account.code} has been adjusted.`,
-        },
-      );
+      return Toasts.dataWithSuccess(null, {
+        message: "Success",
+        description: `The reimbursement request has been approved and account ${account.code} has been adjusted.`,
+      });
     } catch (error) {
       logger.error(error);
       Sentry.captureException(error);
-      return Toasts.dataWithError(
-        { message: "An unknown error occurred" },
-        {
-          message: "An unknown error occurred",
-          description: error instanceof Error ? error.message : "",
-        },
-      );
+      return Toasts.dataWithError(null, {
+        message: "Error",
+        description: "An unknown error occurred. Please try again later.",
+      });
     }
   }
 
@@ -304,22 +292,16 @@ export async function action({ request }: ActionFunctionArgs) {
     data: { status: _action },
     include: { user: true },
   });
-  await sendReimbursementRequestUpdateEmail({
-    email: rr.user.username,
-    status: _action,
-    orgId,
-  });
+  await sendReimbursementRequestUpdateEmail({ email: rr.user.username, status: _action });
   const normalizedAction = _action === ReimbursementRequestStatus.REJECTED ? "rejected" : "voided";
-  return Toasts.dataWithSuccess(
-    { reimbursementRequest: rr },
-    {
-      message: `Reimbursement request ${normalizedAction}`,
-      description: `The reimbursement request has been ${normalizedAction} and the requester will be notified.`,
-    },
-  );
+  return Toasts.dataWithSuccess(null, {
+    message: `Reimbursement request ${normalizedAction}`,
+    description: `The reimbursement request has been ${normalizedAction} and the requester will be notified.`,
+  });
 }
 
 export default function ReimbursementRequestPage() {
+  const navigation = useNavigation();
   const { reimbursementRequest: rr, accounts, transactionCategories, relatedTrx } = useLoaderData<typeof loader>();
 
   return (
@@ -412,12 +394,12 @@ export default function ReimbursementRequestPage() {
 
           <CardFooter>
             <ValidatedForm
-              id="reimbursement-request"
+              noValidate
               method="post"
               schema={schema}
               className="flex w-full"
               defaultValues={{
-                ...rr,
+                id: rr.id,
                 _action: ReimbursementRequestStatus.APPROVED,
                 approverNote: rr.approverNote ?? "",
                 amount: String(rr.amountInCents / 100.0),
@@ -427,6 +409,7 @@ export default function ReimbursementRequestPage() {
               {(form) => (
                 <>
                   <input type="hidden" name="id" value={rr.id} />
+                  {/* <span>{JSON.stringify(form., null, 2)}</span> */}
                   {rr.status === ReimbursementRequestStatus.PENDING ? (
                     <fieldset>
                       <legend>
@@ -467,33 +450,56 @@ export default function ReimbursementRequestPage() {
                         />
                         <Separator />
                         <div className="flex w-full flex-col gap-2 sm:flex-row-reverse sm:items-center">
-                          <Button
+                          <SubmitButton
                             name="_action"
                             value={ReimbursementRequestStatus.APPROVED}
+                            isSubmitting={
+                              form.formState.isSubmitting &&
+                              navigation.formData?.get("_action") === ReimbursementRequestStatus.APPROVED
+                            }
                             className="mb-24 sm:mb-0 md:ml-auto"
                           >
                             Approve
-                          </Button>
-                          <Button variant="outline" name="_action" value={ReimbursementRequestStatus.VOID}>
+                          </SubmitButton>
+                          <SubmitButton
+                            name="_action"
+                            value={ReimbursementRequestStatus.VOID}
+                            isSubmitting={
+                              form.formState.isSubmitting &&
+                              navigation.formData?.get("_action") === ReimbursementRequestStatus.VOID
+                            }
+                            variant="outline"
+                          >
                             Void
-                          </Button>
-                          <Button variant="destructive" name="_action" value={ReimbursementRequestStatus.REJECTED}>
+                          </SubmitButton>
+                          <SubmitButton
+                            name="_action"
+                            value={ReimbursementRequestStatus.REJECTED}
+                            isSubmitting={
+                              form.formState.isSubmitting &&
+                              navigation.formData?.get("_action") === ReimbursementRequestStatus.REJECTED
+                            }
+                            variant="destructive"
+                          >
                             Reject
-                          </Button>
+                          </SubmitButton>
                         </div>
                       </div>
                     </fieldset>
                   ) : (
                     <>
-                      <input type="hidden" name="amount" value={rr.amountInCents} />
-                      <Button
+                      <SubmitButton
                         name="_action"
                         value={ReimbursementRequestStatus.PENDING}
+                        isSubmitting={
+                          form.formState.isSubmitting &&
+                          navigation.formData?.get("_action") === ReimbursementRequestStatus.PENDING
+                        }
                         variant="outline"
                         className="ml-auto"
                       >
                         Reopen
-                      </Button>
+                      </SubmitButton>
                     </>
                   )}
                 </>

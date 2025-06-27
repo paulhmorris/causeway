@@ -1,22 +1,22 @@
-import { ValidatedForm } from "@rvf/react-router";
-import { IconAddressBook, IconBuildingBank, IconKey, IconLockPlus, IconUserCircle } from "@tabler/icons-react";
-import { Link, LoaderFunctionArgs, MetaFunction, NavLink, Outlet, useFetcher, useLoaderData } from "react-router";
+import { LoaderFunctionArgs, Outlet, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 
+import { AccountLinkBadge } from "~/components/common/account-link-badge";
+import { ContactLinkBadge } from "~/components/common/contact-link-badge";
+import { ContactTypeBadge } from "~/components/common/contact-type-badge";
+import { InvitationStatusBadge } from "~/components/common/invitation-status-badge";
 import { PageHeader } from "~/components/common/page-header";
+import { RoleBadge } from "~/components/common/role-badge";
 import { PageContainer } from "~/components/page-container";
-import { Badge } from "~/components/ui/badge";
-import { SubmitButton } from "~/components/ui/submit-button";
-import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
 import { forbidden, handleLoaderError } from "~/lib/responses.server";
-import { cn } from "~/lib/utils";
-import { passwordResetSchema } from "~/routes/resources.reset-password";
+import { AuthService } from "~/services.server/auth";
 import { SessionService } from "~/services.server/session";
 
-export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  const authorizedUser = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const loader = async (args: LoaderFunctionArgs) => {
+  const { params } = args;
+  const authorizedUser = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   invariant(params.userId, "userId not found");
 
@@ -25,7 +25,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   }
 
   try {
-    const [accounts, userWithPassword, accountsThatCanBeSubscribedTo] = await Promise.all([
+    const [accounts, user, accountsThatCanBeSubscribedTo] = await db.$transaction([
       db.account.findMany({
         where: {
           orgId,
@@ -43,6 +43,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
         select: {
           id: true,
           username: true,
+          clerkId: true,
           role: true,
           contactAssignments: {
             select: {
@@ -56,7 +57,6 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
               },
             },
           },
-          password: true,
           account: {
             select: {
               id: true,
@@ -100,134 +100,42 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       }),
     ]);
 
-    const { password: _password, ...userWithoutPassword } = userWithPassword;
-
+    const existingInvitations = await AuthService.getInvitationsByEmail(user.username);
+    const latestInvitation =
+      existingInvitations.length === 0
+        ? null
+        : existingInvitations.length === 1
+          ? existingInvitations[0]
+          : existingInvitations.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
     return {
+      latestInvitation,
+      user,
       accounts,
-      user: userWithoutPassword,
       accountsThatCanBeSubscribedTo,
-      hasPassword: !!_password,
     };
   } catch (e) {
     handleLoaderError(e);
   }
 };
 
-export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  {
-    title: `${data?.user.contact.firstName}${data?.user.contact.lastName ? " " + data.user.contact.lastName : ""}`,
-  },
-];
-
-const links = [{ label: "Profile", to: "profile" }];
-
 export default function UserDetailsLayout() {
-  const authorizedUser = useUser();
-  const { user, hasPassword } = useLoaderData<typeof loader>();
-  const fetcher = useFetcher();
-
-  const isYou = authorizedUser.id === user.id;
+  const { user, latestInvitation } = useLoaderData<typeof loader>();
 
   return (
     <>
-      <PageHeader title={`${user.contact.firstName}${user.contact.lastName ? " " + user.contact.lastName : ""}`}>
-        <div className="mt-2 flex items-center gap-2">
-          <ValidatedForm
-            id="reset-password-form"
-            fetcher={fetcher}
-            schema={passwordResetSchema}
-            method="post"
-            action="/resources/reset-password"
-            defaultValues={{ username: user.username, _action: hasPassword ? "reset" : "setup" }}
-          >
-            {(form) => (
-              <>
-                <input type="hidden" name="username" value={user.username} />
-                <SubmitButton
-                  isSubmitting={form.formState.isSubmitting}
-                  variant="outline"
-                  type="submit"
-                  name="_action"
-                  value={hasPassword ? "reset" : "setup"}
-                >
-                  <span>Send Password {hasPassword ? "Reset" : "Setup"}</span>
-                  {!hasPassword ? <IconLockPlus className="size-4" /> : null}
-                </SubmitButton>
-              </>
-            )}
-          </ValidatedForm>
-        </div>
-      </PageHeader>
+      <title>{`${user.contact.firstName}${user.contact.lastName ? " " + user.contact.lastName : ""}`}</title>
+      <PageHeader title={`${user.contact.firstName}${user.contact.lastName ? " " + user.contact.lastName : ""}`} />
 
       <div className="mt-4 flex flex-wrap items-center gap-2 sm:mt-1">
-        <Badge variant="outline" className="capitalize">
-          <div>
-            <IconAddressBook className="size-3" />
-          </div>
-          <span>{user.contact.type.name.toLowerCase()}</span>
-        </Badge>
-        <Badge variant="outline" className="capitalize">
-          <div>
-            <IconKey className="size-3" />
-          </div>
-          <span>{user.role.toLowerCase()}</span>
-        </Badge>
-        <Badge variant="secondary" className="capitalize">
-          <Link to={`/contacts/${user.contact.id}`} prefetch="intent" className="flex items-center gap-2">
-            <div>
-              <IconUserCircle className="size-3" />
-            </div>
-            <span>
-              {user.contact.firstName} {user.contact.lastName}
-            </span>
-          </Link>
-        </Badge>
-        {user.account ? (
-          <Badge variant="secondary">
-            <Link to={`/accounts/${user.account.id}`} prefetch="intent" className="flex items-center gap-2">
-              <div>
-                <IconBuildingBank className="size-3" />
-              </div>
-              {`${user.account.code} - ${user.account.description}`}
-            </Link>
-          </Badge>
-        ) : null}
+        {latestInvitation ? <InvitationStatusBadge status={latestInvitation.status} /> : null}
+        <ContactTypeBadge type={user.contact.type.name.toLowerCase()} />
+        <RoleBadge role={user.role.toLowerCase()} />
+        <ContactLinkBadge contact={user.contact} />
+        {user.account ? <AccountLinkBadge account={user.account} /> : null}
       </div>
 
       <PageContainer>
-        <ul className="bg-muted text-muted-foreground inline-flex h-10 items-center justify-center gap-2 rounded-md p-1">
-          {links.map((link) => (
-            <li key={link.to}>
-              <NavLink
-                className={({ isActive }) =>
-                  cn(
-                    "ring-offset-background focus-visible:ring-ring inline-flex items-center justify-center gap-2 rounded px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50",
-                    isActive ? "bg-background text-foreground shadow-xs" : "hover:bg-background/50",
-                  )
-                }
-                to={link.to}
-              >
-                <span>{link.label}</span>
-              </NavLink>
-            </li>
-          ))}
-          {isYou ? (
-            <NavLink
-              className={({ isActive }) =>
-                cn(
-                  "ring-offset-background focus-visible:ring-ring inline-flex items-center justify-center gap-2 rounded px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50",
-                  isActive ? "bg-background text-foreground shadow-xs" : "hover:bg-background/50",
-                )
-              }
-              to="password"
-            >
-              <span>Password</span>
-            </NavLink>
-          ) : null}
-        </ul>
-        <div className="pt-4">
-          <Outlet />
-        </div>
+        <Outlet />
       </PageContainer>
     </>
   );

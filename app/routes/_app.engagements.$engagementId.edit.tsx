@@ -34,10 +34,11 @@ const schema = z.object({
   contactId: cuid,
 });
 
-export const loader = async ({ params, request }: LoaderFunctionArgs) => {
+export const loader = async (args: LoaderFunctionArgs) => {
+  const { params } = args;
   try {
-    const user = await SessionService.requireUser(request);
-    const orgId = await SessionService.requireOrgId(request);
+    const user = await SessionService.requireUser(args);
+    const orgId = await SessionService.requireOrgId(args);
 
     invariant(params.engagementId, "engagementId not found");
 
@@ -79,11 +80,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
 export const meta: MetaFunction = () => [{ title: "Edit Account" }];
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const action = async (args: ActionFunctionArgs) => {
+  await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }

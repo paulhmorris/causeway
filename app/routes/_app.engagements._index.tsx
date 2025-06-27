@@ -13,10 +13,10 @@ import { SessionService } from "~/services.server/session";
 
 export const meta: MetaFunction = () => [{ title: "Engagements" }];
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader(args: LoaderFunctionArgs) {
   try {
-    const user = await SessionService.requireUser(request);
-    const orgId = await SessionService.requireOrgId(request);
+    const user = await SessionService.requireUser(args);
+    const orgId = await SessionService.requireOrgId(args);
 
     const engagements = await db.engagement.findMany({
       where: {

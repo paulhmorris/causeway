@@ -48,7 +48,6 @@ export function AnnouncementModal({
           action="/api/announcements"
           schema={schema}
           fetcher={fetcher}
-          id="announcement-form"
           className="space-y-4"
           defaultValues={{
             intent: "update",

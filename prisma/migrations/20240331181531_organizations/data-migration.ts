@@ -10,7 +10,7 @@ async function main() {
       defaultOrg ??= await tx.organization.create({
         data: {
           name: "Alliance 436",
-          host: "alliance436.org",
+          // host: "alliance436.org",
         },
       });
 

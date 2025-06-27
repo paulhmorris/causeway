@@ -4,9 +4,10 @@ import { z } from "zod/v4";
 import { db } from "~/integrations/prisma.server";
 import { SessionService } from "~/services.server/session";
 
-export async function action({ request }: ActionFunctionArgs) {
-  const userId = await SessionService.requireUserId(request);
-  const orgId = await SessionService.requireOrgId(request);
+export async function action(args: ActionFunctionArgs) {
+  const { request } = args;
+  const userId = await SessionService.requireUserId(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   switch (request.method) {
     case "POST": {

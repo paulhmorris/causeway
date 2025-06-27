@@ -12,16 +12,16 @@ import { ReceiptSelector } from "~/components/common/receipt-selector";
 import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
 import { Callout } from "~/components/ui/callout";
-import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
+import { FormField, FormSelect, FormTextarea, GenericFieldError } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { sendEmail } from "~/integrations/email.server";
 import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod } from "~/lib/constants";
+import { CONFIG } from "~/lib/env.server";
 import { Toasts } from "~/lib/toast.server";
-import { constructOrgMailFrom, constructOrgURL } from "~/lib/utils";
-import { cuid, currency, date, number, optionalLongText, optionalText } from "~/schemas/fields";
+import { checkboxGroup, cuid, currency, date, number, optionalLongText, optionalText } from "~/schemas/fields";
 import { generateS3Urls } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
 import { getTransactionItemMethods } from "~/services.server/transaction";
@@ -34,15 +34,15 @@ const schema = z.object({
   description: optionalLongText,
   amountInCents: currency,
   accountId: cuid,
-  receiptIds: z.array(cuid.optional()),
+  receiptIds: checkboxGroup,
   methodId: number.pipe(z.enum(TransactionItemMethod, { message: "Invalid method" })),
 });
 
 export const meta: MetaFunction = () => [{ title: "New Reimbursement Request" }];
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const user = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const loader = async (args: LoaderFunctionArgs) => {
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   const [receipts, methods, accounts] = await Promise.all([
     db.receipt.findMany({
@@ -65,11 +65,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return { receipts, methods, accounts };
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const user = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const action = async (args: ActionFunctionArgs) => {
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -116,28 +116,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         org: {
           select: {
             name: true,
-            host: true,
-            subdomain: true,
-            replyToEmail: true,
-            administratorEmail: true,
+            primaryEmail: true,
           },
         },
       },
     });
 
     await generateS3Urls(rr.receipts);
-    const url = constructOrgURL("/dashboards/admin", rr.org).toString();
     const { contact } = rr.user;
 
     await sendEmail({
-      from: constructOrgMailFrom(rr.org),
-      to: `${rr.org.administratorEmail}@${rr.org.host}`,
+      // TODO: remove exclamation after migrations
+      to: rr.org.primaryEmail!,
       subject: "New Reimbursement Request",
       html: await render(
         <ReimbursementRequestEmail
+          url={CONFIG.baseUrl}
           accountName={rr.account.code}
           amountInCents={rr.amountInCents}
-          url={url}
           requesterName={`${contact.firstName} ${contact.lastName}`}
         />,
       ),
@@ -162,6 +158,7 @@ export default function NewReimbursementPage() {
       <PageHeader title="New Reimbursement Request" />
       <PageContainer>
         <ValidatedForm
+          noValidate
           method="post"
           defaultValues={{
             vendor: "",
@@ -216,6 +213,7 @@ export default function NewReimbursementPage() {
                 />
               </div>
               <ReceiptSelector receipts={receipts} />
+              <GenericFieldError error={form.error("receiptIds")} />
               <Callout variant="warning">
                 High quality images of itemized receipts are required. Please allow two weeks for processing.
               </Callout>

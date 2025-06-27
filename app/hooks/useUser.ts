@@ -1,14 +1,17 @@
+import { useClerk } from "@clerk/react-router";
 import { MembershipRole, UserRole } from "@prisma/client";
 
 import { useOptionalUser } from "~/hooks/useOptionalUser";
 
 export function useUser() {
+  const { signOut } = useClerk();
   const maybeUser = useOptionalUser();
+
   if (!maybeUser) {
-    throw new Error(
-      "No user found in root loader, but user is required by useUser. If user is optional, try useOptionalUser instead.",
-    );
+    void signOut();
+    return undefined as never;
   }
+
   if (!maybeUser.role) {
     throw new Error("User has no role in root loader.");
   }

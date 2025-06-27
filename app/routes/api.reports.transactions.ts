@@ -11,9 +11,10 @@ export const TransactionsReportSchema = z.object({
   trxEndDate: z.string(),
 });
 
-export async function loader({ request }: LoaderFunctionArgs) {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export async function loader(args: LoaderFunctionArgs) {
+  const { request } = args;
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
   const { searchParams } = new URL(request.url);
   const trxStartDate = searchParams.get("trxStartDate");
   const trxEndDate = searchParams.get("trxEndDate");

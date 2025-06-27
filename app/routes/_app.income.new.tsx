@@ -22,8 +22,9 @@ import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionItemType } from "~/lib/constants";
+import { CONFIG } from "~/lib/env.server";
 import { Toasts } from "~/lib/toast.server";
-import { constructOrgMailFrom, constructOrgURL, formatCentsAsDollars, getToday } from "~/lib/utils";
+import { formatCentsAsDollars, getToday } from "~/lib/utils";
 import { TransactionSchema } from "~/schemas";
 import { checkbox } from "~/schemas/fields";
 import { getContactTypes } from "~/services.server/contact";
@@ -36,9 +37,9 @@ const schema = TransactionSchema.extend({ shouldNotifyUser: checkbox });
 
 export const meta: MetaFunction = () => [{ title: "Add Income" }];
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const user = await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const loader = async (args: LoaderFunctionArgs) => {
+  const user = await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   const [contacts, contactTypes, accounts, transactionItemMethods, transactionItemTypes, categories, receipts] =
     await db.$transaction([
@@ -89,11 +90,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   };
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const action = async (args: ActionFunctionArgs) => {
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -129,14 +130,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             },
           },
         },
-        org: {
-          select: {
-            name: true,
-            host: true,
-            subdomain: true,
-            replyToEmail: true,
-          },
-        },
       },
     });
 
@@ -149,14 +142,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         });
       }
 
-      const org = transaction.org;
       await sendEmail({
-        from: constructOrgMailFrom(org),
         to: email,
         subject: "You have new income!",
         html: await render(
           <IncomeNotificationEmail
-            url={constructOrgURL("/", org).toString()}
+            url={CONFIG.baseUrl}
             accountName={transaction.account.code}
             amountInCents={transaction.amountInCents}
             userFirstname={transaction.account.user?.contact.firstName ?? "User"}

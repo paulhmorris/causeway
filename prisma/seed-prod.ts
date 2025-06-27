@@ -36,7 +36,7 @@ async function seed() {
   ]);
 
   const org = await prisma.organization.create({
-    data: { name: "Alliance 436", host: "alliance436.org", subdomain: "admin", replyToEmail: "no-reply" },
+    data: { name: "Alliance 436", primaryEmail: "jared@alliance436.org" },
   });
 
   await prisma.$transaction([

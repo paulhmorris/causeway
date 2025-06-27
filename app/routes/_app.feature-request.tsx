@@ -11,7 +11,6 @@ import { sendEmail } from "~/integrations/email.server";
 import { createLogger } from "~/integrations/logger.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
-import { constructOrgMailFrom } from "~/lib/utils";
 import { longText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 
@@ -23,13 +22,10 @@ const schema = z.object({
   description: longText,
 });
 
-export async function action({ request }: ActionFunctionArgs) {
-  const user = await SessionService.requireUser(request);
-  if (request.method !== "POST") {
-    return new Response(null, { status: 405 });
-  }
+export async function action(args: ActionFunctionArgs) {
+  const user = await SessionService.requireUser(args);
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -39,7 +35,6 @@ export async function action({ request }: ActionFunctionArgs) {
   try {
     await sendEmail({
       to: "paul@paulmorris.dev",
-      from: constructOrgMailFrom(user.org),
       subject: `New ${type}: ${title}`,
       html: `A new ${type} has been submitted by ${user.contact.email}.\n\n${description}`,
     });

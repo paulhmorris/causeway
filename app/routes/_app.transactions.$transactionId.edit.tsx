@@ -31,10 +31,11 @@ const schema = z.object({
   description: optionalText,
 });
 
-export const loader = async ({ params, request }: LoaderFunctionArgs) => {
+export const loader = async (args: LoaderFunctionArgs) => {
+  const { params } = args;
   invariant(params.transactionId, "transactionId not found");
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   const transaction = await db.transaction.findUnique({
     where: { id: params.transactionId, orgId },
@@ -60,11 +61,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
 export const meta: MetaFunction = () => [{ title: "Transaction Edit" }];
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export const action = async (args: ActionFunctionArgs) => {
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(request, schema);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }
@@ -82,13 +83,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     return Toasts.redirectWithSuccess(`/transactions/${id}`, {
-      message: "Transaction updated",
+      message: "Success",
       description: `Transaction has been updated.`,
     });
   } catch (error) {
     logger.error(error);
     Sentry.captureException(error);
-    return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
+    return Toasts.dataWithError(null, {
+      message: "Error",
+      description: "An unknown error has occurred. Please try again later.",
+    });
   }
 };
 
@@ -121,7 +125,6 @@ export default function TransactionDetailsPage() {
                 </DetailItem>
               ) : null}
               <ValidatedForm
-                id="transaction-edit"
                 schema={schema}
                 method="PUT"
                 defaultValues={{
@@ -130,40 +133,41 @@ export default function TransactionDetailsPage() {
                   description: transaction.description ?? "",
                   categoryId: String(transaction.categoryId),
                 }}
-                className="flex flex-col"
               >
                 {(form) => (
                   <>
-                    <input type="hidden" name="id" value={transaction.id} />
-                    <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                      <dt className="text-sm font-semibold capitalize">Date</dt>
-                      <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
-                        <FormField scope={form.scope("date")} label="Date" hideLabel type="date" />
-                      </dd>
+                    <div className="flex flex-col">
+                      <input type="hidden" name="id" value={transaction.id} />
+                      <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                        <dt className="text-sm font-semibold capitalize">Date</dt>
+                        <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
+                          <FormField scope={form.scope("date")} label="Date" hideLabel type="date" />
+                        </dd>
+                      </div>
+                      <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                        <dt className="text-sm font-semibold capitalize">Category</dt>
+                        <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
+                          <FormSelect
+                            hideLabel
+                            required
+                            scope={form.scope("categoryId")}
+                            label="Category"
+                            placeholder="Select category"
+                            options={categories.map((c) => ({
+                              value: c.id,
+                              label: c.name,
+                            }))}
+                          />
+                        </dd>
+                      </div>
+                      <div className="items-start py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                        <dt className="text-sm font-semibold capitalize">Description</dt>
+                        <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
+                          <FormTextarea scope={form.scope("description")} label="Description" hideLabel />
+                        </dd>
+                      </div>
                     </div>
-                    <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                      <dt className="text-sm font-semibold capitalize">Category</dt>
-                      <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
-                        <FormSelect
-                          hideLabel
-                          required
-                          scope={form.scope("categoryId")}
-                          label="Category"
-                          placeholder="Select category"
-                          options={categories.map((c) => ({
-                            value: c.id,
-                            label: c.name,
-                          }))}
-                        />
-                      </dd>
-                    </div>
-                    <div className="items-start py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                      <dt className="text-sm font-semibold capitalize">Description</dt>
-                      <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
-                        <FormTextarea scope={form.scope("description")} label="Description" hideLabel />
-                      </dd>
-                    </div>
-                    <SubmitButton isSubmitting={form.formState.isSubmitting} className="ml-auto">
+                    <SubmitButton isSubmitting={form.formState.isSubmitting} className="ml-auto self-start">
                       Save
                     </SubmitButton>
                   </>

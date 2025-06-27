@@ -9,6 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~
 import { Textarea } from "~/components/ui/textarea";
 import { cn } from "~/lib/utils";
 
+export function GenericFieldError({ error }: { error?: string | null }) {
+  if (!error) return null;
+  return (
+    <p aria-live="polite" role="alert" className="text-destructive mt-1 ml-1 text-xs font-medium">
+      {error ? <span>{error}</span> : null}
+    </p>
+  );
+}
+
 function FieldError({ id, error }: { id: string; error?: string | null }) {
   if (!error) return null;
   return (
@@ -24,6 +33,14 @@ function FieldDescription({ id, description }: { id: string; description?: strin
     <p id={`${id}-description`} className="text-muted-foreground mt-1 ml-1 text-xs">
       {description}
     </p>
+  );
+}
+
+function LabelOptionalIndicator({ required, error }: { required?: boolean; error: string | null }) {
+  return (
+    <span className={cn(required || error ? "text-destructive" : "text-muted-foreground", !required && "text-xs")}>
+      {required ? "*" : "(optional)"}
+    </span>
   );
 }
 
@@ -48,25 +65,17 @@ export const FormField = forwardRef<HTMLInputElement, FieldProps<string>>(
 
     return (
       <div className={cn("relative w-full")}>
-        <Label
-          htmlFor={inputId}
+        <div
           className={cn(
-            hideLabel && "sr-only",
+            "flex items-center gap-x-1 leading-4",
             error && "text-destructive",
             props.disabled && "cursor-not-allowed opacity-50",
+            hideLabel && "sr-only",
           )}
         >
-          <span>{label}</span>
-          <span
-            className={cn(
-              "ml-1 inline-block font-normal",
-              props.required || error ? "text-destructive" : "text-muted-foreground",
-              !props.required && "text-xs",
-            )}
-          >
-            {props.required ? "*" : "(optional)"}
-          </span>
-        </Label>
+          <Label htmlFor={inputId}>{label}</Label>
+          <LabelOptionalIndicator required={props.required} error={error} />
+        </div>
         <div className="relative mt-0.5">
           <Input
             {...field.getInputProps({
@@ -132,42 +141,34 @@ export function FormTextarea({ hideLabel = false, scope, label, className, descr
   const fallbackId = useId();
   const field = useField(scope);
   const error = field.error();
-  const id = props.id ?? fallbackId;
+  const inputId = props.id ?? fallbackId;
 
   return (
     <div className={cn("relative w-full")}>
-      <Label
-        htmlFor={id}
+      <div
         className={cn(
-          hideLabel && "sr-only",
+          "flex items-center gap-x-1 leading-4",
           error && "text-destructive",
           props.disabled && "cursor-not-allowed opacity-50",
+          hideLabel && "sr-only",
         )}
       >
-        <span>{label}</span>
-        <span
-          className={cn(
-            "ml-1 inline-block font-normal",
-            props.required || error ? "text-destructive" : "text-muted-foreground",
-            !props.required && "text-xs",
-          )}
-        >
-          {props.required ? "*" : "(optional)"}
-        </span>
-      </Label>
+        <Label htmlFor={inputId}>{label}</Label>
+        <LabelOptionalIndicator required={props.required} error={error} />
+      </div>
       <div className="mt-0.5">
         <Textarea
           {...field.getInputProps({
-            id: id,
+            id: inputId,
             "aria-invalid": error ? true : props["aria-invalid"],
-            "aria-errormessage": error ? `${id}-error` : props["aria-errormessage"],
-            "aria-describedby": description ? `${id}-description` : props["aria-describedby"],
+            "aria-errormessage": error ? `${inputId}-error` : props["aria-errormessage"],
+            "aria-describedby": description ? `${inputId}-description` : props["aria-describedby"],
             className: cn(className),
             ...props,
           })}
         />
       </div>
-      {error ? <FieldError id={id} error={error} /> : <FieldDescription id={id} description={description} />}
+      {error ? <FieldError id={inputId} error={error} /> : <FieldDescription id={inputId} description={description} />}
     </div>
   );
 }
@@ -193,25 +194,17 @@ export function FormSelect(props: FormSelectProps) {
 
   return (
     <div {...divProps} className={cn("relative w-full", divProps?.className)}>
-      <Label
-        htmlFor={selectId}
+      <div
         className={cn(
-          hideLabel && "sr-only",
+          "flex items-center gap-x-1 leading-4",
           error && "text-destructive",
           props.disabled && "cursor-not-allowed opacity-50",
+          hideLabel && "sr-only",
         )}
       >
-        <span>{label}</span>
-        <span
-          className={cn(
-            "ml-1 inline-block font-normal",
-            props.required || error ? "text-destructive" : "text-muted-foreground",
-            !props.required && "text-xs",
-          )}
-        >
-          {props.required ? "*" : "(optional)"}
-        </span>
-      </Label>
+        <Label htmlFor={selectId}>{label}</Label>
+        <LabelOptionalIndicator required={props.required} error={error} />
+      </div>
       <input type="hidden" name={name} value={input.value?.toString()} />
       <Select
         {...input}
@@ -240,7 +233,7 @@ export function FormSelect(props: FormSelectProps) {
         <SelectContent>
           {options && options.length === 0 ? (
             // @ts-expect-error see https://github.com/radix-ui/primitives/issues/1569#issuecomment-1567414323
-            <SelectItem value={undefined} disabled>
+            <SelectItem key={`${selectId}-no-options`} value={undefined} disabled>
               No options
             </SelectItem>
           ) : (

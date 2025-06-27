@@ -29,9 +29,9 @@ export const accountsIndexSelect: Prisma.AccountSelect = {
     },
   },
 };
-export async function loader({ request }: LoaderFunctionArgs) {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export async function loader(args: LoaderFunctionArgs) {
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   try {
     const accounts = await db.account.findMany({

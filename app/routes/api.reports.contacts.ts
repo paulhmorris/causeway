@@ -6,9 +6,9 @@ import { ContactType } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
 import { SessionService } from "~/services.server/session";
 
-export async function loader({ request }: LoaderFunctionArgs) {
-  await SessionService.requireAdmin(request);
-  const orgId = await SessionService.requireOrgId(request);
+export async function loader(args: LoaderFunctionArgs) {
+  await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
   const _contacts = await db.contact.findMany({
     where: {

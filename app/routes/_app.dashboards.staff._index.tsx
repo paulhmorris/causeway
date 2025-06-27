@@ -16,10 +16,10 @@ import { SessionService } from "~/services.server/session";
 
 export const meta: MetaFunction = () => [{ title: "Home" }];
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader(args: LoaderFunctionArgs) {
   try {
-    const user = await SessionService.requireUser(request);
-    const orgId = await SessionService.requireOrgId(request);
+    const user = await SessionService.requireUser(args);
+    const orgId = await SessionService.requireOrgId(args);
 
     const [total, reimbursementRequests, announcement, accountSubscriptions] = await Promise.all([
       db.transaction.aggregate({
@@ -62,7 +62,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
         },
       }),
       db.account.findMany({
-        where: { orgId, id: { in: user.contact.accountSubscriptions.map((s) => s.accountId) } },
+        where: {
+          orgId,
+          id: { in: user.contact.accountSubscriptions.map((s) => s.accountId) },
+        },
         include: {
           transactions: true,
         },

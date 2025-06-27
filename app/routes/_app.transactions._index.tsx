@@ -19,11 +19,11 @@ import { SessionService } from "~/services.server/session";
 
 export const meta: MetaFunction = () => [{ title: "Transactions" }];
 
-export async function loader({ request }: LoaderFunctionArgs) {
-  const user = await SessionService.requireUser(request);
-  const orgId = await SessionService.requireOrgId(request);
+export async function loader(args: LoaderFunctionArgs) {
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
-  const url = new URL(request.url);
+  const url = new URL(args.request.url);
   const take = Number(url.searchParams.get("pageSize") ?? DEFAULT_PAGE_SIZE);
   const skip = Number(url.searchParams.get("page") ?? 1) * take - take;
 

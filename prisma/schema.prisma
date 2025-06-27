@@ -10,28 +10,29 @@ generator client {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  username  String    @unique
-  password  Password?
-  role      UserRole  @default(USER)
-  contact   Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  contactId String    @unique
-  account   Account?  @relation(fields: [accountId], references: [id])
-  accountId String?   @unique
-  isActive  Boolean   @default(true)
+  id        String   @id @default(cuid())
+  clerkId   String?  @unique
+  username  String   @unique
+  role      UserRole @default(USER)
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId String   @unique
+  account   Account? @relation(fields: [accountId], references: [id])
+  accountId String?  @unique
+  isActive  Boolean  @default(true)
 
-  // Auth
+  // Depcreated
+  password               Password?
   verificationCode       String?
   verificationCodeExpiry DateTime?
-  loginAttempts          Int       @default(0)
+  loginAttempts          Int             @default(0)
   lastLoginAttempt       DateTime?
   lastLogin              DateTime?
   lockoutExpiration      DateTime?
+  passwordResets         PasswordReset[]
 
   receipts              Receipt[]
   memberships           Membership[]
   engagements           Engagement[]
-  passwordResets        PasswordReset[]
   contactAssignments    ContactAssigment[]
   reimbursementRequests ReimbursementRequest[]
 
@@ -66,18 +67,9 @@ enum MembershipRole {
 }
 
 model Organization {
-  id                 String  @id @default(cuid())
-  name               String
-  /// e.g. "example.com"
-  host               String  @unique
-  /// e.g. "admin" will be used as "admin.example.com"
-  subdomain          String?
-  replyToEmail       String  @default("no-reply")
-  administratorEmail String?
-  inquiriesEmail     String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String  @id @default(cuid())
+  name         String
+  primaryEmail String?
 
   accounts               Account[]
   memberships            Membership[]
@@ -97,7 +89,8 @@ model Organization {
   announcements          Announcement[]
   transactionCategories  TransactionCategory[]
 
-  @@unique([host, subdomain])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Password {
@@ -297,18 +290,19 @@ enum ReimbursementRequestStatus {
 }
 
 model Contact {
-  id                   String                @id @default(cuid())
-  email                String?
-  alternateEmail       String?
-  firstName            String?
-  lastName             String?
-  organizationName     String?
-  phone                String?
-  alternatePhone       String?
+  id               String  @id @default(cuid())
+  email            String?
+  alternateEmail   String?
+  firstName        String?
+  lastName         String?
+  organizationName String?
+  phone            String?
+  alternatePhone   String?
+  typeId           Int
+
+  user                 User?
   address              Address?
   type                 ContactType           @relation(fields: [typeId], references: [id])
-  typeId               Int
-  user                 User?
   transactions         Transaction[]
   engagements          Engagement[]
   accountSubscriptions AccountSubscription[]

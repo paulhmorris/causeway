@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference types="vitest/config" />
 import { reactRouter } from "@react-router/dev/vite";
 import { sentryReactRouter, SentryReactRouterBuildOptions } from "@sentry/react-router";
@@ -5,6 +6,7 @@ import tailwindcss from "@tailwindcss/vite";
 import morgan from "morgan";
 import { defineConfig, ViteDevServer } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+import { coverageConfigDefaults, defaultExclude } from "vitest/config";
 
 const sentryConfig: SentryReactRouterBuildOptions = {
   telemetry: false,
@@ -41,20 +43,15 @@ export default defineConfig((config) => ({
   },
 
   test: {
-    exclude: [
-      "**/node_modules/**",
-      "**/dist/**",
-      "**/playwright/**",
-      "test/e2e/**",
-      "**/.{idea,git,cache,output,temp}/**",
-      "**/*.config.*",
-    ],
+    exclude: [...defaultExclude, "**/*.config.*", "**/playwright/**", "test/e2e/**"],
     environment: "jsdom",
     globals: true,
     setupFiles: "./test/setup.ts",
     coverage: {
       provider: "v8",
+      reporter: ["text"],
       include: ["app/"],
+      exclude: [...coverageConfigDefaults.exclude, "app/components/ui/**"],
     },
   },
 }));

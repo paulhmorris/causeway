@@ -58,7 +58,7 @@ export function FileUploadModal() {
           return;
         }
 
-        const response = await fetch("/resources/get-upload-url", {
+        const response = await fetch("/api/get-upload-url", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fileName: file.name, contentType: file.type }),
@@ -83,7 +83,7 @@ export function FileUploadModal() {
         }
 
         // Save receipt to database
-        const receiptUpload = await fetch("/resources/receipts", {
+        const receiptUpload = await fetch("/api/receipts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: file.name, s3Key }),

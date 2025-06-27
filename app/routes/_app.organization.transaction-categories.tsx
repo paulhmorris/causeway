@@ -15,9 +15,9 @@ import { SessionService } from "~/services.server/session";
 
 const logger = createLogger("Routes.OrganizationTransactionCategories");
 
-export async function loader({ request }: LoaderFunctionArgs) {
-  const orgId = await SessionService.requireOrgId(request);
-  await SessionService.requireAdmin(request);
+export async function loader(args: LoaderFunctionArgs) {
+  const orgId = await SessionService.requireOrgId(args);
+  await SessionService.requireAdmin(args);
   const categories = await db.transactionCategory.findMany({
     where: {
       OR: [{ orgId }, { orgId: null }],
@@ -43,10 +43,10 @@ const schema = z.object({
   ),
 });
 
-export async function action({ request }: ActionFunctionArgs) {
-  const orgId = await SessionService.requireOrgId(request);
-  await SessionService.requireAdmin(request);
-  const result = await parseFormData(request, schema);
+export async function action(args: ActionFunctionArgs) {
+  const orgId = await SessionService.requireOrgId(args);
+  await SessionService.requireAdmin(args);
+  const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
   }
