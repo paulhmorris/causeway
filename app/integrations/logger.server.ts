@@ -12,10 +12,24 @@ const transport: pino.LoggerOptions["transport"] = shouldBeVerbose
         ignore: "pid,hostname",
       },
     }
-  : undefined;
+  : CONFIG.isProd || CONFIG.isPreview
+    ? {
+        target: "@axiomhq/pino",
+        options: {
+          dataset: process.env.AXIOM_DATASET,
+          token: process.env.AXIOM_TOKEN,
+        },
+      }
+    : undefined;
 
 const baseLogger = pino({
-  transport,
+  transport: {
+    target: "@axiomhq/pino",
+    options: {
+      dataset: "server-logs",
+      token: process.env.AXIOM_TOKEN,
+    },
+  },
   level: shouldBeVerbose ? "debug" : (process.env.LOG_LEVEL ?? "info"),
   name: "Global",
 });
