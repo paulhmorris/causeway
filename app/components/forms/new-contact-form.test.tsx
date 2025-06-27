@@ -149,7 +149,7 @@ describe("New Contact Form", () => {
     await user.type(await screen.findByLabelText(/first name/i), "J");
     await user.click(await screen.findByRole("combobox", { name: /type/i }));
     await user.click(await screen.findByRole("option", { name: "Type 1" }));
-    // await user.click(await screen.findByRole("checkbox", { name: /alice smith/i }));
+    await user.click(await screen.findByRole("checkbox", { name: /alice smith/i }));
     await user.click(await screen.findByRole("button", { name: /create contact/i }));
 
     expect(action).toHaveBeenCalledTimes(1);

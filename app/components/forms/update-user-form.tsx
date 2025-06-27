@@ -12,16 +12,16 @@ import { SelectItem } from "~/components/ui/select";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useUser } from "~/hooks/useUser";
 import { loader } from "~/routes/_app.users.$userId";
-import { cuid, email, optionalSelect, selectEnum, text } from "~/schemas/fields";
+import { cuid, email, optionalCheckboxGroup, optionalSelect, optionalText, selectEnum, text } from "~/schemas/fields";
 
 export const updateUserSchema = z.object({
   id: cuid,
   firstName: text,
-  lastName: text,
+  lastName: optionalText,
   username: email,
   role: selectEnum(UserRole),
   accountId: optionalSelect.transform((v) => (v === "Select an account" ? undefined : v)),
-  subscribedAccountIds: z.array(z.string()).optional(),
+  subscribedAccountIds: optionalCheckboxGroup,
 });
 
 export function UpdateUserForm() {
