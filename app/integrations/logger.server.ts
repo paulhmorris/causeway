@@ -1,3 +1,4 @@
+import "@axiomhq/pino";
 import pino from "pino";
 
 import { CONFIG } from "~/lib/env.server";
