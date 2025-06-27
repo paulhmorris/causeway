@@ -1,7 +1,7 @@
 import { Contact } from "@prisma/client";
 import { rankItem } from "@tanstack/match-sorter-utils";
 import { FilterFn } from "@tanstack/react-table";
-import clsx, { ClassValue } from "clsx";
+import { ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 const DEFAULT_REDIRECT = "/";
