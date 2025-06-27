@@ -23,13 +23,7 @@ const transport: pino.LoggerOptions["transport"] = shouldBeVerbose
     : undefined;
 
 const baseLogger = pino({
-  transport: {
-    target: "@axiomhq/pino",
-    options: {
-      dataset: "server-logs",
-      token: process.env.AXIOM_TOKEN,
-    },
-  },
+  transport,
   level: shouldBeVerbose ? "debug" : (process.env.LOG_LEVEL ?? "info"),
   name: "Global",
 });
