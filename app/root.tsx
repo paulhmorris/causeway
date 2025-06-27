@@ -1,4 +1,4 @@
-import { ClerkProvider, RedirectToSignIn, SignedIn, SignedOut } from "@clerk/react-router";
+import { ClerkProvider } from "@clerk/react-router";
 import { rootAuthLoader } from "@clerk/react-router/ssr.server";
 import { dark } from "@clerk/themes";
 import "@fontsource-variable/dm-sans/wght.css";
@@ -80,12 +80,7 @@ export default function App({ loaderData }: Route.ComponentProps) {
       publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
       telemetry={{ disabled: true }}
     >
-      <SignedIn>
-        <Outlet />
-      </SignedIn>
-      <SignedOut>
-        <RedirectToSignIn />
-      </SignedOut>
+      <Outlet />
     </ClerkProvider>
   );
 }

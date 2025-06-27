@@ -1,3 +1,4 @@
+import { RedirectToSignIn, SignedIn, SignedOut } from "@clerk/react-router";
 import { useEffect } from "react";
 import { data, LoaderFunctionArgs, Outlet, redirect, ShouldRevalidateFunctionArgs, useLoaderData } from "react-router";
 
@@ -88,13 +89,20 @@ export default function AppLayout() {
   }, [data.user]);
 
   return (
-    <div vaul-drawer-wrapper="" className="bg-background mx-auto flex min-h-dvh w-full flex-col md:flex-row">
-      <MobileNav />
-      <DesktopNav />
-      <main className="w-full max-w-(--breakpoint-2xl) grow p-6 md:ml-64 md:p-10">
-        <Outlet />
-      </main>
-    </div>
+    <>
+      <SignedIn>
+        <div vaul-drawer-wrapper="" className="bg-background mx-auto flex min-h-dvh w-full flex-col md:flex-row">
+          <MobileNav />
+          <DesktopNav />
+          <main className="w-full max-w-(--breakpoint-2xl) grow p-6 md:ml-64 md:p-10">
+            <Outlet />
+          </main>
+        </div>
+      </SignedIn>
+      <SignedOut>
+        <RedirectToSignIn />
+      </SignedOut>
+    </>
   );
 }
 
