@@ -27,7 +27,7 @@ export async function loader(args: LoaderFunctionArgs) {
       return redirect("/dashboards/staff");
     }
 
-    const [accounts, reimbursementRequests, announcement] = await Promise.all([
+    const [accounts, reimbursementRequests, announcement] = await db.$transaction([
       db.account.findMany({
         where: {
           orgId,

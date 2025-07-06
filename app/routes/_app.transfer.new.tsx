@@ -35,7 +35,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
-  const [accounts, transactionItemMethods] = await Promise.all([
+  const [accounts, transactionItemMethods] = await db.$transaction([
     db.account.findMany({ where: { orgId }, orderBy: { code: "asc" } }),
     getTransactionItemMethods(orgId),
   ]);

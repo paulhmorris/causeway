@@ -54,7 +54,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
       }
     }
 
-    const [contactTypes, usersWhoCanBeAssigned] = await Promise.all([
+    const [contactTypes, usersWhoCanBeAssigned] = await db.$transaction([
       getContactTypes(orgId),
       db.user.findMany({
         where: {

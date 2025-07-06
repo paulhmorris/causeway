@@ -1,5 +1,1 @@
-import * as remixToast from "remix-toast";
-
-export const Toasts = {
-  ...remixToast,
-};
+export * as Toasts from "remix-toast";

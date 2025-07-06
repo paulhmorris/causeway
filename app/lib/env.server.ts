@@ -70,20 +70,6 @@ declare global {
   }
 }
 
-// export function validateEnv(): void {
-//   try {
-//     const env = { ...loadEnv("", process.cwd(), ""), ...process.env };
-//     console.info("🌎 validating environment variables..");
-//     serverEnv.parse(env);
-//   } catch (err) {
-//     if (err instanceof z.ZodError) {
-//       const tree = z.treeifyError(err);
-//       const message = tree.errors.join("\n  ");
-//       throw new Error(`Missing environment variables:\n  ${message}`);
-//     }
-//   }
-// }
-
 export const CONFIG = {
   isCI: Boolean(process.env.CI),
   baseUrl: process.env.BASE_URL,

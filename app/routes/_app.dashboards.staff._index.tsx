@@ -21,7 +21,7 @@ export async function loader(args: LoaderFunctionArgs) {
     const user = await SessionService.requireUser(args);
     const orgId = await SessionService.requireOrgId(args);
 
-    const [total, reimbursementRequests, announcement, accountSubscriptions] = await Promise.all([
+    const [total, reimbursementRequests, announcement, accountSubscriptions] = await db.$transaction([
       db.transaction.aggregate({
         where: {
           orgId,
