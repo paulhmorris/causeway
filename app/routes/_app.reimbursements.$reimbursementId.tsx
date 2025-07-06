@@ -36,40 +36,14 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => [
   },
 ];
 
-const schema = z.discriminatedUnion("_action", [
-  z.object({
-    _action: z.literal(ReimbursementRequestStatus.APPROVED),
-    id: cuid,
-    amount: currency,
-    categoryId: number,
-    accountId: optionalText.nullable(),
-    approverNote: optionalLongText.nullable(),
-  }),
-  z.object({
-    _action: z.literal(ReimbursementRequestStatus.VOID),
-    id: cuid,
-    amount: z.undefined(),
-    categoryId: z.undefined(),
-    accountId: z.undefined(),
-    approverNote: z.undefined(),
-  }),
-  z.object({
-    _action: z.literal(ReimbursementRequestStatus.PENDING),
-    id: cuid,
-    amount: z.undefined(),
-    categoryId: z.undefined(),
-    accountId: z.undefined(),
-    approverNote: z.undefined(),
-  }),
-  z.object({
-    _action: z.literal(ReimbursementRequestStatus.REJECTED),
-    id: cuid,
-    amount: z.undefined(),
-    categoryId: z.undefined(),
-    accountId: z.undefined(),
-    approverNote: z.undefined(),
-  }),
-]);
+const schema = z.object({
+  _action: z.enum(ReimbursementRequestStatus),
+  id: cuid,
+  amount: currency,
+  categoryId: number,
+  accountId: optionalText.nullable(),
+  approverNote: optionalLongText.nullable(),
+});
 
 export async function loader(args: ActionFunctionArgs) {
   const { params } = args;
@@ -488,6 +462,10 @@ export default function ReimbursementRequestPage() {
                     </fieldset>
                   ) : (
                     <>
+                      <input type="hidden" name="amount" value={rr.amountInCents} />
+                      <input type="hidden" name="categoryId" value={relatedTrx?.transaction.category?.id ?? ""} />
+                      <input type="hidden" name="accountId" value={rr.accountId} />
+                      <input type="hidden" name="approverNote" value={rr.approverNote ?? ""} />
                       <SubmitButton
                         name="_action"
                         value={ReimbursementRequestStatus.PENDING}
