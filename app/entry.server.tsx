@@ -1,11 +1,12 @@
+import "../instrument.server.mjs";
+
 import { createReadableStreamFromReadable } from "@react-router/node";
+import * as Sentry from "@sentry/react-router";
 import { renderToPipeableStream } from "react-dom/server";
 import type { HandleErrorFunction } from "react-router";
 import { ServerRouter } from "react-router";
-import "../instrument.server.mjs";
 
 import { createLogger } from "~/integrations/logger.server";
-import { Sentry } from "~/integrations/sentry";
 
 const logger = createLogger("ServerEntry");
 

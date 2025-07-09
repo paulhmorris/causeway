@@ -4,7 +4,7 @@ import * as Sentry from "@sentry/react-router";
 
 Sentry.init({
   dsn: "https://f18051d71458f411f51af7ca0308b1cb@o4505496663359488.ingest.us.sentry.io/4506395673886720",
-  enabled: process.env.NODE_ENV === "production",
+  enabled: true,
   environment: process.env.VERCEL_ENV,
 
   sampleRate: 0.25,
