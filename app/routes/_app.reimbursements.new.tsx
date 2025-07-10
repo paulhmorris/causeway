@@ -44,7 +44,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   const user = await SessionService.requireUser(args);
   const orgId = await SessionService.requireOrgId(args);
 
-  const [receipts, methods, accounts] = await Promise.all([
+  const [receipts, methods, accounts] = await db.$transaction([
     db.receipt.findMany({
       // Admins can see all receipts, users can only see their own
       where: {

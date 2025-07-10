@@ -42,7 +42,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
 
     invariant(params.engagementId, "engagementId not found");
 
-    const [contacts, contactTypes, engagement, engagementTypes] = await Promise.all([
+    const [contacts, contactTypes, engagement, engagementTypes] = await db.$transaction([
       db.contact.findMany({
         where: {
           orgId,

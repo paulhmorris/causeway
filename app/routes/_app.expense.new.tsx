@@ -33,7 +33,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   const orgId = await SessionService.requireOrgId(args);
 
   const [contacts, contactTypes, accounts, transactionItemMethods, transactionItemTypes, categories, receipts] =
-    await Promise.all([
+    await db.$transaction([
       db.contact.findMany({ where: { orgId }, include: { type: true } }),
       getContactTypes(orgId),
       db.account.findMany({ where: { orgId }, orderBy: { code: "asc" } }),

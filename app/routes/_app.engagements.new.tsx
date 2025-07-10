@@ -41,7 +41,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   const user = await SessionService.requireUser(args);
   const orgId = await SessionService.requireOrgId(args);
 
-  const [contacts, contactTypes, engagementTypes] = await Promise.all([
+  const [contacts, contactTypes, engagementTypes] = await db.$transaction([
     db.contact.findMany({
       where: {
         orgId,

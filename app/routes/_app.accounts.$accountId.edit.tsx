@@ -40,7 +40,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
 
     invariant(params.accountId, "accountId not found");
 
-    const [account, accountTypes, users] = await Promise.all([
+    const [account, accountTypes, users] = await db.$transaction([
       db.account.findUnique({ where: { id: params.accountId, orgId }, include: { user: true } }),
       getAccountTypes(orgId),
       db.user.findMany({
