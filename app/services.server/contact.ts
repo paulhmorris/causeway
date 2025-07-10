@@ -1,7 +1,11 @@
-import { Organization } from "@prisma/client";
-
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 
-export function getContactTypes(orgId: Organization["id"]) {
-  return db.contactType.findMany({ where: { OR: [{ orgId }, { orgId: null }] } });
-}
+const logger = createLogger("ContactService");
+
+export const ContactService = {
+  getTypes(orgId: string) {
+    logger.info({ orgId }, "Getting contact types");
+    return db.contactType.findMany({ where: { OR: [{ orgId }, { orgId: null }] } });
+  },
+};

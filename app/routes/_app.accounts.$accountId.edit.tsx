@@ -19,7 +19,7 @@ import { AccountType } from "~/lib/constants";
 import { handleLoaderError, notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cuid, number, optionalSelect, text } from "~/schemas/fields";
-import { getAccountTypes } from "~/services.server/account";
+import { AccountService } from "~/services.server/account";
 import { SessionService } from "~/services.server/session";
 
 const logger = createLogger("Routes.AccountEdit");
@@ -42,7 +42,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
 
     const [account, accountTypes, users] = await db.$transaction([
       db.account.findUnique({ where: { id: params.accountId, orgId }, include: { user: true } }),
-      getAccountTypes(orgId),
+      AccountService.getTypes(orgId),
       db.user.findMany({
         where: {
           memberships: {

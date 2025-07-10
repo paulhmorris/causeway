@@ -22,7 +22,7 @@ import { capitalize, formatCentsAsDollars } from "~/lib/utils";
 import { sendReimbursementRequestUpdateEmail } from "~/services.server/mail";
 import { ReimbursementRequestService } from "~/services.server/reimbursement-request";
 import { SessionService } from "~/services.server/session";
-import { getTransactionCategories } from "~/services.server/transaction";
+import { TransactionService } from "~/services.server/transaction";
 
 const logger = createLogger("Routes.ReimbursementShow");
 
@@ -44,7 +44,7 @@ export async function loader(args: ActionFunctionArgs) {
       select: { id: true, code: true, description: true },
       orderBy: { code: "asc" },
     }),
-    getTransactionCategories(orgId),
+    TransactionService.getCategories(orgId),
   ]);
 
   return { reimbursementRequest: rr, accounts, transactionCategories, relatedTrx };

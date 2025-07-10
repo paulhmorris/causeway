@@ -12,7 +12,7 @@ export const AuthService = {
       return invitations.data;
     } catch (error) {
       Sentry.captureException(error, { extra: { email } });
-      logger.error(`Error fetching invitation for email ${email}:`, error);
+      logger.error({ email, error }, "Error fetching invitation for email");
       throw error;
     }
   },
@@ -20,11 +20,11 @@ export const AuthService = {
   async revokeSession(sessionId: string) {
     try {
       const revokedSession = await client.sessions.revokeSession(sessionId);
-      logger.info(`Session ${sessionId} revoked successfully`);
+      logger.info({ sessionId }, "Session revoked successfully");
       return revokedSession;
     } catch (error) {
       Sentry.captureException(error, { extra: { sessionId } });
-      logger.error(`Error revoking session ${sessionId}:`, error);
+      logger.error({ sessionId, error }, "Error revoking session");
       throw error;
     }
   },

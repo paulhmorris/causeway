@@ -1,4 +1,3 @@
-import { TransactionItemTypeDirection } from "@prisma/client";
 import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import { IconPlus } from "@tabler/icons-react";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
@@ -20,9 +19,9 @@ import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
 import { formatCentsAsDollars, getToday } from "~/lib/utils";
 import { TransactionSchema } from "~/schemas";
-import { getContactTypes } from "~/services.server/contact";
+import { ContactService } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
-import { generateTransactionItems, getTransactionItemMethods } from "~/services.server/transaction";
+import { TransactionService } from "~/services.server/transaction";
 
 const logger = createLogger("Routes.ExpenseNew");
 
@@ -35,15 +34,10 @@ export const loader = async (args: LoaderFunctionArgs) => {
   const [contacts, contactTypes, accounts, transactionItemMethods, transactionItemTypes, categories, receipts] =
     await db.$transaction([
       db.contact.findMany({ where: { orgId }, include: { type: true } }),
-      getContactTypes(orgId),
+      ContactService.getTypes(orgId),
       db.account.findMany({ where: { orgId }, orderBy: { code: "asc" } }),
-      getTransactionItemMethods(orgId),
-      db.transactionItemType.findMany({
-        where: {
-          OR: [{ orgId }, { orgId: null }],
-          direction: TransactionItemTypeDirection.OUT,
-        },
-      }),
+      TransactionService.getItemMethods(orgId),
+      TransactionService.getItemTypes(orgId),
       db.transactionCategory.findMany({ orderBy: { id: "asc" } }),
       db.receipt.findMany({
         // Admins can see all receipts, users can only see their own
@@ -80,7 +74,10 @@ export const action = async (args: ActionFunctionArgs) => {
   const { transactionItems, contactId, receiptIds, ...rest } = result.data;
 
   try {
-    const { transactionItems: trxItems, totalInCents } = await generateTransactionItems(transactionItems, orgId);
+    const { transactionItems: trxItems, totalInCents } = await TransactionService.generateItems(
+      transactionItems,
+      orgId,
+    );
     const receiptIdArr = typeof receiptIds === "string" ? [receiptIds] : receiptIds?.length ? receiptIds : [];
 
     const transaction = await db.transaction.create({

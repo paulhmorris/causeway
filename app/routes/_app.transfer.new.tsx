@@ -17,7 +17,7 @@ import { Toasts } from "~/lib/toast.server";
 import { getToday } from "~/lib/utils";
 import { cuid, currency, date, optionalLongText } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
-import { getTransactionItemMethods } from "~/services.server/transaction";
+import { TransactionService } from "~/services.server/transaction";
 
 const logger = createLogger("Routes.TransferNew");
 
@@ -37,7 +37,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
 
   const [accounts, transactionItemMethods] = await db.$transaction([
     db.account.findMany({ where: { orgId }, orderBy: { code: "asc" } }),
-    getTransactionItemMethods(orgId),
+    TransactionService.getItemMethods(orgId),
   ]);
 
   return {

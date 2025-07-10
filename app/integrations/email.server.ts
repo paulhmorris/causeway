@@ -10,67 +10,70 @@ import { Prettify } from "~/lib/utils";
 const logger = createLogger("EmailService");
 const client = new SESv2Client({ region: "us-east-1" });
 
-export type SendEmailInput = {
+type SendInput = {
   to: string | Array<string>;
   subject: string;
   html: string;
   from?: string;
+  bcc?: string | Array<string>;
+  cc?: string | Array<string>;
 };
-export async function sendEmail(props: SendEmailInput) {
-  const input: SendEmailCommandInput = {
-    FromEmailAddress: props.from ?? `Team Causeway <no-reply@${process.env.EMAIL_FROM_DOMAIN}>`,
-    Destination: {
-      ToAddresses: Array.isArray(props.to) ? props.to : [props.to],
-    },
-    Content: {
-      Simple: {
-        Subject: {
-          Charset: "UTF-8",
-          Data: props.subject,
-        },
-        Body: {
-          Html: {
-            Charset: "UTF-8",
-            Data: props.html,
-          },
-        },
-        Headers: [
-          {
-            Name: "X-Entity-Ref-ID",
-            Value: nanoid(),
-          },
-        ],
+
+export const Mailer = {
+  client,
+  async send(props: SendInput) {
+    const input = {
+      FromEmailAddress: props.from ?? CONFIG.defaultEmailFromAddress,
+      Destination: {
+        ToAddresses: Array.isArray(props.to) ? props.to : [props.to],
+        BccAddresses: props.bcc ? (Array.isArray(props.bcc) ? props.bcc : [props.bcc]) : undefined,
+        CcAddresses: props.cc ? (Array.isArray(props.cc) ? props.cc : [props.cc]) : undefined,
       },
-    },
-  };
+      Content: {
+        Simple: {
+          Subject: {
+            Charset: "UTF-8",
+            Data: props.subject,
+          },
+          Body: {
+            Html: {
+              Charset: "UTF-8",
+              Data: props.html,
+            },
+          },
+          Headers: [
+            {
+              Name: "X-Entity-Ref-ID",
+              Value: nanoid(),
+            },
+          ],
+        },
+      },
+    } satisfies SendEmailCommandInput;
 
-  if (CONFIG.isProd || CONFIG.isPreview) {
-    try {
-      const command = new SendEmailCommand(input);
-      const response = await client.send(command);
-      if (!response.MessageId) {
-        throw new Error("Email not sent");
-      }
-
-      return { messageId: response.MessageId, $metadata: response.$metadata } as Prettify<
-        { messageId: string } & {
-          $metadata: SendEmailCommandOutput["$metadata"];
+    if (CONFIG.isProd || CONFIG.isPreview) {
+      logger.info(props, "Sending email");
+      try {
+        const command = new SendEmailCommand(input);
+        const response = await client.send(command);
+        if (!response.MessageId) {
+          throw new Error("Email not sent");
         }
-      >;
-    } catch (e) {
-      logger.error(e);
-      Sentry.captureException(e);
-      throw e;
-    }
-  }
 
-  logger.debug(
-    {
-      From: props.from,
-      To: props.to,
-      Subject: props.subject,
-    },
-    "Email sent",
-  );
-  return { messageId: "test", $metadata: {} };
-}
+        logger.info({ messageId: response.MessageId }, "Email sent successfully");
+        return { messageId: response.MessageId, $metadata: response.$metadata } as Prettify<
+          { messageId: string } & {
+            $metadata: SendEmailCommandOutput["$metadata"];
+          }
+        >;
+      } catch (e) {
+        logger.error(e);
+        Sentry.captureException(e);
+        throw e;
+      }
+    }
+
+    logger.debug(props, "Email sent");
+    return { messageId: "test", $metadata: {} };
+  },
+};

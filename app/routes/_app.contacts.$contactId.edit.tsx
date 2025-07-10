@@ -25,7 +25,7 @@ import { ContactType } from "~/lib/constants";
 import { forbidden, handleLoaderError, notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { UpdateContactSchema } from "~/schemas";
-import { getContactTypes } from "~/services.server/contact";
+import { ContactService } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
 
 const logger = createLogger("Routes.ContactEdit");
@@ -55,7 +55,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     }
 
     const [contactTypes, usersWhoCanBeAssigned] = await db.$transaction([
-      getContactTypes(orgId),
+      ContactService.getTypes(orgId),
       db.user.findMany({
         where: {
           memberships: {

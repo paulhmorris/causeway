@@ -21,8 +21,8 @@ import { ContactType, EngagementType } from "~/lib/constants";
 import { Toasts } from "~/lib/toast.server";
 import { getToday } from "~/lib/utils";
 import { cuid, number, optionalLongText, text } from "~/schemas/fields";
-import { getContactTypes } from "~/services.server/contact";
-import { getEngagementTypes } from "~/services.server/engagement";
+import { ContactService } from "~/services.server/contact";
+import { EngagementService } from "~/services.server/engagement";
 import { SessionService } from "~/services.server/session";
 
 const logger = createLogger("Routes.EngagementNew");
@@ -55,8 +55,8 @@ export const loader = async (args: LoaderFunctionArgs) => {
         typeId: { notIn: [ContactType.Staff] },
       },
     }),
-    getContactTypes(orgId),
-    getEngagementTypes(orgId),
+    ContactService.getTypes(orgId),
+    EngagementService.getTypes(orgId),
   ]);
 
   return {
