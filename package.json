@@ -7,11 +7,11 @@
   "scripts": {
     "build": "react-router build",
     "coverage": "vitest run coverage",
-    "dev": "NODE_OPTIONS='--import ./instrument.server.mjs' react-router dev",
+    "dev": "react-router dev",
     "email": "email dev --port 3001",
     "format": "prettier --write .",
     "lint": "eslint . --cache",
-    "start": "NODE_OPTIONS='--import ./instrument.server.mjs' react-router-serve ./build/server/index.js",
+    "start": "react-router-serve ./build/server/index.js",
     "postinstall": "prisma generate --no-hints && patch-package",
     "test": "vitest --coverage --run",
     "test:watch": "vitest",
