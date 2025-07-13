@@ -4,7 +4,7 @@ import { ActionFunctionArgs, data } from "react-router";
 import { z } from "zod/v4";
 
 import { NewInquiryEmail } from "emails/new-inquiry";
-import { sendEmail } from "~/integrations/email.server";
+import { Mailer } from "~/integrations/email.server";
 import { createLogger } from "~/integrations/logger.server";
 import { Sentry } from "~/integrations/sentry";
 import { CONFIG } from "~/lib/env.server";
@@ -56,7 +56,7 @@ export async function action(args: ActionFunctionArgs) {
     const url = new URL("/", CONFIG.baseUrl).toString();
     const html = await render(<NewInquiryEmail url={url} username={user.username} {...result.data} />);
 
-    const { messageId } = await sendEmail({
+    const { messageId } = await Mailer.send({
       // TODO: remove exclamation after migrations
       to: org.primaryEmail!,
       subject: "New Inquiry",

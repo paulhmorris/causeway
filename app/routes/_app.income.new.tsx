@@ -17,7 +17,7 @@ import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
 import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { SubmitButton } from "~/components/ui/submit-button";
-import { sendEmail } from "~/integrations/email.server";
+import { Mailer } from "~/integrations/email.server";
 import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
@@ -27,9 +27,9 @@ import { Toasts } from "~/lib/toast.server";
 import { formatCentsAsDollars, getToday } from "~/lib/utils";
 import { TransactionSchema } from "~/schemas";
 import { checkbox } from "~/schemas/fields";
-import { getContactTypes } from "~/services.server/contact";
+import { ContactService } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
-import { generateTransactionItems, getTransactionItemMethods } from "~/services.server/transaction";
+import { TransactionService } from "~/services.server/transaction";
 
 const logger = createLogger("Routes.IncomeNew");
 
@@ -44,7 +44,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   const [contacts, contactTypes, accounts, transactionItemMethods, transactionItemTypes, categories, receipts] =
     await db.$transaction([
       db.contact.findMany({ where: { orgId }, include: { type: true } }),
-      getContactTypes(orgId),
+      ContactService.getTypes(orgId),
       db.account.findMany({
         where: { orgId },
         select: {
@@ -56,7 +56,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
         },
         orderBy: { code: "asc" },
       }),
-      getTransactionItemMethods(orgId),
+      TransactionService.getItemMethods(orgId),
       db.transactionItemType.findMany({
         where: {
           AND: [
@@ -100,7 +100,10 @@ export const action = async (args: ActionFunctionArgs) => {
   }
   const { transactionItems, shouldNotifyUser, contactId, receiptIds, ...rest } = result.data;
   try {
-    const { transactionItems: trxItems, totalInCents } = await generateTransactionItems(transactionItems, orgId);
+    const { transactionItems: trxItems, totalInCents } = await TransactionService.generateItems(
+      transactionItems,
+      orgId,
+    );
     const receiptIdArr = typeof receiptIds === "string" ? [receiptIds] : receiptIds?.length ? receiptIds : [];
 
     const transaction = await db.transaction.create({
@@ -142,7 +145,7 @@ export const action = async (args: ActionFunctionArgs) => {
         });
       }
 
-      await sendEmail({
+      await Mailer.send({
         to: email,
         subject: "You have new income!",
         html: await render(

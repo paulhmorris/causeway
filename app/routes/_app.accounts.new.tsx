@@ -16,7 +16,7 @@ import { AccountType } from "~/lib/constants";
 import { handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { number, optionalSelect, text } from "~/schemas/fields";
-import { getAccountTypes } from "~/services.server/account";
+import { AccountService } from "~/services.server/account";
 import { SessionService } from "~/services.server/session";
 
 const logger = createLogger("Routes.AccountNew");
@@ -33,7 +33,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   const orgId = await SessionService.requireOrgId(args);
 
   try {
-    const accountTypes = await getAccountTypes(orgId);
+    const accountTypes = await AccountService.getTypes(orgId);
     const users = await db.user.findMany({
       where: {
         memberships: {

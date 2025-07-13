@@ -14,7 +14,7 @@ import { PageContainer } from "~/components/page-container";
 import { Callout } from "~/components/ui/callout";
 import { FormField, FormSelect, FormTextarea, GenericFieldError } from "~/components/ui/form";
 import { SubmitButton } from "~/components/ui/submit-button";
-import { sendEmail } from "~/integrations/email.server";
+import { Mailer } from "~/integrations/email.server";
 import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
@@ -24,7 +24,7 @@ import { Toasts } from "~/lib/toast.server";
 import { checkboxGroup, cuid, currency, date, number, optionalLongText, optionalText } from "~/schemas/fields";
 import { generateS3Urls } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
-import { getTransactionItemMethods } from "~/services.server/transaction";
+import { TransactionService } from "~/services.server/transaction";
 
 const logger = createLogger("Routes.ReimbursementsNew");
 
@@ -55,7 +55,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
       include: { user: { select: { contact: { select: { email: true } } } } },
       orderBy: { createdAt: "desc" },
     }),
-    getTransactionItemMethods(orgId),
+    TransactionService.getItemMethods(orgId),
     db.account.findMany({
       where: { user: user.isMember ? { id: user.id } : undefined, orgId },
       include: { type: true },
@@ -125,7 +125,7 @@ export const action = async (args: ActionFunctionArgs) => {
     await generateS3Urls(rr.receipts);
     const { contact } = rr.user;
 
-    await sendEmail({
+    await Mailer.send({
       // TODO: remove exclamation after migrations
       to: rr.org.primaryEmail!,
       subject: "New Reimbursement Request",

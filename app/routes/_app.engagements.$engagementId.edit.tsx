@@ -20,8 +20,8 @@ import { ContactType, EngagementType } from "~/lib/constants";
 import { handleLoaderError, notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cuid, date, number, optionalLongText } from "~/schemas/fields";
-import { getContactTypes } from "~/services.server/contact";
-import { getEngagementTypes } from "~/services.server/engagement";
+import { ContactService } from "~/services.server/contact";
+import { EngagementService } from "~/services.server/engagement";
 import { SessionService } from "~/services.server/session";
 
 const logger = createLogger("Routes.EngagementEdit");
@@ -56,11 +56,11 @@ export const loader = async (args: LoaderFunctionArgs) => {
           typeId: { notIn: [ContactType.Staff] },
         },
       }),
-      getContactTypes(orgId),
+      ContactService.getTypes(orgId),
       db.engagement.findUnique({
         where: { id: Number(params.engagementId), orgId },
       }),
-      getEngagementTypes(orgId),
+      EngagementService.getTypes(orgId),
     ]);
 
     if (!engagement) {

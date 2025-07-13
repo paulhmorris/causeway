@@ -77,4 +77,5 @@ export const CONFIG = {
   isDev: process.env.NODE_ENV === "development",
   isProd: process.env.VERCEL_ENV === "production" && process.env.NODE_ENV === "production",
   isPreview: process.env.VERCEL_ENV === "preview" && process.env.NODE_ENV === "production",
+  defaultEmailFromAddress: `Team Causeway <no-reply@${process.env.EMAIL_FROM_DOMAIN}>`,
 } as const;

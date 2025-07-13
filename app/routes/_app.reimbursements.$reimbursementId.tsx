@@ -1,136 +1,60 @@
-/* eslint-disable react/jsx-no-leaked-render */
 import { ReimbursementRequestStatus } from "@prisma/client";
-import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
-import { IconExternalLink } from "@tabler/icons-react";
+import { parseFormData, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
-import { ActionFunctionArgs, MetaFunction, useLoaderData, useNavigation } from "react-router";
-import invariant from "tiny-invariant";
-import { z } from "zod/v4";
+import { ActionFunctionArgs, useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
+import {
+  ReimbursementRequestApprovalForm,
+  reimbursementRequestApprovalSchema,
+} from "~/components/forms/reimbursement-request-approval-form";
 import { PageContainer } from "~/components/page-container";
-import { Badge } from "~/components/ui/badge";
-import { Callout } from "~/components/ui/callout";
+import { ReceiptLink } from "~/components/reimbursements/receipt-link";
+import { ReimbursementStatusBadge } from "~/components/reimbursements/reimbursement-status-badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "~/components/ui/card";
-import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
-import { Label } from "~/components/ui/label";
-import { Separator } from "~/components/ui/separator";
-import { SubmitButton } from "~/components/ui/submit-button";
-import { Textarea } from "~/components/ui/textarea";
 import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod, TransactionItemType } from "~/lib/constants";
+import { notFound } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { capitalize, formatCentsAsDollars } from "~/lib/utils";
-import { cuid, currency, number, optionalLongText, optionalText } from "~/schemas/fields";
 import { sendReimbursementRequestUpdateEmail } from "~/services.server/mail";
-import { generateS3Urls } from "~/services.server/receipt";
+import { ReimbursementRequestService } from "~/services.server/reimbursement-request";
 import { SessionService } from "~/services.server/session";
+import { TransactionService } from "~/services.server/transaction";
 
 const logger = createLogger("Routes.ReimbursementShow");
-
-export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  {
-    title: data ? `${capitalize(String(data.reimbursementRequest.status))} Request` : "Reimbursement Request",
-  },
-];
-
-const schema = z.object({
-  _action: z.enum(ReimbursementRequestStatus),
-  id: cuid,
-  amount: currency,
-  categoryId: number,
-  accountId: optionalText.nullable(),
-  approverNote: optionalLongText.nullable(),
-});
 
 export async function loader(args: ActionFunctionArgs) {
   const { params } = args;
   await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
-  invariant(params.reimbursementId, "reimbursementId not found");
+  const rr = await ReimbursementRequestService.getById(params.reimbursementId!, orgId);
 
-  const rr = await db.reimbursementRequest.findUniqueOrThrow({
-    where: { id: params.reimbursementId, orgId },
-    select: {
-      id: true,
-      date: true,
-      status: true,
-      vendor: true,
-      accountId: true,
-      description: true,
-      amountInCents: true,
-      approverNote: true,
-      user: {
-        select: {
-          username: true,
-          contact: {
-            select: {
-              email: true,
-            },
-          },
-        },
-      },
-      account: {
-        select: {
-          id: true,
-          code: true,
-          description: true,
-        },
-      },
-      receipts: {
-        select: {
-          id: true,
-          s3Key: true,
-          s3Url: true,
-          s3UrlExpiry: true,
-          title: true,
-        },
-      },
-      method: {
-        select: {
-          name: true,
-        },
-      },
-    },
-  });
-
-  rr.receipts = await generateS3Urls(rr.receipts);
+  if (!rr) {
+    throw notFound();
+  }
 
   const [relatedTrx, accounts, transactionCategories] = await db.$transaction([
-    // In case of REOPEN, have to jump through a few hoops to get the related transaction's category to fill in the form
-    db.transactionItem.findFirst({
-      where: { description: `Reimbursement ID: ${rr.id}` },
-      select: {
-        transaction: {
-          select: {
-            category: {
-              select: {
-                id: true,
-              },
-            },
-          },
-        },
-      },
-    }),
+    ReimbursementRequestService.getRelatedTransaction(rr.id),
     db.account.findMany({
       where: { orgId },
       select: { id: true, code: true, description: true },
       orderBy: { code: "asc" },
     }),
-    db.transactionCategory.findMany({ select: { id: true, name: true } }),
+    TransactionService.getCategories(orgId),
   ]);
 
   return { reimbursementRequest: rr, accounts, transactionCategories, relatedTrx };
 }
 
 export async function action(args: ActionFunctionArgs) {
-  await SessionService.requireAdmin(args);
+  const user = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
-  const result = await parseFormData(args.request, schema);
+  const result = await parseFormData(args.request, reimbursementRequestApprovalSchema);
 
   if (result.error) {
     return validationError(result.error);
@@ -140,7 +64,7 @@ export async function action(args: ActionFunctionArgs) {
 
   // Reopen
   if (_action === ReimbursementRequestStatus.PENDING) {
-    logger.info("Reopening reimbursement request...");
+    logger.info({ username: user.username }, "Reopening reimbursement request...");
     const rr = await db.reimbursementRequest.update({
       where: { id, orgId },
       data: { status: ReimbursementRequestStatus.PENDING },
@@ -161,7 +85,7 @@ export async function action(args: ActionFunctionArgs) {
 
   // Approved
   if (_action === ReimbursementRequestStatus.APPROVED) {
-    logger.info("Processing reimbursement request approval...");
+    logger.info({ username: user.username }, "Processing reimbursement request approval...");
     const { amount, categoryId, accountId, approverNote } = result.data;
     if (!accountId) {
       return validationError(
@@ -203,9 +127,7 @@ export async function action(args: ActionFunctionArgs) {
 
       const balance = account.transactions.reduce((acc, t) => acc + t.amountInCents, 0);
       if (balance < amount) {
-        logger.warn(
-          `Insufficient funds for account ${account.code} (balance: ${formatCentsAsDollars(balance)}, requested: ${formatCentsAsDollars(amount)})`,
-        );
+        logger.warn({ username: user.username, code: account.code, balance, amount }, `Insufficient funds for account`);
         return Toasts.dataWithWarning(null, {
           message: "Insufficient Funds",
           description: `The reimbursement request couldn't be completed because account ${
@@ -275,11 +197,11 @@ export async function action(args: ActionFunctionArgs) {
 }
 
 export default function ReimbursementRequestPage() {
-  const navigation = useNavigation();
   const { reimbursementRequest: rr, accounts, transactionCategories, relatedTrx } = useLoaderData<typeof loader>();
 
   return (
     <>
+      <title>{`${capitalize(rr.status)} Request`}</title>
       <PageHeader title="Reimbursement Request" />
       <PageContainer className="sm:max-w-xl">
         <Card>
@@ -294,19 +216,7 @@ export default function ReimbursementRequestPage() {
             <div className="grid grid-cols-3 items-center gap-2 text-sm">
               <dt className="font-semibold capitalize">Status</dt>
               <dd className="col-span-2">
-                <Badge
-                  variant={
-                    rr.status === "APPROVED"
-                      ? "success"
-                      : rr.status === "REJECTED"
-                        ? "destructive"
-                        : rr.status === "VOID"
-                          ? "outline"
-                          : "secondary"
-                  }
-                >
-                  {capitalize(rr.status)}
-                </Badge>
+                <ReimbursementStatusBadge status={rr.status} />
               </dd>
               <dt className="font-semibold capitalize">Submitted By</dt>
               <dd className="text-muted-foreground col-span-2">{rr.user.username}</dd>
@@ -337,28 +247,7 @@ export default function ReimbursementRequestPage() {
               <dt className="self-start font-semibold capitalize">Receipts</dt>
               <dd className="text-muted-foreground col-span-2">
                 {rr.receipts.length > 0 ? (
-                  rr.receipts.map((receipt) => {
-                    if (!receipt.s3Url) {
-                      return (
-                        <span key={receipt.id} className="text-muted-foregrounded-none block">
-                          {receipt.title} (Link missing or broken - try refreshing)
-                        </span>
-                      );
-                    }
-
-                    return (
-                      <a
-                        key={receipt.id}
-                        href={receipt.s3Url}
-                        className="text-primary flex items-center gap-1.5 font-medium"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        <span className="truncate">{receipt.title}</span>
-                        <IconExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
-                      </a>
-                    );
-                  })
+                  rr.receipts.map((receipt) => <ReceiptLink key={receipt.id} receipt={receipt} />)
                 ) : (
                   <span className="text-muted-foreground">None</span>
                 )}
@@ -367,122 +256,12 @@ export default function ReimbursementRequestPage() {
           </CardContent>
 
           <CardFooter>
-            <ValidatedForm
-              noValidate
-              method="post"
-              schema={schema}
-              className="flex w-full"
-              defaultValues={{
-                id: rr.id,
-                _action: ReimbursementRequestStatus.APPROVED,
-                approverNote: rr.approverNote ?? "",
-                amount: String(rr.amountInCents / 100.0),
-                categoryId: relatedTrx?.transaction.category?.id ?? ("" as unknown as number),
-              }}
-            >
-              {(form) => (
-                <>
-                  <input type="hidden" name="id" value={rr.id} />
-                  {/* <span>{JSON.stringify(form., null, 2)}</span> */}
-                  {rr.status === ReimbursementRequestStatus.PENDING ? (
-                    <fieldset>
-                      <legend>
-                        <Callout>
-                          <span>Approving this will deduct from the below account for the amount specified.</span>
-                        </Callout>
-                      </legend>
-                      <div className="mt-4 space-y-4">
-                        <div>
-                          <Label className="mb-1.5">Requester Notes</Label>
-                          <Textarea name="description" required readOnly defaultValue={rr.description ?? ""} />
-                        </div>
-                        <FormField scope={form.scope("amount")} type="number" label="Amount" isCurrency required />
-                        <FormSelect
-                          required
-                          scope={form.scope("categoryId")}
-                          label="Transaction Category"
-                          placeholder="Select category"
-                          options={transactionCategories.map((c) => ({
-                            value: c.id,
-                            label: c.name,
-                          }))}
-                        />
-                        <FormSelect
-                          scope={form.scope("accountId")}
-                          label="Account to deduct from"
-                          placeholder="Select account"
-                          description="Required for approvals"
-                          options={accounts.map((a) => ({
-                            value: a.id,
-                            label: `${a.code} - ${a.description}`,
-                          }))}
-                        />
-                        <FormTextarea
-                          scope={form.scope("approverNote")}
-                          label="Approver Notes"
-                          description="Also appears as the transaction description"
-                        />
-                        <Separator />
-                        <div className="flex w-full flex-col gap-2 sm:flex-row-reverse sm:items-center">
-                          <SubmitButton
-                            name="_action"
-                            value={ReimbursementRequestStatus.APPROVED}
-                            isSubmitting={
-                              form.formState.isSubmitting &&
-                              navigation.formData?.get("_action") === ReimbursementRequestStatus.APPROVED
-                            }
-                            className="mb-24 sm:mb-0 md:ml-auto"
-                          >
-                            Approve
-                          </SubmitButton>
-                          <SubmitButton
-                            name="_action"
-                            value={ReimbursementRequestStatus.VOID}
-                            isSubmitting={
-                              form.formState.isSubmitting &&
-                              navigation.formData?.get("_action") === ReimbursementRequestStatus.VOID
-                            }
-                            variant="outline"
-                          >
-                            Void
-                          </SubmitButton>
-                          <SubmitButton
-                            name="_action"
-                            value={ReimbursementRequestStatus.REJECTED}
-                            isSubmitting={
-                              form.formState.isSubmitting &&
-                              navigation.formData?.get("_action") === ReimbursementRequestStatus.REJECTED
-                            }
-                            variant="destructive"
-                          >
-                            Reject
-                          </SubmitButton>
-                        </div>
-                      </div>
-                    </fieldset>
-                  ) : (
-                    <>
-                      <input type="hidden" name="amount" value={rr.amountInCents} />
-                      <input type="hidden" name="categoryId" value={relatedTrx?.transaction.category?.id ?? ""} />
-                      <input type="hidden" name="accountId" value={rr.accountId} />
-                      <input type="hidden" name="approverNote" value={rr.approverNote ?? ""} />
-                      <SubmitButton
-                        name="_action"
-                        value={ReimbursementRequestStatus.PENDING}
-                        isSubmitting={
-                          form.formState.isSubmitting &&
-                          navigation.formData?.get("_action") === ReimbursementRequestStatus.PENDING
-                        }
-                        variant="outline"
-                        className="ml-auto"
-                      >
-                        Reopen
-                      </SubmitButton>
-                    </>
-                  )}
-                </>
-              )}
-            </ValidatedForm>
+            <ReimbursementRequestApprovalForm
+              rr={rr}
+              transactionCategories={transactionCategories}
+              accounts={accounts}
+              relatedTrx={relatedTrx}
+            />
           </CardFooter>
         </Card>
       </PageContainer>

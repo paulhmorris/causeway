@@ -7,7 +7,7 @@ import { PageContainer } from "~/components/page-container";
 import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
 import { SelectItem } from "~/components/ui/select";
 import { SubmitButton } from "~/components/ui/submit-button";
-import { sendEmail } from "~/integrations/email.server";
+import { Mailer } from "~/integrations/email.server";
 import { createLogger } from "~/integrations/logger.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
@@ -33,7 +33,7 @@ export async function action(args: ActionFunctionArgs) {
   const { type, title, description } = result.data;
 
   try {
-    await sendEmail({
+    await Mailer.send({
       to: "paul@paulmorris.dev",
       subject: `New ${type}: ${title}`,
       html: `A new ${type} has been submitted by ${user.contact.email}.\n\n${description}`,

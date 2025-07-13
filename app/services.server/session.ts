@@ -54,7 +54,7 @@ class Session {
   async getOrg(args: LoaderFunctionArgs | ActionFunctionArgs) {
     const orgId = await this.getOrgId(args);
     if (!orgId) {
-      this.logger.debug(`no orgId found in session`);
+      this.logger.debug("no orgId found in session");
       return null;
     }
     const org = await db.organization.findUnique({
@@ -69,7 +69,7 @@ class Session {
     const { sessionId } = await this.getSession(args);
     const orgId = await this.getOrgId(args);
     if (!orgId) {
-      this.logger.info(`no orgId found in session`);
+      this.logger.info("no orgId found in session");
       const originURL = new URL(args.request.url);
       if (originURL.pathname === "/") {
         await this.logout(sessionId);
@@ -77,7 +77,7 @@ class Session {
       }
       const returnUrl = new URL("/choose-org", originURL.origin);
       returnUrl.searchParams.set("redirectTo", originURL.pathname);
-      this.logger.info(`redirecting to ${returnUrl.toString()}`);
+      this.logger.info({ returnUrl: returnUrl.toString() }, "redirecting");
       throw redirect(returnUrl.toString());
     }
     return orgId;
@@ -87,7 +87,7 @@ class Session {
     const { userId, sessionId, sessionClaims } = await this.getSession(args);
 
     if (!userId) {
-      this.logger.info(`no userId found in session, logging out...`);
+      this.logger.info({ sessionClaims }, `no userId found in session, logging out`);
       await this.logout(sessionId);
       throw redirect("/logout");
     }
@@ -98,14 +98,14 @@ class Session {
       if (sessionClaims.pem) {
         try {
           user = await AuthService.linkOAuthUserToExistingUser(sessionClaims.pem, userId);
-          this.logger.info(`Successfully linked user with ID ${user.id}`);
+          this.logger.info({ userId: user.id }, "Successfully linked user");
         } catch (error) {
-          this.logger.error("Failed to link user: ", error);
+          this.logger.error({ error }, "Failed to link user");
           await this.logout(sessionId);
           throw redirect("/logout");
         }
       } else {
-        this.logger.error("No PEM claim found in session, cannot link user");
+        this.logger.error({ sessionClaims }, "No pem claim found in session claims, cannot link user. Logging out.");
         await this.logout(sessionId);
         throw redirect("/logout");
       }
@@ -149,15 +149,15 @@ class Session {
 
     // User does not exist
     if (!user) {
-      this.logger.warn(`user with ID ${userId} not found in database - throwing unauthorized`);
-      throw unauthorized({ user });
+      this.logger.warn({ userId }, "User not found in database");
+      throw unauthorized();
     }
 
     // User is not a member of the current organization
     const currentMembership = user.memberships.find((m) => m.orgId === orgId);
     if (!currentMembership) {
-      this.logger.warn("No membership in the current org - throwing unauthorized");
-      throw unauthorized({ user });
+      this.logger.warn({ user, currentMembership }, "No membership in the current org");
+      throw unauthorized();
     }
 
     const access = {
@@ -188,10 +188,8 @@ class Session {
           org: currentMembership.org,
         };
       }
-      this.logger.warn(
-        `user ${user.username} with role ${user.role} did not have required role ${allowedRoles.join(", ")}`,
-      );
-      throw unauthorized({ user });
+      this.logger.warn({ username: user.username, role: user.role, allowedRoles }, "User did not have required role");
+      throw unauthorized();
     }
 
     // Otherwise check if user is a member or admin
@@ -206,10 +204,8 @@ class Session {
     }
 
     // Some other scenario
-    this.logger.error(
-      `Unhandled authentication scenario with user ${user.username} with role ${user.role} and allowed roles ${allowedRoles?.join(", ")}`,
-    );
-    throw unauthorized({ user });
+    this.logger.error({ user, allowedRoles }, "Unhandled authentication scenario");
+    throw unauthorized();
   }
 
   async requireAdmin(args: LoaderFunctionArgs) {
@@ -222,7 +218,7 @@ class Session {
     redirectTo?: string;
   }) {
     const session = await this.getOrgSession(args.fnArgs.request);
-    this.logger.info(`Adding orgId ${args.orgId} to session for user`);
+    this.logger.info({ orgId: args.orgId, redirectTo: args.redirectTo }, "Adding orgId to session for user");
     session.set(this.ORGANIZATION_SESSION_KEY, args.orgId);
     return redirect(args.redirectTo ?? "/", {
       headers: {

@@ -251,13 +251,10 @@ export function FormSelect(props: FormSelectProps) {
           {options
             ? options.map((o) => {
                 if (o.value === null || o.label === null) return null;
+                const key = `${selectId}-${o.value.toString()}-${typeof o.label === "string" ? o.label : JSON.stringify(o.label)}`;
 
                 return (
-                  <SelectItem
-                    disabled={o.disabled}
-                    key={`${selectId}-${o.value.toString()}`}
-                    value={o.value.toString()}
-                  >
+                  <SelectItem disabled={o.disabled} data-key={key} key={key} value={o.value.toString()}>
                     {o.label}
                   </SelectItem>
                 );

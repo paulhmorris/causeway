@@ -10,7 +10,7 @@ import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
-import { getContactTypes } from "~/services.server/contact";
+import { ContactService } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
 import { UserService } from "~/services.server/user";
 
@@ -25,7 +25,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
       where: { orgId, user: null },
       orderBy: { code: "asc" },
     }),
-    contactTypes: await getContactTypes(orgId),
+    contactTypes: await ContactService.getTypes(orgId),
   };
 };
 

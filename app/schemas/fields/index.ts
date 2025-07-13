@@ -47,14 +47,18 @@ export const optionalEmail = z
   .transform((v) => (v === "" ? undefined : v));
 export const password = _text.min(8, "Must be 8 or more characters").max(255);
 export const url = z.url({ error: (e) => (!e.input ? "Required" : "Invalid URL") }).max(255);
-export const currency = z.preprocess(
-  (v) => (typeof v === "string" && v.startsWith("$") ? v.slice(1) : v),
-  z.coerce
-    .number()
-    .multipleOf(0.01, { error: "Must be multiple of $0.01" })
-    .nonnegative({ error: "Must be greater than $0.00" })
-    .transform((dollars) => Math.round(dollars * 100)),
-);
+export const currency = z
+  .preprocess((v) => (typeof v === "string" ? v.replace(/[$,]/g, "") : v), z.coerce.string())
+  .transform((val) => (val === "" ? NaN : Number(val)))
+  .pipe(
+    z
+      .number({
+        error: (e) => (!e.input ? "Required" : "Invalid value"),
+      })
+      .nonnegative({ message: "Must be greater than or equal to $0.00" })
+      .multipleOf(0.01, { message: "Cannot have more than two decimal places" })
+      .transform((dollars) => Math.round(dollars * 100)),
+  );
 export const phoneNumber = _text
   .transform((val) => val.replace(/\D/g, ""))
   .pipe(z.string().length(10, { error: "Invalid phone number" }));
