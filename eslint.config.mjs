@@ -134,5 +134,10 @@ export default tseslint.config(
   {
     files: ["app/**/*.test.{ts,tsx}"],
     ...vitest.configs.recommended,
+    rules: {
+      ...vitest.configs.recommended.rules,
+      "@typescript-eslint/unbound-method": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+    },
   },
 );
