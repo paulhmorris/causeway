@@ -10,7 +10,7 @@ import { Separator } from "~/components/ui/separator";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { Textarea } from "~/components/ui/textarea";
 import { loader } from "~/routes/_app.reimbursements.$reimbursementId";
-import { cuid, currency, number, optionalLongText, optionalText } from "~/schemas/fields";
+import { cuid, currency, number, optionalLongText, select } from "~/schemas/fields";
 
 type LoaderData = Awaited<ReturnType<typeof loader>>;
 type Props = {
@@ -20,14 +20,19 @@ type Props = {
   relatedTrx: LoaderData["relatedTrx"];
 };
 
-export const reimbursementRequestApprovalSchema = z.object({
-  _action: z.enum(ReimbursementRequestStatus),
-  id: cuid,
-  amount: currency,
-  categoryId: number,
-  accountId: optionalText.nullable(),
-  approverNote: optionalLongText.nullable(),
-});
+export const reimbursementRequestApprovalSchema = z
+  .object({
+    _action: z.enum(ReimbursementRequestStatus),
+    id: cuid,
+    amount: currency,
+    categoryId: number,
+    accountId: select,
+    approverNote: optionalLongText.nullable(),
+  })
+  .refine((data) => data._action !== ReimbursementRequestStatus.APPROVED || data.accountId, {
+    error: "Account is required for approvals",
+    path: ["accountId"],
+  });
 
 export function ReimbursementRequestApprovalForm(props: Props) {
   const navigation = useNavigation();
@@ -46,6 +51,7 @@ export function ReimbursementRequestApprovalForm(props: Props) {
         approverNote: rr.approverNote ?? "",
         amount: String(rr.amountInCents / 100.0),
         categoryId: relatedTrx?.transaction.category?.id ?? ("" as unknown as number),
+        accountId: rr.account.id,
       }}
     >
       {(form) => (
@@ -60,8 +66,10 @@ export function ReimbursementRequestApprovalForm(props: Props) {
               </legend>
               <div className="mt-4 space-y-4">
                 <div>
-                  <Label className="mb-1.5">Requester Notes</Label>
-                  <Textarea name="description" required readOnly defaultValue={rr.description ?? ""} />
+                  <Label htmlFor="description" className="mb-1.5">
+                    Requester Notes
+                  </Label>
+                  <Textarea id="description" name="description" required readOnly defaultValue={rr.description ?? ""} />
                 </div>
                 <FormField scope={form.scope("amount")} type="number" label="Amount" isCurrency required />
                 <FormSelect
@@ -128,7 +136,7 @@ export function ReimbursementRequestApprovalForm(props: Props) {
             <>
               <input type="hidden" name="amount" value={rr.amountInCents} />
               <input type="hidden" name="categoryId" value={relatedTrx?.transaction.category?.id ?? ""} />
-              <input type="hidden" name="accountId" value={rr.accountId} />
+              <input type="hidden" name="accountId" value={rr.account.id} />
               <input type="hidden" name="approverNote" value={rr.approverNote ?? ""} />
               <SubmitButton
                 name="_action"

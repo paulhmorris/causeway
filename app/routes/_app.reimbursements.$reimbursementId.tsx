@@ -4,12 +4,12 @@ import dayjs from "dayjs";
 import { ActionFunctionArgs, useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
-import { PageContainer } from "~/components/page-container";
-import { ReceiptLink } from "~/components/reimbursements/receipt-link";
 import {
   ReimbursementRequestApprovalForm,
   reimbursementRequestApprovalSchema,
-} from "~/components/reimbursements/reimbursement-request-approval-form";
+} from "~/components/forms/reimbursement-request-approval-form";
+import { PageContainer } from "~/components/page-container";
+import { ReceiptLink } from "~/components/reimbursements/receipt-link";
 import { ReimbursementStatusBadge } from "~/components/reimbursements/reimbursement-status-badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "~/components/ui/card";
 import { createLogger } from "~/integrations/logger.server";

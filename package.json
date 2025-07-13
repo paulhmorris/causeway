@@ -14,7 +14,7 @@
     "start": "react-router-serve ./build/server/index.js",
     "postinstall": "prisma generate --no-hints && patch-package",
     "test": "vitest --coverage --run",
-    "test:watch": "vitest",
+    "test:watch": "vitest --bail=1",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "typegen": "react-router typegen",

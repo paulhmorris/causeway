@@ -10,7 +10,7 @@ type ReceiptWithS3Url = Prisma.ReceiptGetPayload<{
   select: { s3Url: true; title: true; s3Key: true; id: true; s3UrlExpiry: true };
 }>;
 export async function generateS3Urls(receipts: Array<ReceiptWithS3Url>) {
-  logger.info({ count: receipts.length }, "Generating S3 URLs for receipts");
+  logger.info({ count: receipts.length }, "Generating S3 URLs for receipts...");
   let updatedReceipts: Array<ReceiptWithS3Url> = receipts;
 
   if (receipts.some((r) => !r.s3Url || isS3Expired(r))) {
@@ -37,6 +37,5 @@ export async function generateS3Urls(receipts: Array<ReceiptWithS3Url>) {
 function isS3Expired(receipt: ReceiptWithS3Url) {
   const expired =
     !receipt.s3Url || (receipt.s3UrlExpiry && new Date(receipt.s3UrlExpiry).getTime() < new Date().getTime());
-  logger.debug({ receiptId: receipt.id, expired }, "Checked if S3 URL is expired");
   return expired;
 }

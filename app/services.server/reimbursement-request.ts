@@ -14,7 +14,6 @@ export const ReimbursementRequestService = {
         date: true,
         status: true,
         vendor: true,
-        accountId: true,
         description: true,
         amountInCents: true,
         approverNote: true,
