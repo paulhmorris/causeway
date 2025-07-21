@@ -23,8 +23,11 @@ class Session {
 
   async logout(sessionId: string | null) {
     if (sessionId) {
+      this.logger.info("Logging out user", { sessionId });
       await AuthService.revokeSession(sessionId);
     }
+    this.logger.info("No sessionId provided, skipping logout and redirecting to sign in");
+    throw Responses.redirectToSignIn();
   }
 
   async getSession(args: LoaderFunctionArgs | ActionFunctionArgs) {
@@ -89,7 +92,7 @@ class Session {
     if (!userId) {
       this.logger.info("No userId found in session, logging out", { sessionClaims });
       await this.logout(sessionId);
-      throw redirect("/logout");
+      throw Responses.redirectToSignIn();
     }
 
     let user = await db.user.findUnique({ where: { clerkId: userId }, select: { id: true } });
@@ -102,12 +105,12 @@ class Session {
         } catch (error) {
           this.logger.error("Failed to link user", { error });
           await this.logout(sessionId);
-          throw redirect("/logout");
+          throw Responses.redirectToSignIn();
         }
       } else {
         this.logger.error("No pem claim found in session claims, cannot link user. Logging out.", { sessionClaims });
         await this.logout(sessionId);
-        throw redirect("/logout");
+        throw Responses.redirectToSignIn();
       }
     }
 
