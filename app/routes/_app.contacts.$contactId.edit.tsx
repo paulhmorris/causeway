@@ -22,7 +22,7 @@ import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
-import { forbidden, handleLoaderError, notFound } from "~/lib/responses.server";
+import { handleLoaderError, Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { UpdateContactSchema } from "~/schemas";
 import { ContactService } from "~/services.server/contact";
@@ -50,7 +50,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
         },
       });
       if (!assignment) {
-        throw forbidden({ message: "You do not have permission to edit this contact." });
+        throw Responses.forbidden({ message: "You do not have permission to edit this contact." });
       }
     }
 
@@ -89,7 +89,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     });
 
     if (!contact) {
-      throw notFound({ message: "Contact not found" });
+      throw Responses.notFound({ message: "Contact not found" });
     }
 
     return {
@@ -141,14 +141,14 @@ export const action = async (args: ActionFunctionArgs) => {
         },
       });
       if (!assignment) {
-        throw forbidden({ message: "You do not have permission to edit this contact." });
+        throw Responses.forbidden({ message: "You do not have permission to edit this contact." });
       }
     }
 
     // Users can't change their contact type
     if (user.isMember) {
       if (formData.typeId !== user.contact.typeId) {
-        return forbidden({ message: "You do not have permission to change your contact type." });
+        return Responses.forbidden({ message: "You do not have permission to change your contact type." });
       }
     }
 

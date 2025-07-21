@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~
 import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
-import { notFound } from "~/lib/responses.server";
+import { Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cn, formatCentsAsDollars } from "~/lib/utils";
 import { cuid, optionalText, text } from "~/schemas/fields";
@@ -54,7 +54,9 @@ export const loader = async (args: LoaderFunctionArgs) => {
 
   const categories = await db.transactionCategory.findMany();
 
-  if (!transaction) throw notFound({ message: "Transaction not found" });
+  if (!transaction) {
+    throw Responses.notFound();
+  }
 
   return { transaction, categories };
 };

@@ -9,7 +9,7 @@ import { PageHeader } from "~/components/common/page-header";
 import { RoleBadge } from "~/components/common/role-badge";
 import { PageContainer } from "~/components/page-container";
 import { db } from "~/integrations/prisma.server";
-import { forbidden, handleLoaderError } from "~/lib/responses.server";
+import { handleLoaderError, Responses } from "~/lib/responses.server";
 import { AuthService } from "~/services.server/auth";
 import { SessionService } from "~/services.server/session";
 
@@ -21,7 +21,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   invariant(params.userId, "userId not found");
 
   if (authorizedUser.isMember && authorizedUser.id !== params.userId) {
-    throw forbidden({ message: "You do not have permission to view this page" });
+    throw Responses.forbidden({ message: "You do not have permission to view this page" });
   }
 
   try {

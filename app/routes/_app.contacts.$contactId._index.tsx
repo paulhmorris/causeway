@@ -21,7 +21,7 @@ import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
-import { forbidden, handleLoaderError } from "~/lib/responses.server";
+import { handleLoaderError, Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cn } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
@@ -109,7 +109,7 @@ export async function action(args: ActionFunctionArgs) {
     });
 
     if (contact.typeId === ContactType.Staff) {
-      throw forbidden({ message: "You do not have permission to delete this contact." });
+      throw Responses.forbidden({ message: "You do not have permission to delete this contact." });
     }
 
     if (contact.transactions.length > 0) {

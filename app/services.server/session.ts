@@ -12,7 +12,7 @@ import { createThemeSessionResolver } from "remix-themes";
 
 import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
-import { unauthorized } from "~/lib/responses.server";
+import { Responses } from "~/lib/responses.server";
 import { AuthService } from "~/services.server/auth";
 
 class Session {
@@ -150,14 +150,14 @@ class Session {
     // User does not exist
     if (!user) {
       this.logger.warn("User not found in database", { userId });
-      throw unauthorized();
+      throw Responses.unauthorized();
     }
 
     // User is not a member of the current organization
     const currentMembership = user.memberships.find((m) => m.orgId === orgId);
     if (!currentMembership) {
       this.logger.warn("User is not a member of the current organization", { userId, orgId });
-      throw unauthorized();
+      throw Responses.unauthorized();
     }
 
     const access = {
@@ -189,7 +189,7 @@ class Session {
         };
       }
       this.logger.warn("User did not have required role", { username: user.username, role: user.role, allowedRoles });
-      throw unauthorized();
+      throw Responses.unauthorized();
     }
 
     // Otherwise check if user is a member or admin
@@ -205,7 +205,7 @@ class Session {
 
     // Some other scenario
     this.logger.error("Unhandled authentication scenario", { user, allowedRoles });
-    throw unauthorized();
+    throw Responses.unauthorized();
   }
 
   async requireAdmin(args: LoaderFunctionArgs) {

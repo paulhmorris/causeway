@@ -16,7 +16,7 @@ import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { AccountType } from "~/lib/constants";
-import { handleLoaderError, notFound } from "~/lib/responses.server";
+import { handleLoaderError, Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cuid, number, optionalSelect, text } from "~/schemas/fields";
 import { AccountService } from "~/services.server/account";
@@ -59,7 +59,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
       }),
     ]);
 
-    if (!account || !accountTypes.length) throw notFound({ message: "Account or Account Types not found" });
+    if (!account || !accountTypes.length) throw Responses.notFound({ message: "Account or Account Types not found" });
 
     return {
       account,

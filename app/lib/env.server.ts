@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 const _serverEnv = z.object({
   BASE_URL: z.url(),
   EMAIL_FROM_DOMAIN: z.string(),
+  SESSION_SECRET: z.string().min(32),
   NODE_ENV: z.enum(["development", "production", "test"]),
   // CI
   CI: z.string().optional(),
@@ -11,8 +12,9 @@ const _serverEnv = z.object({
   // Axiom
   AXIOM_TOKEN: z.string(),
 
-  // RR
-  SESSION_SECRET: z.string().min(16),
+  // Clerk
+  CLERK_SECRET_KEY: z.string().min(1),
+  AUTH_DOMAIN: z.url(),
 
   // Vercel
   CRON_SECRET: z.string().min(16),
@@ -81,4 +83,6 @@ export const CONFIG = {
   isProd: process.env.VERCEL_ENV === "production" && process.env.NODE_ENV === "production",
   isPreview: process.env.VERCEL_ENV === "preview" && process.env.NODE_ENV === "production",
   defaultEmailFromAddress: `Team Causeway <no-reply@${process.env.EMAIL_FROM_DOMAIN}>`,
+  signInUrl: new URL("/sign-in", process.env.AUTH_DOMAIN),
+  signUpUrl: new URL("/sign-up", process.env.AUTH_DOMAIN),
 } as const;

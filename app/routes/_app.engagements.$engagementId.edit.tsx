@@ -17,7 +17,7 @@ import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType, EngagementType } from "~/lib/constants";
-import { handleLoaderError, notFound } from "~/lib/responses.server";
+import { handleLoaderError, Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cuid, date, number, optionalLongText } from "~/schemas/fields";
 import { ContactService } from "~/services.server/contact";
@@ -64,7 +64,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     ]);
 
     if (!engagement) {
-      throw notFound("Engagement not found");
+      throw Responses.notFound("Engagement not found");
     }
 
     return {

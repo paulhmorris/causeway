@@ -15,7 +15,7 @@ import { Button } from "~/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
-import { forbidden, handleLoaderError } from "~/lib/responses.server";
+import { handleLoaderError, Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cn, formatCentsAsDollars } from "~/lib/utils";
 import { generateS3Urls } from "~/services.server/receipt";
@@ -93,7 +93,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     });
 
     if (user.isMember && transaction.account.user?.id !== user.id) {
-      throw forbidden({ message: "You do not have permission to view this transaction" });
+      throw Responses.forbidden({ message: "You do not have permission to view this transaction" });
     }
 
     transaction.receipts = await generateS3Urls(transaction.receipts);

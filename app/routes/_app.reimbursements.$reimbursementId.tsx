@@ -16,7 +16,7 @@ import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod, TransactionItemType } from "~/lib/constants";
-import { notFound } from "~/lib/responses.server";
+import { Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { capitalize, formatCentsAsDollars } from "~/lib/utils";
 import { sendReimbursementRequestUpdateEmail } from "~/services.server/mail";
@@ -34,7 +34,7 @@ export async function loader(args: ActionFunctionArgs) {
   const rr = await ReimbursementRequestService.getById(params.reimbursementId!, orgId);
 
   if (!rr) {
-    throw notFound();
+    throw Responses.notFound();
   }
 
   const [relatedTrx, accounts, transactionCategories] = await db.$transaction([

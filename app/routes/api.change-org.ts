@@ -6,7 +6,7 @@ import { z } from "zod/v4";
 import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
-import { serverError } from "~/lib/responses.server";
+import { Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
@@ -66,6 +66,6 @@ export const action = async (args: ActionFunctionArgs) => {
         description: "No membership found for the selected organization",
       });
     }
-    throw serverError("An unknown error occurred");
+    throw Responses.serverError();
   }
 };
