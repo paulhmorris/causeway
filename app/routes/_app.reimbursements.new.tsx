@@ -2,7 +2,7 @@ import { ReimbursementRequestStatus } from "@prisma/client";
 import { render } from "@react-email/render";
 import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { useLoaderData } from "react-router";
 import { z } from "zod/v4";
 
@@ -37,8 +37,6 @@ const schema = z.object({
   receiptIds: checkboxGroup,
   methodId: number.pipe(z.enum(TransactionItemMethod, { message: "Invalid method" })),
 });
-
-export const meta: MetaFunction = () => [{ title: "New Reimbursement Request" }];
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const user = await SessionService.requireUser(args);
@@ -144,7 +142,7 @@ export const action = async (args: ActionFunctionArgs) => {
       description: "Your request will be processed as soon as possible.",
     });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error creating reimbursement request", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError(null, { message: "An unknown error occurred" }, { status: 500 });
   }
@@ -155,6 +153,7 @@ export default function NewReimbursementPage() {
 
   return (
     <>
+      <title>New Reimbursement Request</title>
       <PageHeader title="New Reimbursement Request" />
       <PageContainer>
         <ValidatedForm

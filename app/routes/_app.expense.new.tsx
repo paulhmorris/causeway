@@ -1,6 +1,6 @@
 import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import { IconPlus } from "@tabler/icons-react";
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
@@ -24,8 +24,6 @@ import { SessionService } from "~/services.server/session";
 import { TransactionService } from "~/services.server/transaction";
 
 const logger = createLogger("Routes.ExpenseNew");
-
-export const meta: MetaFunction = () => [{ title: "Add Expense" }];
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const user = await SessionService.requireAdmin(args);
@@ -104,7 +102,7 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `Expense of ${formatCentsAsDollars(totalInCents)} charged to account ${transaction.account.code}`,
     });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error creating expense", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
   }
@@ -138,6 +136,7 @@ export default function AddExpensePage() {
 
   return (
     <>
+      <title>Add Expense</title>
       <PageHeader title="Add Expense" />
       <PageContainer>
         <form {...form.getFormProps()} className="sm:max-w-xl">

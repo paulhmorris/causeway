@@ -2,7 +2,7 @@ import { TransactionItemTypeDirection } from "@prisma/client";
 import { render } from "@react-email/render";
 import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import { IconPlus } from "@tabler/icons-react";
-import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 
 import { IncomeNotificationEmail } from "emails/income-notification";
 import { PageHeader } from "~/components/common/page-header";
@@ -34,8 +34,6 @@ import { TransactionService } from "~/services.server/transaction";
 const logger = createLogger("Routes.IncomeNew");
 
 const schema = TransactionSchema.extend({ shouldNotifyUser: checkbox });
-
-export const meta: MetaFunction = () => [{ title: "Add Income" }];
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const user = await SessionService.requireAdmin(args);
@@ -164,7 +162,7 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `Income of ${formatCentsAsDollars(totalInCents)} added to account ${transaction.account.code}`,
     });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error creating income", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
   }
@@ -202,6 +200,7 @@ export default function AddIncomePage() {
 
   return (
     <>
+      <title>Add Income</title>
       <PageHeader title="Add Income" />
       <PageContainer>
         <form {...form.getFormProps()} className="sm:max-w-xl">

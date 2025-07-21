@@ -12,7 +12,7 @@ import { createThemeSessionResolver } from "remix-themes";
 
 import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
-import { unauthorized } from "~/lib/responses.server";
+import { Responses } from "~/lib/responses.server";
 import { AuthService } from "~/services.server/auth";
 
 class Session {
@@ -23,8 +23,11 @@ class Session {
 
   async logout(sessionId: string | null) {
     if (sessionId) {
+      this.logger.info("Logging out user", { sessionId });
       await AuthService.revokeSession(sessionId);
     }
+    this.logger.info("No sessionId provided, skipping logout and redirecting to sign in");
+    throw Responses.redirectToSignIn();
   }
 
   async getSession(args: LoaderFunctionArgs | ActionFunctionArgs) {
@@ -77,7 +80,7 @@ class Session {
       }
       const returnUrl = new URL("/choose-org", originURL.origin);
       returnUrl.searchParams.set("redirectTo", originURL.pathname);
-      this.logger.info({ returnUrl: returnUrl.toString() }, "redirecting");
+      this.logger.info("Redirecting to choose-org", { returnUrl: returnUrl.toString() });
       throw redirect(returnUrl.toString());
     }
     return orgId;
@@ -87,9 +90,9 @@ class Session {
     const { userId, sessionId, sessionClaims } = await this.getSession(args);
 
     if (!userId) {
-      this.logger.info({ sessionClaims }, `no userId found in session, logging out`);
+      this.logger.info("No userId found in session, logging out", { sessionClaims });
       await this.logout(sessionId);
-      throw redirect("/logout");
+      throw Responses.redirectToSignIn();
     }
 
     let user = await db.user.findUnique({ where: { clerkId: userId }, select: { id: true } });
@@ -98,16 +101,16 @@ class Session {
       if (sessionClaims.pem) {
         try {
           user = await AuthService.linkOAuthUserToExistingUser(sessionClaims.pem, userId);
-          this.logger.info({ userId: user.id }, "Successfully linked user");
+          this.logger.info("Successfully linked user", { userId: user.id });
         } catch (error) {
-          this.logger.error({ error }, "Failed to link user");
+          this.logger.error("Failed to link user", { error });
           await this.logout(sessionId);
-          throw redirect("/logout");
+          throw Responses.redirectToSignIn();
         }
       } else {
-        this.logger.error({ sessionClaims }, "No pem claim found in session claims, cannot link user. Logging out.");
+        this.logger.error("No pem claim found in session claims, cannot link user. Logging out.", { sessionClaims });
         await this.logout(sessionId);
-        throw redirect("/logout");
+        throw Responses.redirectToSignIn();
       }
     }
 
@@ -149,15 +152,15 @@ class Session {
 
     // User does not exist
     if (!user) {
-      this.logger.warn({ userId }, "User not found in database");
-      throw unauthorized();
+      this.logger.warn("User not found in database", { userId });
+      throw Responses.unauthorized();
     }
 
     // User is not a member of the current organization
     const currentMembership = user.memberships.find((m) => m.orgId === orgId);
     if (!currentMembership) {
-      this.logger.warn({ user, currentMembership }, "No membership in the current org");
-      throw unauthorized();
+      this.logger.warn("User is not a member of the current organization", { userId, orgId });
+      throw Responses.unauthorized();
     }
 
     const access = {
@@ -188,8 +191,8 @@ class Session {
           org: currentMembership.org,
         };
       }
-      this.logger.warn({ username: user.username, role: user.role, allowedRoles }, "User did not have required role");
-      throw unauthorized();
+      this.logger.warn("User did not have required role", { username: user.username, role: user.role, allowedRoles });
+      throw Responses.unauthorized();
     }
 
     // Otherwise check if user is a member or admin
@@ -204,8 +207,8 @@ class Session {
     }
 
     // Some other scenario
-    this.logger.error({ user, allowedRoles }, "Unhandled authentication scenario");
-    throw unauthorized();
+    this.logger.error("Unhandled authentication scenario", { user, allowedRoles });
+    throw Responses.unauthorized();
   }
 
   async requireAdmin(args: LoaderFunctionArgs) {
@@ -218,7 +221,7 @@ class Session {
     redirectTo?: string;
   }) {
     const session = await this.getOrgSession(args.fnArgs.request);
-    this.logger.info({ orgId: args.orgId, redirectTo: args.redirectTo }, "Adding orgId to session for user");
+    this.logger.info("Adding orgId to session for user", { orgId: args.orgId, redirectTo: args.redirectTo });
     session.set(this.ORGANIZATION_SESSION_KEY, args.orgId);
     return redirect(args.redirectTo ?? "/", {
       headers: {

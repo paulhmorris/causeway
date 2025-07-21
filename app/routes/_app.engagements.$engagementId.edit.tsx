@@ -1,7 +1,7 @@
 import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { ActionFunctionArgs, LoaderFunctionArgs, useLoaderData, type MetaFunction } from "react-router";
+import { ActionFunctionArgs, LoaderFunctionArgs, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod/v4";
 dayjs.extend(utc);
@@ -17,7 +17,7 @@ import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType, EngagementType } from "~/lib/constants";
-import { handleLoaderError, notFound } from "~/lib/responses.server";
+import { handleLoaderError, Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cuid, date, number, optionalLongText } from "~/schemas/fields";
 import { ContactService } from "~/services.server/contact";
@@ -64,7 +64,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     ]);
 
     if (!engagement) {
-      throw notFound("Engagement not found");
+      throw Responses.notFound("Engagement not found");
     }
 
     return {
@@ -77,8 +77,6 @@ export const loader = async (args: LoaderFunctionArgs) => {
     handleLoaderError(e);
   }
 };
-
-export const meta: MetaFunction = () => [{ title: "Edit Account" }];
 
 export const action = async (args: ActionFunctionArgs) => {
   await SessionService.requireUser(args);
@@ -96,9 +94,9 @@ export const action = async (args: ActionFunctionArgs) => {
     });
 
     return Toasts.redirectWithSuccess(`/engagements/${engagement.id}`, { message: "Engagement updated" });
-  } catch (e) {
-    logger.error(e);
-    Sentry.captureException(e);
+  } catch (error) {
+    logger.error("Error updating engagement", { error });
+    Sentry.captureException(error);
     return Toasts.dataWithError(null, { message: "An unknown error occurred" }, { status: 500 });
   }
 };
@@ -108,6 +106,7 @@ export default function EditEngagementPage() {
 
   return (
     <>
+      <title>Edit Engagement</title>
       <PageHeader title="Edit Engagement" />
       <PageContainer>
         <ValidatedForm

@@ -1,6 +1,6 @@
 import { MembershipRole } from "@prisma/client";
 import { parseFormData, useForm, validationError } from "@rvf/react-router";
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { useLoaderData } from "react-router";
 import { z } from "zod/v4";
 
@@ -90,13 +90,11 @@ export const action = async (args: ActionFunctionArgs) => {
       description: "Well done.",
     });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error creating account", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError({ success: false }, { message: "Error creating account" });
   }
 };
-
-export const meta: MetaFunction = () => [{ title: "New Account" }];
 
 export default function NewAccountPage() {
   const { users, accountTypes } = useLoaderData<typeof loader>();
@@ -112,6 +110,7 @@ export default function NewAccountPage() {
   });
   return (
     <>
+      <title>New Account</title>
       <PageHeader title="New Account" />
       <PageContainer>
         <form {...form.getFormProps()} className="space-y-4 sm:max-w-md">

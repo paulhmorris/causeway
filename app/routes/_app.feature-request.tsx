@@ -1,5 +1,5 @@
 import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
-import { ActionFunctionArgs, MetaFunction } from "react-router";
+import { ActionFunctionArgs } from "react-router";
 import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
@@ -42,18 +42,17 @@ export async function action(args: ActionFunctionArgs) {
     return Toasts.redirectWithSuccess(user.isMember ? "/dashboards/staff" : "/dashboards/admin", {
       message: "Request Sent",
     });
-  } catch (e) {
-    logger.error(e);
-    Sentry.captureException(e);
+  } catch (error) {
+    logger.error("Error sending feature request", { error });
+    Sentry.captureException(error);
     return Toasts.dataWithError(null, { message: "Error", description: "An unknown error occurred." });
   }
 }
 
-export const meta: MetaFunction = () => [{ title: `Feature Request` }];
-
 export default function FeatureRequestPage() {
   return (
     <>
+      <title>Feature Request</title>
       <PageHeader title="Feature Request" description="Request an improvement or feature" />
       <PageContainer className="max-w-sm">
         <ValidatedForm

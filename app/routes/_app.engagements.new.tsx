@@ -1,11 +1,5 @@
 import { parseFormData, useForm, validationError } from "@rvf/react-router";
-import {
-  useLoaderData,
-  useSearchParams,
-  type ActionFunctionArgs,
-  type LoaderFunctionArgs,
-  type MetaFunction,
-} from "react-router";
+import { useLoaderData, useSearchParams, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
@@ -34,8 +28,6 @@ const schema = z.object({
   typeId: number.pipe(z.enum(EngagementType)),
   contactId: cuid,
 });
-
-export const meta: MetaFunction = () => [{ title: "Add Engagement" }];
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const user = await SessionService.requireUser(args);
@@ -91,7 +83,7 @@ export const action = async (args: ActionFunctionArgs) => {
     });
   } catch (error) {
     Sentry.captureException(error);
-    logger.error(error);
+    logger.error("Error creating engagement", { error });
     return Toasts.dataWithError(null, { message: "An unknown error occurred" });
   }
 };
@@ -112,6 +104,7 @@ export default function NewEngagementPage() {
 
   return (
     <>
+      <title>Add Engagement</title>
       <PageHeader title="Add Engagement" />
       <PageContainer>
         <form {...form.getFormProps()} className="space-y-4 sm:max-w-md">

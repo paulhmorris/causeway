@@ -1,4 +1,4 @@
-import { LoaderFunctionArgs, MetaFunction, NavLink, Outlet, useLoaderData } from "react-router";
+import { LoaderFunctionArgs, NavLink, Outlet, useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
 import { Separator } from "~/components/ui/separator";
@@ -19,10 +19,6 @@ export async function loader(args: LoaderFunctionArgs) {
   }
 }
 
-export const meta: MetaFunction<typeof loader> = ({ data }) => {
-  return [{ title: `Settings | ${data?.org.name}` }];
-};
-
 const links = [
   { label: "Settings", to: "settings" },
   { label: "Transaction Categories", to: "transaction-categories" },
@@ -33,6 +29,7 @@ export default function OrganizationSettingsLayout() {
 
   return (
     <>
+      <title>Settings | {org.name}</title>
       <PageHeader title={`${org.name} Settings`} />
       <nav className="mt-4">
         <ul className="bg-muted text-muted-foreground inline-flex h-10 items-center justify-center gap-2 rounded-md p-1">

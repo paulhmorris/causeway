@@ -52,7 +52,7 @@ export const Mailer = {
     } satisfies SendEmailCommandInput;
 
     if (CONFIG.isProd || CONFIG.isPreview) {
-      logger.info(props, "Sending email");
+      logger.info("Sending email", { props });
       try {
         const command = new SendEmailCommand(input);
         const response = await client.send(command);
@@ -60,20 +60,20 @@ export const Mailer = {
           throw new Error("Email not sent");
         }
 
-        logger.info({ messageId: response.MessageId }, "Email sent successfully");
+        logger.info("Email sent successfully", { messageId: response.MessageId });
         return { messageId: response.MessageId, $metadata: response.$metadata } as Prettify<
           { messageId: string } & {
             $metadata: SendEmailCommandOutput["$metadata"];
           }
         >;
       } catch (e) {
-        logger.error(e);
+        logger.error("Error sending email", { error: e });
         Sentry.captureException(e);
         throw e;
       }
     }
 
-    logger.debug(props, "Email sent");
+    logger.debug("Email sent", { props });
     return { messageId: "test", $metadata: {} };
   },
 };

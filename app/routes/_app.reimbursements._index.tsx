@@ -1,12 +1,10 @@
-import { LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
+import { LoaderFunctionArgs, useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
 import { PageContainer } from "~/components/page-container";
 import { ReimbursementRequestsTable } from "~/components/reimbursements/reimbursement-requests-table";
 import { db } from "~/integrations/prisma.server";
 import { SessionService } from "~/services.server/session";
-
-export const meta: MetaFunction = () => [{ title: "Reimbursement Requests" }];
 
 export async function loader(args: LoaderFunctionArgs) {
   await SessionService.requireAdmin(args);
@@ -35,6 +33,7 @@ export default function ReimbursementRequestsList() {
   const { requests } = useLoaderData<typeof loader>();
   return (
     <>
+      <title>Reimbursement Requests</title>
       <PageHeader title="Reimbursement Requests" />
       <PageContainer>
         <ReimbursementRequestsTable data={requests} />

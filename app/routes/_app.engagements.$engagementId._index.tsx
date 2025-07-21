@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { ActionFunctionArgs, Link, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
+import { ActionFunctionArgs, Link, LoaderFunctionArgs, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod/v4";
 dayjs.extend(utc);
@@ -15,8 +15,6 @@ import { Sentry } from "~/integrations/sentry";
 import { handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { SessionService } from "~/services.server/session";
-
-export const meta: MetaFunction = () => [{ title: "View Engagement" }];
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const { params } = args;
@@ -91,6 +89,7 @@ export default function EngagementPage() {
 
   return (
     <>
+      <title>View Engagement</title>
       <PageHeader title="View Engagement" />
       <PageContainer className="max-w-md">
         <Card>

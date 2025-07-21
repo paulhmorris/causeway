@@ -5,7 +5,7 @@ const logger = createLogger("ContactService");
 
 export const ContactService = {
   getTypes(orgId: string) {
-    logger.info({ orgId }, "Getting contact types");
+    logger.debug("Getting contact types", { orgId });
     return db.contactType.findMany({ where: { OR: [{ orgId }, { orgId: null }] } });
   },
 };

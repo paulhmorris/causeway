@@ -1,6 +1,6 @@
 import {} from "@rvf/react-router";
 import { IconCoins, IconExclamationCircle, IconUser } from "@tabler/icons-react";
-import type { LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { LoaderFunctionArgs } from "react-router";
 import { Link, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 
@@ -13,10 +13,8 @@ import { Button } from "~/components/ui/button";
 import { AccountBalanceCard } from "~/components/users/balance-card";
 import { db } from "~/integrations/prisma.server";
 import { AccountType } from "~/lib/constants";
-import { handleLoaderError, unauthorized } from "~/lib/responses.server";
+import { handleLoaderError, Responses } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
-
-export const meta: MetaFunction<typeof loader> = ({ data }) => [{ title: `Account ${data?.account.code}` }];
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const { params } = args;
@@ -42,7 +40,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   }
 
   if (!canViewAccount()) {
-    throw unauthorized("You are not authorized to view this account.");
+    throw Responses.unauthorized("You are not authorized to view this account.");
   }
 
   try {
@@ -100,6 +98,7 @@ export default function AccountDetailsPage() {
 
   return (
     <>
+      <title>Account {account.code}</title>
       <PageHeader title={account.code}>
         <Button variant="outline" asChild>
           <Link to={`/accounts/${account.id}/edit`} prefetch="intent">

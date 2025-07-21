@@ -2,7 +2,7 @@ import { UserRole } from "@prisma/client";
 import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import { IconAddressBook, IconUser } from "@tabler/icons-react";
 import { useState } from "react";
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Link, useLoaderData, useLocation } from "react-router";
 import invariant from "tiny-invariant";
 
@@ -22,7 +22,7 @@ import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
-import { forbidden, handleLoaderError, notFound } from "~/lib/responses.server";
+import { handleLoaderError, Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { UpdateContactSchema } from "~/schemas";
 import { ContactService } from "~/services.server/contact";
@@ -50,7 +50,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
         },
       });
       if (!assignment) {
-        throw forbidden({ message: "You do not have permission to edit this contact." });
+        throw Responses.forbidden({ message: "You do not have permission to edit this contact." });
       }
     }
 
@@ -89,7 +89,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     });
 
     if (!contact) {
-      throw notFound({ message: "Contact not found" });
+      throw Responses.notFound({ message: "Contact not found" });
     }
 
     return {
@@ -101,10 +101,6 @@ export const loader = async (args: LoaderFunctionArgs) => {
     handleLoaderError(e);
   }
 };
-
-export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  { title: `Edit ${data?.contact.firstName}${data?.contact.lastName ? " " + data.contact.lastName : ""}` },
-];
 
 export const action = async (args: ActionFunctionArgs) => {
   const user = await SessionService.requireUser(args);
@@ -141,14 +137,14 @@ export const action = async (args: ActionFunctionArgs) => {
         },
       });
       if (!assignment) {
-        throw forbidden({ message: "You do not have permission to edit this contact." });
+        throw Responses.forbidden({ message: "You do not have permission to edit this contact." });
       }
     }
 
     // Users can't change their contact type
     if (user.isMember) {
       if (formData.typeId !== user.contact.typeId) {
-        return forbidden({ message: "You do not have permission to change your contact type." });
+        return Responses.forbidden({ message: "You do not have permission to change your contact type." });
       }
     }
 
@@ -200,7 +196,7 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `${contact.firstName} ${contact.lastName} was updated successfully.`,
     });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error updating contact", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError(null, {
       message: "Unknown error",
@@ -247,6 +243,9 @@ export default function EditContactPage() {
 
   return (
     <>
+      <title>
+        Edit {contact.firstName}${contact.lastName ? " " + contact.lastName : ""}
+      </title>
       <PageHeader title="Edit Contact" />
       <div className="mt-1">
         {user.contact.id === contact.id ? (

@@ -1,9 +1,7 @@
-import { redirect, type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { redirect, type LoaderFunctionArgs } from "react-router";
 
 import { ErrorComponent } from "~/components/error-component";
 import { SessionService } from "~/services.server/session";
-
-export const meta: MetaFunction = () => [{ title: "Home" }];
 
 export async function loader(args: LoaderFunctionArgs) {
   const user = await SessionService.requireUser(args);

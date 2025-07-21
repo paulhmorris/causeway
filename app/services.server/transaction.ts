@@ -9,17 +9,17 @@ const logger = createLogger("TransactionService");
 
 export const TransactionService = {
   getItemMethods(orgId: string) {
-    logger.info({ orgId }, "Fetching transaction item methods");
+    logger.debug("Fetching transaction item methods", { orgId });
     return db.transactionItemMethod.findMany({ where: { OR: [{ orgId }, { orgId: null }] } });
   },
 
   getItemTypes(orgId: string) {
-    logger.info({ orgId }, "Fetching transaction item types");
+    logger.debug("Fetching transaction item types", { orgId });
     return db.transactionItemType.findMany({ where: { OR: [{ orgId }, { orgId: null }] } });
   },
 
   getCategories(orgId: string) {
-    logger.info({ orgId }, "Fetching transaction categories");
+    logger.debug("Fetching transaction categories", { orgId });
     return db.transactionCategory.findMany({
       select: { id: true, name: true },
       where: { OR: [{ orgId }, { orgId: null }] },
@@ -51,7 +51,7 @@ export const TransactionService = {
         amountInCents: item.amountInCents * modifier,
       };
     });
-    logger.info({ orgId, transactionItems, totalInCents }, "Generated transaction items");
+    logger.info("Generated transaction items", { orgId, transactionItems, totalInCents });
 
     return { totalInCents, transactionItems };
   },

@@ -10,7 +10,7 @@ type ReceiptWithS3Url = Prisma.ReceiptGetPayload<{
   select: { s3Url: true; title: true; s3Key: true; id: true; s3UrlExpiry: true };
 }>;
 export async function generateS3Urls(receipts: Array<ReceiptWithS3Url>) {
-  logger.info({ count: receipts.length }, "Generating S3 URLs for receipts...");
+  logger.info("Generating S3 URLs for receipts...", { count: receipts.length });
   let updatedCount = 0;
 
   // Use Promise.all to process all receipts and create a new, updated array.
@@ -21,11 +21,11 @@ export async function generateS3Urls(receipts: Array<ReceiptWithS3Url>) {
       }
       updatedCount++;
 
-      logger.info({ receiptId: receipt.id, title: receipt.title }, `Generating presigned url for receipt`);
+      logger.info("Generating presigned url for receipt", { receiptId: receipt.id, title: receipt.title });
       const newUrl = await Bucket.getGETPresignedUrl(receipt.s3Key);
       const newExpiry = new Date(Date.now() + 6.5 * 24 * 60 * 60 * 1000); // 6.5 days
 
-      logger.debug({ receiptId: receipt.id }, "Updating receipt in database with new URL");
+      logger.debug("Updating receipt in database with new URL", { receiptId: receipt.id });
       await db.receipt.update({
         where: { id: receipt.id },
         data: { s3Url: newUrl, s3UrlExpiry: newExpiry },
@@ -39,7 +39,7 @@ export async function generateS3Urls(receipts: Array<ReceiptWithS3Url>) {
     }),
   );
 
-  logger.info(`Finished generating S3 URLs for ${updatedCount} receipts.`);
+  logger.debug(`Finished generating S3 URLs for ${updatedCount} receipts.`);
   return updatedReceipts;
 }
 

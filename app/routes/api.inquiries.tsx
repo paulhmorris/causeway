@@ -68,7 +68,7 @@ export async function action(args: ActionFunctionArgs) {
       { message: "Inquiry sent", description: "We'll be in touch soon!" },
     );
   } catch (error) {
-    logger.error(error);
+    logger.error("Error processing inquiry", { error });
     Sentry.captureException(error);
     return Toasts.dataWithSuccess(
       { success: false, message: JSON.stringify(error) },

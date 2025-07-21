@@ -2,7 +2,7 @@
 import { IconCloudDownload } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { Link, MetaFunction } from "react-router";
+import { Link } from "react-router";
 import { useIsClient } from "usehooks-ts";
 
 import { PageHeader } from "~/components/common/page-header";
@@ -10,10 +10,6 @@ import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-
-export const meta: MetaFunction = () => {
-  return [{ title: "Reports" }];
-};
 
 export default function AdminReports() {
   const isClient = useIsClient();
@@ -33,6 +29,7 @@ export default function AdminReports() {
 
   return (
     <>
+      <title>Reports</title>
       <PageHeader title="Reports" />
       <p className="text-muted-foreground mt-2 text-sm">Generate reports for your organization.</p>
       <PageContainer>

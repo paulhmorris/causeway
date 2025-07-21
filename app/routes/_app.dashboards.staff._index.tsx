@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { useLoaderData, type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { useLoaderData, type LoaderFunctionArgs } from "react-router";
 dayjs.extend(utc);
 
 import { AnnouncementCard } from "~/components/admin/announcement-card";
@@ -13,8 +13,6 @@ import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
 import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
-
-export const meta: MetaFunction = () => [{ title: "Home" }];
 
 export async function loader(args: LoaderFunctionArgs) {
   try {
@@ -85,6 +83,7 @@ export default function Index() {
 
   return (
     <>
+      <title>Home</title>
       <PageHeader title="Home" />
       <PageContainer className="max-w-4xl">
         <div className="mb-4">{announcement ? <AnnouncementCard announcement={announcement} /> : null}</div>

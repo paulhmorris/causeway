@@ -1,7 +1,7 @@
 import { Engagement } from "@prisma/client";
 import { IconAddressBook, IconPlus, IconUser } from "@tabler/icons-react";
 import dayjs from "dayjs";
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Link, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod/v4";
@@ -21,7 +21,7 @@ import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
-import { forbidden, handleLoaderError } from "~/lib/responses.server";
+import { handleLoaderError, Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cn } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
@@ -109,7 +109,7 @@ export async function action(args: ActionFunctionArgs) {
     });
 
     if (contact.typeId === ContactType.Staff) {
-      throw forbidden({ message: "You do not have permission to delete this contact." });
+      throw Responses.forbidden({ message: "You do not have permission to delete this contact." });
     }
 
     if (contact.transactions.length > 0) {
@@ -134,16 +134,12 @@ export async function action(args: ActionFunctionArgs) {
         description: `${contact.firstName} ${contact.lastName} was deleted successfully.`,
       });
     } catch (error) {
-      logger.error(error);
+      logger.error("Error deleting contact", { error });
       Sentry.captureException(error);
       return Toasts.dataWithError({ success: false }, { message: "Error", description: "An unknown error occurred" });
     }
   }
 }
-
-export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  { title: `${data?.contact.firstName}${data?.contact.lastName ? " " + data.contact.lastName : ""}` },
-];
 
 export default function ContactDetailsPage() {
   const user = useUser();
@@ -154,6 +150,10 @@ export default function ContactDetailsPage() {
 
   return (
     <>
+      <title>
+        {contact.firstName}
+        {contact.lastName ? " " + contact.lastName : ""}
+      </title>
       <PageHeader title="View Contact">
         {canDelete ? (
           <ConfirmDestructiveModal

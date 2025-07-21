@@ -16,7 +16,7 @@ export const handleError: HandleErrorFunction = (error, { request }) => {
   }
   if (!request.signal.aborted) {
     Sentry.captureException(error);
-    logger.error(error);
+    logger.error("Request handling error", { error });
   }
 };
 

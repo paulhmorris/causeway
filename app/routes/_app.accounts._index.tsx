@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { IconPlus } from "@tabler/icons-react";
-import type { LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { LoaderFunctionArgs } from "react-router";
 import { Link, useLoaderData } from "react-router";
 
 import { AccountsTable } from "~/components/accounts/accounts-table";
@@ -11,8 +11,6 @@ import { Button } from "~/components/ui/button";
 import { db } from "~/integrations/prisma.server";
 import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
-
-export const meta: MetaFunction = () => [{ title: "Accounts" }];
 
 export const accountsIndexSelect: Prisma.AccountSelect = {
   id: true,
@@ -55,6 +53,7 @@ export default function AccountsIndexPage() {
   const { accounts } = useLoaderData<typeof loader>();
   return (
     <>
+      <title>Accounts</title>
       <PageHeader title="Accounts">
         <Button asChild>
           <Link to="/accounts/new" prefetch="intent">

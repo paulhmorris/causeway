@@ -87,7 +87,7 @@ export async function action(args: ActionFunctionArgs) {
 
     return Toasts.dataWithSuccess(null, { message: "Transaction categories updated" });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error updating transaction categories", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError(null, {
       message: "Unknown error",

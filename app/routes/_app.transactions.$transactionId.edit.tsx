@@ -1,7 +1,7 @@
 import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { ActionFunctionArgs, Link, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
+import { ActionFunctionArgs, Link, LoaderFunctionArgs, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod/v4";
 dayjs.extend(utc);
@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~
 import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
-import { notFound } from "~/lib/responses.server";
+import { Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cn, formatCentsAsDollars } from "~/lib/utils";
 import { cuid, optionalText, text } from "~/schemas/fields";
@@ -54,12 +54,12 @@ export const loader = async (args: LoaderFunctionArgs) => {
 
   const categories = await db.transactionCategory.findMany();
 
-  if (!transaction) throw notFound({ message: "Transaction not found" });
+  if (!transaction) {
+    throw Responses.notFound();
+  }
 
   return { transaction, categories };
 };
-
-export const meta: MetaFunction = () => [{ title: "Transaction Edit" }];
 
 export const action = async (args: ActionFunctionArgs) => {
   await SessionService.requireAdmin(args);
@@ -87,7 +87,7 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `Transaction has been updated.`,
     });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error updating transaction", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError(null, {
       message: "Error",
@@ -101,7 +101,8 @@ export default function TransactionDetailsPage() {
 
   return (
     <>
-      <PageHeader title="Transaction Edit" />
+      <title>Edit Transaction</title>
+      <PageHeader title="Edit Transaction" />
       <BackButton to={`/transactions/${transaction.id}`} />
 
       <PageContainer className="max-w-3xl">

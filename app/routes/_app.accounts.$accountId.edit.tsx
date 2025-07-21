@@ -1,6 +1,6 @@
 import { MembershipRole } from "@prisma/client";
 import { parseFormData, useForm, validationError } from "@rvf/react-router";
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod/v4";
@@ -16,7 +16,7 @@ import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { AccountType } from "~/lib/constants";
-import { handleLoaderError, notFound } from "~/lib/responses.server";
+import { handleLoaderError, Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cuid, number, optionalSelect, text } from "~/schemas/fields";
 import { AccountService } from "~/services.server/account";
@@ -59,7 +59,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
       }),
     ]);
 
-    if (!account || !accountTypes.length) throw notFound({ message: "Account or Account Types not found" });
+    if (!account || !accountTypes.length) throw Responses.notFound({ message: "Account or Account Types not found" });
 
     return {
       account,
@@ -70,8 +70,6 @@ export const loader = async (args: LoaderFunctionArgs) => {
     handleLoaderError(e);
   }
 };
-
-export const meta: MetaFunction<typeof loader> = ({ data }) => [{ title: `Edit Account ${data?.account.code}` }];
 
 export const action = async (args: ActionFunctionArgs) => {
   await SessionService.requireAdmin(args);
@@ -104,7 +102,7 @@ export const action = async (args: ActionFunctionArgs) => {
       description: "Great job.",
     });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error updating account", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError(null, { message: "An unknown error occurred" }, { status: 500 });
   }
@@ -120,10 +118,8 @@ export default function EditAccountPage() {
 
   return (
     <>
+      <title>Edit Account {account.code}</title>
       <PageHeader title="Edit Account" />
-      <pre className="text-xs">
-        <code>{JSON.stringify(form.value(), null, 2)}</code>
-      </pre>
       <PageContainer>
         <form {...form.getFormProps()} className="space-y-4 sm:max-w-md">
           <input type="hidden" name="id" value={account.id} />

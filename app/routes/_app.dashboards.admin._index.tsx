@@ -1,7 +1,7 @@
 import { ReimbursementRequestStatus } from "@prisma/client";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { redirect, useLoaderData, type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { redirect, useLoaderData, type LoaderFunctionArgs } from "react-router";
 dayjs.extend(utc);
 
 import { AnnouncementCard } from "~/components/admin/announcement-card";
@@ -15,8 +15,6 @@ import { db } from "~/integrations/prisma.server";
 import { AccountType } from "~/lib/constants";
 import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
-
-export const meta: MetaFunction = () => [{ title: "Home" }];
 
 export async function loader(args: LoaderFunctionArgs) {
   try {
@@ -81,6 +79,7 @@ export default function Index() {
 
   return (
     <>
+      <title>Home</title>
       <PageHeader title="Home" />
       <PageContainer className="max-w-4xl">
         <div className="mb-4">

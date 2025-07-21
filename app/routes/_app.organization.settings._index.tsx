@@ -25,7 +25,7 @@ export async function action(args: ActionFunctionArgs) {
     await db.organization.update({ where: { id: orgId }, data: result.data });
     return Toasts.redirectWithSuccess("/organization/settings", { message: "Organization settings updated" });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error updating organization settings", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError({ success: false }, { message: "Error", description: "An unknown error occurred" });
   }

@@ -2,7 +2,7 @@ import { parseFormData, validationError } from "@rvf/react-router";
 import { IconExternalLink } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { ActionFunctionArgs, Link, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
+import { ActionFunctionArgs, Link, LoaderFunctionArgs, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod/v4";
 dayjs.extend(utc);
@@ -15,7 +15,7 @@ import { Button } from "~/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
-import { forbidden, handleLoaderError } from "~/lib/responses.server";
+import { handleLoaderError, Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { cn, formatCentsAsDollars } from "~/lib/utils";
 import { generateS3Urls } from "~/services.server/receipt";
@@ -93,7 +93,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     });
 
     if (user.isMember && transaction.account.user?.id !== user.id) {
-      throw forbidden({ message: "You do not have permission to view this transaction" });
+      throw Responses.forbidden({ message: "You do not have permission to view this transaction" });
     }
 
     transaction.receipts = await generateS3Urls(transaction.receipts);
@@ -102,8 +102,6 @@ export const loader = async (args: LoaderFunctionArgs) => {
     handleLoaderError(e);
   }
 };
-
-export const meta: MetaFunction = () => [{ title: "Transaction Details" }];
 
 export const action = async (args: ActionFunctionArgs) => {
   await SessionService.requireAdmin(args);
@@ -131,6 +129,7 @@ export default function TransactionDetailsPage() {
 
   return (
     <>
+      <title>Transaction Details</title>
       <PageHeader title="Transaction Details">
         <div className="flex items-center gap-2">
           {!authorizedUser.isMember ? (
