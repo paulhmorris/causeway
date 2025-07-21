@@ -1,5 +1,5 @@
 import { IconPlus } from "@tabler/icons-react";
-import type { LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { LoaderFunctionArgs } from "react-router";
 import { Link, useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
@@ -9,8 +9,6 @@ import { Button } from "~/components/ui/button";
 import { UsersTable } from "~/components/users/users-table";
 import { db } from "~/integrations/prisma.server";
 import { SessionService } from "~/services.server/session";
-
-export const meta: MetaFunction = () => [{ title: "Users" }];
 
 export async function loader(args: LoaderFunctionArgs) {
   await SessionService.requireAdmin(args);
@@ -32,6 +30,7 @@ export default function UserIndexPage() {
   const { users } = useLoaderData<typeof loader>();
   return (
     <>
+      <title>Users</title>
       <PageHeader title="Users">
         <Button asChild>
           <Link to="/users/new" prefetch="intent">

@@ -1,7 +1,7 @@
 import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { ActionFunctionArgs, LoaderFunctionArgs, useLoaderData, type MetaFunction } from "react-router";
+import { ActionFunctionArgs, LoaderFunctionArgs, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod/v4";
 dayjs.extend(utc);
@@ -78,8 +78,6 @@ export const loader = async (args: LoaderFunctionArgs) => {
   }
 };
 
-export const meta: MetaFunction = () => [{ title: "Edit Account" }];
-
 export const action = async (args: ActionFunctionArgs) => {
   await SessionService.requireUser(args);
   const orgId = await SessionService.requireOrgId(args);
@@ -108,6 +106,7 @@ export default function EditEngagementPage() {
 
   return (
     <>
+      <title>Edit Engagement</title>
       <PageHeader title="Edit Engagement" />
       <PageContainer>
         <ValidatedForm

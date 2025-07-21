@@ -1,5 +1,5 @@
 import { IconPlus } from "@tabler/icons-react";
-import type { LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { LoaderFunctionArgs } from "react-router";
 import { Link, useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
@@ -10,8 +10,6 @@ import { Button } from "~/components/ui/button";
 import { db } from "~/integrations/prisma.server";
 import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
-
-export const meta: MetaFunction = () => [{ title: "Engagements" }];
 
 export async function loader(args: LoaderFunctionArgs) {
   try {
@@ -60,6 +58,7 @@ export default function EngagementIndexPage() {
 
   return (
     <>
+      <title>Engagements</title>
       <PageHeader title="Engagements">
         <Button asChild>
           <Link to="/engagements/new" prefetch="intent">

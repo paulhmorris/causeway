@@ -1,7 +1,7 @@
 import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { ActionFunctionArgs, Link, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
+import { ActionFunctionArgs, Link, LoaderFunctionArgs, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod/v4";
 dayjs.extend(utc);
@@ -61,8 +61,6 @@ export const loader = async (args: LoaderFunctionArgs) => {
   return { transaction, categories };
 };
 
-export const meta: MetaFunction = () => [{ title: "Transaction Edit" }];
-
 export const action = async (args: ActionFunctionArgs) => {
   await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
@@ -103,7 +101,8 @@ export default function TransactionDetailsPage() {
 
   return (
     <>
-      <PageHeader title="Transaction Edit" />
+      <title>Edit Transaction</title>
+      <PageHeader title="Edit Transaction" />
       <BackButton to={`/transactions/${transaction.id}`} />
 
       <PageContainer className="max-w-3xl">

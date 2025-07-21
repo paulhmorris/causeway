@@ -1,7 +1,7 @@
 import { Engagement } from "@prisma/client";
 import { IconAddressBook, IconPlus, IconUser } from "@tabler/icons-react";
 import dayjs from "dayjs";
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Link, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod/v4";
@@ -141,10 +141,6 @@ export async function action(args: ActionFunctionArgs) {
   }
 }
 
-export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  { title: `${data?.contact.firstName}${data?.contact.lastName ? " " + data.contact.lastName : ""}` },
-];
-
 export default function ContactDetailsPage() {
   const user = useUser();
   const { contact } = useLoaderData<typeof loader>();
@@ -154,6 +150,10 @@ export default function ContactDetailsPage() {
 
   return (
     <>
+      <title>
+        {contact.firstName}
+        {contact.lastName ? " " + contact.lastName : ""}
+      </title>
       <PageHeader title="View Contact">
         {canDelete ? (
           <ConfirmDestructiveModal

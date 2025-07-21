@@ -2,7 +2,7 @@ import { parseFormData, validationError } from "@rvf/react-router";
 import { IconExternalLink } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { ActionFunctionArgs, Link, LoaderFunctionArgs, MetaFunction, useLoaderData } from "react-router";
+import { ActionFunctionArgs, Link, LoaderFunctionArgs, useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod/v4";
 dayjs.extend(utc);
@@ -103,8 +103,6 @@ export const loader = async (args: LoaderFunctionArgs) => {
   }
 };
 
-export const meta: MetaFunction = () => [{ title: "Transaction Details" }];
-
 export const action = async (args: ActionFunctionArgs) => {
   await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
@@ -131,6 +129,7 @@ export default function TransactionDetailsPage() {
 
   return (
     <>
+      <title>Transaction Details</title>
       <PageHeader title="Transaction Details">
         <div className="flex items-center gap-2">
           {!authorizedUser.isMember ? (

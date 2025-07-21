@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import type { LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { LoaderFunctionArgs } from "react-router";
 import { Link, useLoaderData } from "react-router";
 dayjs.extend(utc);
 
@@ -16,8 +16,6 @@ import { Facet } from "~/components/ui/data-table/data-table-toolbar";
 import { db } from "~/integrations/prisma.server";
 import { formatCentsAsDollars } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
-
-export const meta: MetaFunction = () => [{ title: "Transactions" }];
 
 export async function loader(args: LoaderFunctionArgs) {
   const user = await SessionService.requireUser(args);
@@ -93,6 +91,7 @@ export default function TransactionsIndexPage() {
 
   return (
     <>
+      <title>Transactions</title>
       <PageHeader title="Transactions" />
       <div className="mt-1 max-w-xs">
         <TransactionSearch />

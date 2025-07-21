@@ -1,7 +1,7 @@
 import {} from "@clerk/react-router/";
 import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import { IconChevronRight } from "@tabler/icons-react";
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { useLoaderData, useSearchParams } from "react-router";
 import { z } from "zod/v4";
 
@@ -120,51 +120,52 @@ export const action = async (args: ActionFunctionArgs) => {
   }
 };
 
-export const meta: MetaFunction = () => [{ title: "Choose Organization" }];
-
 export default function ChooseOrgPage() {
   const { orgs } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/";
 
   return (
-    <AuthCard>
-      <h1 className="text-4xl font-extrabold">Choose organization</h1>
-      <p className="text-muted-foreground mt-1 text-sm">You can change organizations at any time.</p>
-      <ValidatedForm
-        schema={schema}
-        method="post"
-        className="mt-6 space-y-4"
-        defaultValues={{
-          redirectTo: redirectTo === "/" ? undefined : redirectTo,
-          rememberSelection: "",
-          orgId: "",
-        }}
-      >
-        <input type="hidden" name="redirectTo" value={redirectTo === "/choose-org" ? "/" : redirectTo} />
-        <Label className="inline-flex cursor-pointer items-center gap-2">
-          <Checkbox
-            name="rememberSelection"
-            defaultChecked={orgs.some((o) => o.isDefault)}
-            aria-label="Remember selection"
-          />
-          <span>Remember selection</span>
-        </Label>
-        <div className="flex max-h-[30dvh] flex-col gap-y-4 overflow-y-scroll">
-          {orgs.map((org) => {
-            return (
-              <BigButton key={org.id} type="submit" name="orgId" value={org.id}>
-                <div>
-                  <p className="text-foreground text-lg font-bold">{org.name}</p>
-                  <p className="text-muted-foreground text-sm">{normalizeEnum(org.role)}</p>
-                </div>
-                <IconChevronRight />
-              </BigButton>
-            );
-          })}
-        </div>
-      </ValidatedForm>
-    </AuthCard>
+    <>
+      <title>Choose Organization</title>
+      <AuthCard>
+        <h1 className="text-4xl font-extrabold">Choose organization</h1>
+        <p className="text-muted-foreground mt-1 text-sm">You can change organizations at any time.</p>
+        <ValidatedForm
+          schema={schema}
+          method="post"
+          className="mt-6 space-y-4"
+          defaultValues={{
+            redirectTo: redirectTo === "/" ? undefined : redirectTo,
+            rememberSelection: "",
+            orgId: "",
+          }}
+        >
+          <input type="hidden" name="redirectTo" value={redirectTo === "/choose-org" ? "/" : redirectTo} />
+          <Label className="inline-flex cursor-pointer items-center gap-2">
+            <Checkbox
+              name="rememberSelection"
+              defaultChecked={orgs.some((o) => o.isDefault)}
+              aria-label="Remember selection"
+            />
+            <span>Remember selection</span>
+          </Label>
+          <div className="flex max-h-[30dvh] flex-col gap-y-4 overflow-y-scroll">
+            {orgs.map((org) => {
+              return (
+                <BigButton key={org.id} type="submit" name="orgId" value={org.id}>
+                  <div>
+                    <p className="text-foreground text-lg font-bold">{org.name}</p>
+                    <p className="text-muted-foreground text-sm">{normalizeEnum(org.role)}</p>
+                  </div>
+                  <IconChevronRight />
+                </BigButton>
+              );
+            })}
+          </div>
+        </ValidatedForm>
+      </AuthCard>
+    </>
   );
 }
 

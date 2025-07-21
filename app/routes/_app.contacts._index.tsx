@@ -1,5 +1,5 @@
 import { IconPlus } from "@tabler/icons-react";
-import type { LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { LoaderFunctionArgs } from "react-router";
 import { Form, Link, useLoaderData, useSearchParams, useSubmit } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
@@ -56,8 +56,6 @@ export async function loader(args: LoaderFunctionArgs) {
   }
 }
 
-export const meta: MetaFunction = () => [{ title: "Contacts" }];
-
 export default function ContactIndexPage() {
   const { contacts } = useLoaderData<typeof loader>();
   const submit = useSubmit();
@@ -65,6 +63,7 @@ export default function ContactIndexPage() {
 
   return (
     <>
+      <title>Contacts</title>
       <PageHeader title="Contacts">
         <Button asChild>
           <Link to="/contacts/new" prefetch="intent">

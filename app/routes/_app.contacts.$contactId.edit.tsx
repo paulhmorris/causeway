@@ -2,7 +2,7 @@ import { UserRole } from "@prisma/client";
 import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import { IconAddressBook, IconUser } from "@tabler/icons-react";
 import { useState } from "react";
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Link, useLoaderData, useLocation } from "react-router";
 import invariant from "tiny-invariant";
 
@@ -101,10 +101,6 @@ export const loader = async (args: LoaderFunctionArgs) => {
     handleLoaderError(e);
   }
 };
-
-export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  { title: `Edit ${data?.contact.firstName}${data?.contact.lastName ? " " + data.contact.lastName : ""}` },
-];
 
 export const action = async (args: ActionFunctionArgs) => {
   const user = await SessionService.requireUser(args);
@@ -247,6 +243,9 @@ export default function EditContactPage() {
 
   return (
     <>
+      <title>
+        Edit {contact.firstName}${contact.lastName ? " " + contact.lastName : ""}
+      </title>
       <PageHeader title="Edit Contact" />
       <div className="mt-1">
         {user.contact.id === contact.id ? (

@@ -1,6 +1,6 @@
 import { MembershipRole } from "@prisma/client";
 import { parseFormData, useForm, validationError } from "@rvf/react-router";
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { useLoaderData } from "react-router";
 import invariant from "tiny-invariant";
 import { z } from "zod/v4";
@@ -71,8 +71,6 @@ export const loader = async (args: LoaderFunctionArgs) => {
   }
 };
 
-export const meta: MetaFunction<typeof loader> = ({ data }) => [{ title: `Edit Account ${data?.account.code}` }];
-
 export const action = async (args: ActionFunctionArgs) => {
   await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
@@ -120,10 +118,8 @@ export default function EditAccountPage() {
 
   return (
     <>
+      <title>Edit Account {account.code}</title>
       <PageHeader title="Edit Account" />
-      <pre className="text-xs">
-        <code>{JSON.stringify(form.value(), null, 2)}</code>
-      </pre>
       <PageContainer>
         <form {...form.getFormProps()} className="space-y-4 sm:max-w-md">
           <input type="hidden" name="id" value={account.id} />

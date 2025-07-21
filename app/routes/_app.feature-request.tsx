@@ -1,5 +1,5 @@
 import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
-import { ActionFunctionArgs, MetaFunction } from "react-router";
+import { ActionFunctionArgs } from "react-router";
 import { z } from "zod/v4";
 
 import { PageHeader } from "~/components/common/page-header";
@@ -49,11 +49,10 @@ export async function action(args: ActionFunctionArgs) {
   }
 }
 
-export const meta: MetaFunction = () => [{ title: `Feature Request` }];
-
 export default function FeatureRequestPage() {
   return (
     <>
+      <title>Feature Request</title>
       <PageHeader title="Feature Request" description="Request an improvement or feature" />
       <PageContainer className="max-w-sm">
         <ValidatedForm

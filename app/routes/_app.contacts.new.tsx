@@ -1,6 +1,6 @@
 import { MembershipRole } from "@prisma/client";
 import { parseFormData, validationError } from "@rvf/react-router";
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
@@ -16,8 +16,6 @@ import { Toasts } from "~/lib/toast.server";
 import { SessionService } from "~/services.server/session";
 
 const logger = createLogger("Routes.ContactNew");
-
-export const meta: MetaFunction = () => [{ title: "New Contact" }];
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const user = await SessionService.requireUser(args);
@@ -121,6 +119,7 @@ export default function NewContactPage() {
 
   return (
     <>
+      <title>New Contact</title>
       <PageHeader title="New Contact" />
       <PageContainer>
         <NewContactForm contactTypes={data.contactTypes} usersWhoCanBeAssigned={data.usersWhoCanBeAssigned} />

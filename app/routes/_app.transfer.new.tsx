@@ -1,6 +1,6 @@
 import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { useLoaderData } from "react-router";
 import { z } from "zod/v4";
 
@@ -28,8 +28,6 @@ const schema = z.object({
   toAccountId: cuid,
   amountInCents: currency.pipe(z.number().positive({ error: "Amount must be greater than $0.00" })),
 });
-
-export const meta: MetaFunction = () => [{ title: "Add Transfer" }];
 
 export const loader = async (args: LoaderFunctionArgs) => {
   await SessionService.requireAdmin(args);
@@ -127,6 +125,7 @@ export default function AddTransferPage() {
 
   return (
     <>
+      <title>Add Transfer</title>
       <PageHeader title="Add Transfer" />
       <PageContainer>
         <ValidatedForm
