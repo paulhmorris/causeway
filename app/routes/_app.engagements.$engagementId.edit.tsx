@@ -96,9 +96,9 @@ export const action = async (args: ActionFunctionArgs) => {
     });
 
     return Toasts.redirectWithSuccess(`/engagements/${engagement.id}`, { message: "Engagement updated" });
-  } catch (e) {
-    logger.error(e);
-    Sentry.captureException(e);
+  } catch (error) {
+    logger.error("Error updating engagement", { error });
+    Sentry.captureException(error);
     return Toasts.dataWithError(null, { message: "An unknown error occurred" }, { status: 500 });
   }
 };

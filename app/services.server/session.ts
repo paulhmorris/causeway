@@ -77,7 +77,7 @@ class Session {
       }
       const returnUrl = new URL("/choose-org", originURL.origin);
       returnUrl.searchParams.set("redirectTo", originURL.pathname);
-      this.logger.info({ returnUrl: returnUrl.toString() }, "redirecting");
+      this.logger.info("Redirecting to choose-org", { returnUrl: returnUrl.toString() });
       throw redirect(returnUrl.toString());
     }
     return orgId;
@@ -87,7 +87,7 @@ class Session {
     const { userId, sessionId, sessionClaims } = await this.getSession(args);
 
     if (!userId) {
-      this.logger.info({ sessionClaims }, `no userId found in session, logging out`);
+      this.logger.info("No userId found in session, logging out", { sessionClaims });
       await this.logout(sessionId);
       throw redirect("/logout");
     }
@@ -98,14 +98,14 @@ class Session {
       if (sessionClaims.pem) {
         try {
           user = await AuthService.linkOAuthUserToExistingUser(sessionClaims.pem, userId);
-          this.logger.info({ userId: user.id }, "Successfully linked user");
+          this.logger.info("Successfully linked user", { userId: user.id });
         } catch (error) {
-          this.logger.error({ error }, "Failed to link user");
+          this.logger.error("Failed to link user", { error });
           await this.logout(sessionId);
           throw redirect("/logout");
         }
       } else {
-        this.logger.error({ sessionClaims }, "No pem claim found in session claims, cannot link user. Logging out.");
+        this.logger.error("No pem claim found in session claims, cannot link user. Logging out.", { sessionClaims });
         await this.logout(sessionId);
         throw redirect("/logout");
       }
@@ -149,14 +149,14 @@ class Session {
 
     // User does not exist
     if (!user) {
-      this.logger.warn({ userId }, "User not found in database");
+      this.logger.warn("User not found in database", { userId });
       throw unauthorized();
     }
 
     // User is not a member of the current organization
     const currentMembership = user.memberships.find((m) => m.orgId === orgId);
     if (!currentMembership) {
-      this.logger.warn({ user, currentMembership }, "No membership in the current org");
+      this.logger.warn("User is not a member of the current organization", { userId, orgId });
       throw unauthorized();
     }
 
@@ -188,7 +188,7 @@ class Session {
           org: currentMembership.org,
         };
       }
-      this.logger.warn({ username: user.username, role: user.role, allowedRoles }, "User did not have required role");
+      this.logger.warn("User did not have required role", { username: user.username, role: user.role, allowedRoles });
       throw unauthorized();
     }
 
@@ -204,7 +204,7 @@ class Session {
     }
 
     // Some other scenario
-    this.logger.error({ user, allowedRoles }, "Unhandled authentication scenario");
+    this.logger.error("Unhandled authentication scenario", { user, allowedRoles });
     throw unauthorized();
   }
 
@@ -218,7 +218,7 @@ class Session {
     redirectTo?: string;
   }) {
     const session = await this.getOrgSession(args.fnArgs.request);
-    this.logger.info({ orgId: args.orgId, redirectTo: args.redirectTo }, "Adding orgId to session for user");
+    this.logger.info("Adding orgId to session for user", { orgId: args.orgId, redirectTo: args.redirectTo });
     session.set(this.ORGANIZATION_SESSION_KEY, args.orgId);
     return redirect(args.redirectTo ?? "/", {
       headers: {

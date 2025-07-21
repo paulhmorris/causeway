@@ -104,7 +104,7 @@ export const action = async (args: ActionFunctionArgs) => {
       description: "Great job.",
     });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error updating account", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError(null, { message: "An unknown error occurred" }, { status: 500 });
   }

@@ -87,7 +87,7 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `Transaction has been updated.`,
     });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error updating transaction", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError(null, {
       message: "Error",

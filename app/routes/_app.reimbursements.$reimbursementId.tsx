@@ -64,7 +64,7 @@ export async function action(args: ActionFunctionArgs) {
 
   // Reopen
   if (_action === ReimbursementRequestStatus.PENDING) {
-    logger.info({ username: user.username }, "Reopening reimbursement request...");
+    logger.info("Reopening reimbursement request...", { username: user.username });
     const rr = await db.reimbursementRequest.update({
       where: { id, orgId },
       data: { status: ReimbursementRequestStatus.PENDING },
@@ -85,7 +85,7 @@ export async function action(args: ActionFunctionArgs) {
 
   // Approved
   if (_action === ReimbursementRequestStatus.APPROVED) {
-    logger.info({ username: user.username }, "Processing reimbursement request approval...");
+    logger.info("Processing reimbursement request approval...", { username: user.username });
     const { amount, categoryId, accountId, approverNote } = result.data;
     if (!accountId) {
       return validationError(
@@ -127,7 +127,7 @@ export async function action(args: ActionFunctionArgs) {
 
       const balance = account.transactions.reduce((acc, t) => acc + t.amountInCents, 0);
       if (balance < amount) {
-        logger.warn({ username: user.username, code: account.code, balance, amount }, `Insufficient funds for account`);
+        logger.warn("Insufficient funds for account", { username: user.username, code: account.code, balance, amount });
         return Toasts.dataWithWarning(null, {
           message: "Insufficient Funds",
           description: `The reimbursement request couldn't be completed because account ${
@@ -173,7 +173,7 @@ export async function action(args: ActionFunctionArgs) {
         description: `The reimbursement request has been approved and account ${account.code} has been adjusted.`,
       });
     } catch (error) {
-      logger.error(error);
+      logger.error("Error updating reimbursement request", { error });
       Sentry.captureException(error);
       return Toasts.dataWithError(null, {
         message: "Error",

@@ -1,37 +1,29 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-import "@axiomhq/pino";
-import pino from "pino";
+import { Axiom } from "@axiomhq/js";
+import { AxiomJSTransport, ConsoleTransport, Logger } from "@axiomhq/logging";
 
-import "pino-pretty";
 import { CONFIG } from "~/lib/env.server";
 
-const devTransport: pino.TransportSingleOptions = {
-  target: "pino-pretty",
-  options: {
-    colorize: true,
-    ignore: "pid,hostname",
-  },
-};
+// Axiom
+const axiom = new Axiom({ token: process.env.AXIOM_TOKEN });
+const logLevel = CONFIG.isDev ? "debug" : "info";
+const logger = new Logger({
+  logLevel,
+  args: { environment: process.env.VERCEL_ENV },
+  transports: [
+    new AxiomJSTransport({ axiom, logLevel, dataset: "server" }),
+    new ConsoleTransport({ logLevel, prettyPrint: true }),
+  ],
+});
 
-const baseLogger = pino(
-  {
-    transport: CONFIG.isDev ? devTransport : undefined,
-    level: CONFIG.isDev ? "debug" : (process.env.LOG_LEVEL ?? "info"),
-    name: "Global",
-  },
-  CONFIG.isDev
-    ? undefined
-    : pino.transport({
-        target: "@axiomhq/pino",
-        options: {
-          dataset: process.env.AXIOM_DATASET,
-          token: process.env.AXIOM_TOKEN,
-        },
-      }),
-);
-
-export function createLogger(name?: string) {
-  return name ? baseLogger.child({ name }) : baseLogger;
+export function createLogger(module: string) {
+  return logger.with({ module });
 }
 
-export const logger = createLogger();
+export const httpLogger = new Logger({
+  logLevel,
+  args: { environment: process.env.VERCEL_ENV },
+  transports: [
+    new AxiomJSTransport({ axiom, logLevel, dataset: "http" }),
+    new ConsoleTransport({ logLevel, prettyPrint: true }),
+  ],
+});

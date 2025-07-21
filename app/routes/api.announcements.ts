@@ -123,7 +123,7 @@ export async function action(args: ActionFunctionArgs) {
       );
     }
   } catch (error) {
-    logger.error(error);
+    logger.error("Error processing announcement", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred." });
   }

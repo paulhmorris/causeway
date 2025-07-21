@@ -61,7 +61,7 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `${contact.firstName} has been invited to join the organization.`,
     });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error creating user", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError(null, {
       message: "Error",

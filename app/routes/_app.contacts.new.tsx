@@ -110,7 +110,7 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `${contact.firstName} ${contact.lastName} was created successfully.`,
     });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error creating contact", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError(null, { message: "Error", description: "An unknown error occurred." });
   }

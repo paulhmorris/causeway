@@ -8,6 +8,9 @@ const _serverEnv = z.object({
   // CI
   CI: z.string().optional(),
 
+  // Axiom
+  AXIOM_TOKEN: z.string(),
+
   // RR
   SESSION_SECRET: z.string().min(16),
 

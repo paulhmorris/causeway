@@ -200,7 +200,7 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `${contact.firstName} ${contact.lastName} was updated successfully.`,
     });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error updating contact", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError(null, {
       message: "Unknown error",

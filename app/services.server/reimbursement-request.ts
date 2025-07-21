@@ -6,7 +6,7 @@ const logger = createLogger("ReimbursementRequestService");
 
 export const ReimbursementRequestService = {
   async getById(id: string, orgId: string) {
-    logger.info({ id, orgId }, "Fetching reimbursement request by id");
+    logger.debug("Fetching reimbursement request by id", { id, orgId });
     const rr = await db.reimbursementRequest.findUnique({
       where: { id, orgId },
       select: {
@@ -60,7 +60,7 @@ export const ReimbursementRequestService = {
 
   // In case of REOPEN, have to jump through a few hoops to get the related transaction's category to fill in the form
   getRelatedTransaction(requestId: string) {
-    logger.info({ requestId }, "Fetching related transaction for reimbursement request");
+    logger.debug("Fetching related transaction for reimbursement request", { requestId });
     return db.transactionItem.findFirst({
       where: { description: `Reimbursement ID: ${requestId}` },
       select: {

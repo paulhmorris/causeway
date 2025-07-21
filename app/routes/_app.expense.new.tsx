@@ -104,7 +104,7 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `Expense of ${formatCentsAsDollars(totalInCents)} charged to account ${transaction.account.code}`,
     });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error creating expense", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
   }

@@ -2,8 +2,10 @@
 import { Prisma } from "@prisma/client";
 import { data, redirect } from "react-router";
 
-import { logger } from "~/integrations/logger.server";
+import { createLogger } from "~/integrations/logger.server";
 import { Sentry } from "~/integrations/sentry";
+
+const logger = createLogger("Responses");
 
 /**
  * Create a response receiving a JSON object with the status code 201.
@@ -324,7 +326,7 @@ export function handleLoaderError(e: unknown, request?: Request): never {
   if (e instanceof Error && request) {
     logger.error(`Loader error at path ${new URL(request.url).pathname}: ${e.message}`);
   } else {
-    logger.error(e);
+    logger.error("Loader error", { error: e });
   }
   Sentry.captureException(e);
 

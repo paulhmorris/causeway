@@ -3,8 +3,8 @@
 import { reactRouter } from "@react-router/dev/vite";
 import { sentryReactRouter, SentryReactRouterBuildOptions } from "@sentry/react-router";
 import tailwindcss from "@tailwindcss/vite";
-import morgan from "morgan";
-import { defineConfig, ViteDevServer } from "vite";
+import { reactRouterHonoServer } from "react-router-hono-server/dev";
+import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { coverageConfigDefaults, defaultExclude } from "vitest/config";
 
@@ -31,15 +31,21 @@ export default defineConfig((config) => ({
     port: 3000,
   },
   plugins: [
-    morganPlugin(),
-    tsconfigPaths(),
-    !process.env.VITEST && reactRouter(),
     tailwindcss(),
+    tsconfigPaths(),
+    reactRouterHonoServer(),
+    !process.env.VITEST && reactRouter(),
     ...(isCI ? [sentryReactRouter(sentryConfig, config)] : []),
   ],
 
   build: {
+    target: "esnext",
     sourcemap: !!process.env.CI,
+    rollupOptions: config.isSsrBuild
+      ? {
+          input: "./app/server/index.ts",
+        }
+      : undefined,
   },
 
   test: {
@@ -55,26 +61,3 @@ export default defineConfig((config) => ({
     },
   },
 }));
-
-function morganPlugin() {
-  return {
-    name: "morgan-plugin",
-    configureServer(server: ViteDevServer) {
-      return () => {
-        server.middlewares.use(
-          morgan("dev", {
-            skip: (req) => {
-              if (req.url?.startsWith("/.well-known")) {
-                return true;
-              }
-              if (req.url?.startsWith("/__manifest")) {
-                return true;
-              }
-              return false;
-            },
-          }),
-        );
-      };
-    },
-  };
-}

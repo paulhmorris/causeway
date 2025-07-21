@@ -57,10 +57,10 @@ export const action = async (args: ActionFunctionArgs) => {
         return new Response("Method Not Allowed", { status: 405, statusText: "Method Not Allowed" });
       }
     }
-  } catch (e) {
-    logger.error(e);
-    Sentry.captureException(e);
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+  } catch (error) {
+    logger.error("Error changing organization", { error });
+    Sentry.captureException(error);
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
       return Toasts.dataWithError(null, {
         message: "Error",
         description: "No membership found for the selected organization",

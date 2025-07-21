@@ -5,7 +5,7 @@ const logger = createLogger("AccountService");
 
 export const AccountService = {
   getTypes(orgId: string) {
-    logger.info({ orgId }, "Getting account types");
+    logger.debug("Getting account types", { orgId });
     return db.accountType.findMany({ where: { OR: [{ orgId }, { orgId: null }] } });
   },
 };

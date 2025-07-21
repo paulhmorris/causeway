@@ -42,9 +42,9 @@ export async function action(args: ActionFunctionArgs) {
     return Toasts.redirectWithSuccess(user.isMember ? "/dashboards/staff" : "/dashboards/admin", {
       message: "Request Sent",
     });
-  } catch (e) {
-    logger.error(e);
-    Sentry.captureException(e);
+  } catch (error) {
+    logger.error("Error sending feature request", { error });
+    Sentry.captureException(error);
     return Toasts.dataWithError(null, { message: "Error", description: "An unknown error occurred." });
   }
 }

@@ -116,7 +116,7 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `Transfer completed successfully.`,
     });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error creating transfer", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError(null, { message: "An unknown error occurred" });
   }

@@ -144,7 +144,7 @@ export const action = async (args: ActionFunctionArgs) => {
       description: "Your request will be processed as soon as possible.",
     });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error creating reimbursement request", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError(null, { message: "An unknown error occurred" }, { status: 500 });
   }

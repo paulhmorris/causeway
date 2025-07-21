@@ -134,7 +134,7 @@ export async function action(args: ActionFunctionArgs) {
         description: `${contact.firstName} ${contact.lastName} was deleted successfully.`,
       });
     } catch (error) {
-      logger.error(error);
+      logger.error("Error deleting contact", { error });
       Sentry.captureException(error);
       return Toasts.dataWithError({ success: false }, { message: "Error", description: "An unknown error occurred" });
     }

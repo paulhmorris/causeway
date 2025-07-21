@@ -90,7 +90,7 @@ export const action = async (args: ActionFunctionArgs) => {
       description: "Well done.",
     });
   } catch (error) {
-    logger.error(error);
+    logger.error("Error creating account", { error });
     Sentry.captureException(error);
     return Toasts.dataWithError({ success: false }, { message: "Error creating account" });
   }
