@@ -1,4 +1,3 @@
-import {} from "@rvf/react-router";
 import { IconCoins, IconExclamationCircle, IconUser } from "@tabler/icons-react";
 import type { LoaderFunctionArgs } from "react-router";
 import { Link, useLoaderData } from "react-router";
