@@ -60,7 +60,7 @@
     "@rvf/react-router": "^7.1.5",
     "@sentry/profiling-node": "^9.40.0",
     "@sentry/react-router": "^9.40.0",
-    "@tabler/icons-react": "^3.34.0",
+    "@tabler/icons-react": "^3.17.0",
     "@tailwindcss/vite": "^4.1.11",
     "@tanstack/match-sorter-utils": "^8.19.4",
     "@tanstack/react-table": "^8.21.3",

@@ -1,8 +1,9 @@
 import { FormScope, useField, ValueOfInputType } from "@rvf/react-router";
 import { IconCurrencyDollar, IconEye, IconEyeOff } from "@tabler/icons-react";
-import { ComponentPropsWithRef, forwardRef, JSX, useId, useState } from "react";
+import { ComponentPropsWithoutRef, ComponentPropsWithRef, forwardRef, JSX, useId, useRef, useState } from "react";
 
 import { Checkbox } from "~/components/ui/checkbox";
+import { Combobox } from "~/components/ui/combobox";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
@@ -312,5 +313,62 @@ export function UncontrolledCheckbox({
       </Label>
       <FieldDescription id={inputId} description={description} />
     </div>
+  );
+}
+
+type FormComboboxProps = Omit<ComponentPropsWithoutRef<typeof Combobox>, "id" | "value"> & {
+  scope: FormScope<string | undefined>;
+  label: string;
+  placeholder?: string;
+  description?: string;
+  required?: boolean;
+  hideLabel?: boolean;
+};
+
+export function FormCombobox(props: FormComboboxProps) {
+  const { scope, label, placeholder, description, required, hideLabel } = props;
+  const selectId = useId();
+  const field = useField(scope);
+  const { onChange, name, ...input } = field.getControlProps();
+  const error = field.error();
+  const comboboxTriggerRef = useRef<HTMLButtonElement>(null);
+
+  function handleLabelClick() {
+    if (comboboxTriggerRef.current) {
+      comboboxTriggerRef.current.click();
+    }
+  }
+
+  return (
+    <>
+      <div
+        className={cn(
+          "flex w-full items-center gap-x-1 leading-4",
+          error && "text-destructive",
+          props.disabled && "cursor-not-allowed opacity-50",
+          hideLabel && "sr-only",
+        )}
+      >
+        <Label onClick={handleLabelClick} htmlFor={selectId}>
+          {label}
+        </Label>
+        <LabelOptionalIndicator required={required} error={error} />
+      </div>
+      <input type="hidden" name={name} value={input.value?.toString()} />
+      <Combobox
+        id={selectId}
+        ref={comboboxTriggerRef}
+        options={props.options}
+        value={input.value}
+        onChange={onChange}
+        placeholder={placeholder}
+        disabled={props.disabled}
+      />
+      {error ? (
+        <FieldError id={selectId} error={error} />
+      ) : (
+        <FieldDescription id={selectId} description={description} />
+      )}
+    </>
   );
 }
