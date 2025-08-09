@@ -20,13 +20,13 @@ const logger = createLogger("SessionService");
 export const SessionService = {
   ORGANIZATION_SESSION_KEY: "orgId",
 
-  async logout(sessionId: string | null) {
+  async logout(sessionId: string | null, redirect_uri?: string) {
     if (sessionId) {
       logger.info("Logging out user", { sessionId });
       await AuthService.revokeSession(sessionId);
     }
     logger.warn("No sessionId provided, skipping logout and redirecting to sign in");
-    throw Responses.redirectToSignIn();
+    throw Responses.redirectToSignIn(redirect_uri);
   },
 
   async getSession(args: LoaderFunctionArgs | ActionFunctionArgs) {
@@ -42,12 +42,12 @@ export const SessionService = {
     return sessionStorage.commitSession(session);
   },
 
-  async getUserId(args: LoaderFunctionArgs | ActionFunctionArgs): Promise<string | null> {
+  async getUserId(args: LoaderFunctionArgs | ActionFunctionArgs) {
     const { userId } = await getAuth(args);
     return userId;
   },
 
-  async getOrgId({ request }: LoaderFunctionArgs | ActionFunctionArgs): Promise<Organization["id"] | undefined> {
+  async getOrgId({ request }: LoaderFunctionArgs | ActionFunctionArgs) {
     const session = await this.getOrgSession(request);
     const orgId = session.get(this.ORGANIZATION_SESSION_KEY) as Organization["id"] | undefined;
     return orgId;
@@ -75,7 +75,7 @@ export const SessionService = {
       const originURL = new URL(args.request.url);
       if (originURL.pathname === "/") {
         await this.logout(sessionId);
-        throw redirect("/logout");
+        return;
       }
       const returnUrl = new URL("/choose-org", originURL.origin);
       returnUrl.searchParams.set("redirectTo", originURL.pathname);
@@ -90,8 +90,8 @@ export const SessionService = {
 
     if (!userId) {
       logger.info("No userId found in session, logging out", { sessionClaims });
-      await this.logout(sessionId);
-      throw Responses.redirectToSignIn();
+      await this.logout(sessionId, args.request.url);
+      return;
     }
 
     let user = await db.user.findUnique({ where: { clerkId: userId }, select: { id: true } });
@@ -103,13 +103,13 @@ export const SessionService = {
           logger.info("Successfully linked user", { userId: user.id });
         } catch (error) {
           logger.error("Failed to link user", { error });
-          await this.logout(sessionId);
-          throw Responses.redirectToSignIn();
+          await this.logout(sessionId, args.request.url);
+          return;
         }
       } else {
         logger.error("No pem claim found in session claims, cannot link user. Logging out.", { sessionClaims });
-        await this.logout(sessionId);
-        throw Responses.redirectToSignIn();
+        await this.logout(sessionId, args.request.url);
+        return;
       }
     }
 

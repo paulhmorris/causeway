@@ -30,20 +30,20 @@ export const Responses = {
     return redirect(request.headers.get("Referer") ?? fallback, init);
   },
 
-  redirectToSignIn(redirect_url?: string): never {
+  redirectToSignIn(redirect_url?: string) {
     const url = CONFIG.signInUrl;
     if (redirect_url) {
       url.searchParams.set("redirect_url", redirect_url);
     }
-    throw redirect(url.toString());
+    return redirect(url.toString());
   },
 
-  redirectToSignUp(redirect_url?: string): never {
+  redirectToSignUp(redirect_url?: string) {
     const url = CONFIG.signUpUrl;
     if (redirect_url) {
       url.searchParams.set("redirect_url", redirect_url);
     }
-    throw redirect(url.toString());
+    return redirect(url.toString());
   },
 };
 
