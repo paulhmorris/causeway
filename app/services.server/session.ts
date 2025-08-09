@@ -74,8 +74,7 @@ export const SessionService = {
       logger.info("no orgId found in session");
       const originURL = new URL(args.request.url);
       if (originURL.pathname === "/") {
-        await this.logout(sessionId);
-        return;
+        return await this.logout(sessionId);
       }
       const returnUrl = new URL("/choose-org", originURL.origin);
       returnUrl.searchParams.set("redirectTo", originURL.pathname);
@@ -90,8 +89,7 @@ export const SessionService = {
 
     if (!userId) {
       logger.info("No userId found in session, logging out", { sessionClaims });
-      await this.logout(sessionId, args.request.url);
-      return;
+      return await this.logout(sessionId, args.request.url);
     }
 
     let user = await db.user.findUnique({ where: { clerkId: userId }, select: { id: true } });
@@ -103,13 +101,11 @@ export const SessionService = {
           logger.info("Successfully linked user", { userId: user.id });
         } catch (error) {
           logger.error("Failed to link user", { error });
-          await this.logout(sessionId, args.request.url);
-          return;
+          return await this.logout(sessionId, args.request.url);
         }
       } else {
         logger.error("No pem claim found in session claims, cannot link user. Logging out.", { sessionClaims });
-        await this.logout(sessionId, args.request.url);
-        return;
+        return await this.logout(sessionId, args.request.url);
       }
     }
 
