@@ -15,64 +15,63 @@ import { db } from "~/integrations/prisma.server";
 import { Responses } from "~/lib/responses.server";
 import { AuthService } from "~/services.server/auth";
 
-class Session {
-  public USER_SESSION_KEY = "userId";
-  public ORGANIZATION_SESSION_KEY = "orgId";
+const logger = createLogger("SessionService");
 
-  private logger = createLogger("SessionService");
+export const SessionService = {
+  ORGANIZATION_SESSION_KEY: "orgId",
 
   async logout(sessionId: string | null) {
     if (sessionId) {
-      this.logger.info("Logging out user", { sessionId });
+      logger.info("Logging out user", { sessionId });
       await AuthService.revokeSession(sessionId);
     }
-    this.logger.info("No sessionId provided, skipping logout and redirecting to sign in");
+    logger.warn("No sessionId provided, skipping logout and redirecting to sign in");
     throw Responses.redirectToSignIn();
-  }
+  },
 
   async getSession(args: LoaderFunctionArgs | ActionFunctionArgs) {
     return getAuth(args);
-  }
+  },
 
   async getOrgSession(request: Request) {
     const cookie = request.headers.get("Cookie");
     return sessionStorage.getSession(cookie);
-  }
+  },
 
   async commitSession(session: RemixSession<SessionData, SessionData>) {
     return sessionStorage.commitSession(session);
-  }
+  },
 
   async getUserId(args: LoaderFunctionArgs | ActionFunctionArgs): Promise<string | null> {
     const { userId } = await getAuth(args);
     return userId;
-  }
+  },
 
   async getOrgId({ request }: LoaderFunctionArgs | ActionFunctionArgs): Promise<Organization["id"] | undefined> {
     const session = await this.getOrgSession(request);
     const orgId = session.get(this.ORGANIZATION_SESSION_KEY) as Organization["id"] | undefined;
     return orgId;
-  }
+  },
 
   async getOrg(args: LoaderFunctionArgs | ActionFunctionArgs) {
     const orgId = await this.getOrgId(args);
     if (!orgId) {
-      this.logger.debug("no orgId found in session");
+      logger.debug("no orgId found in session");
       return null;
     }
     const org = await db.organization.findUnique({
       where: { id: orgId },
       select: { id: true, name: true, primaryEmail: true },
     });
-    this.logger.debug(`orgId for ${org?.name} found in session`);
+    logger.debug(`orgId for ${org?.name} found in session`);
     return org;
-  }
+  },
 
   async requireOrgId(args: LoaderFunctionArgs | ActionFunctionArgs) {
     const { sessionId } = await this.getSession(args);
     const orgId = await this.getOrgId(args);
     if (!orgId) {
-      this.logger.info("no orgId found in session");
+      logger.info("no orgId found in session");
       const originURL = new URL(args.request.url);
       if (originURL.pathname === "/") {
         await this.logout(sessionId);
@@ -80,44 +79,44 @@ class Session {
       }
       const returnUrl = new URL("/choose-org", originURL.origin);
       returnUrl.searchParams.set("redirectTo", originURL.pathname);
-      this.logger.info("Redirecting to choose-org", { returnUrl: returnUrl.toString() });
+      logger.info("Redirecting to choose-org", { returnUrl: returnUrl.toString() });
       throw redirect(returnUrl.toString());
     }
     return orgId;
-  }
+  },
 
   async requireUserId(args: LoaderFunctionArgs) {
     const { userId, sessionId, sessionClaims } = await this.getSession(args);
 
     if (!userId) {
-      this.logger.info("No userId found in session, logging out", { sessionClaims });
+      logger.info("No userId found in session, logging out", { sessionClaims });
       await this.logout(sessionId);
       throw Responses.redirectToSignIn();
     }
 
     let user = await db.user.findUnique({ where: { clerkId: userId }, select: { id: true } });
     if (!user) {
-      this.logger.error(`User with clerkId ${userId} authenticated but not found in database, attempting to link...`);
+      logger.error(`User with clerkId ${userId} authenticated but not found in database, attempting to link...`);
       if (sessionClaims.pem) {
         try {
           user = await AuthService.linkOAuthUserToExistingUser(sessionClaims.pem, userId);
-          this.logger.info("Successfully linked user", { userId: user.id });
+          logger.info("Successfully linked user", { userId: user.id });
         } catch (error) {
-          this.logger.error("Failed to link user", { error });
+          logger.error("Failed to link user", { error });
           await this.logout(sessionId);
           throw Responses.redirectToSignIn();
         }
       } else {
-        this.logger.error("No pem claim found in session claims, cannot link user. Logging out.", { sessionClaims });
+        logger.error("No pem claim found in session claims, cannot link user. Logging out.", { sessionClaims });
         await this.logout(sessionId);
         throw Responses.redirectToSignIn();
       }
     }
 
     return user.id;
-  }
+  },
 
-  public async requireUser(args: LoaderFunctionArgs, allowedRoles?: Array<MembershipRole>) {
+  async requireUser(args: LoaderFunctionArgs, allowedRoles?: Array<MembershipRole>) {
     const defaultAllowedRoles: Array<MembershipRole> = [MembershipRole.MEMBER, MembershipRole.ADMIN];
     const userId = await this.requireUserId(args);
     const orgId = await this.requireOrgId(args);
@@ -152,14 +151,14 @@ class Session {
 
     // User does not exist
     if (!user) {
-      this.logger.warn("User not found in database", { userId });
+      logger.warn("User not found in database", { userId });
       throw Responses.unauthorized();
     }
 
     // User is not a member of the current organization
     const currentMembership = user.memberships.find((m) => m.orgId === orgId);
     if (!currentMembership) {
-      this.logger.warn("User is not a member of the current organization", { userId, orgId });
+      logger.warn("User is not a member of the current organization", { userId, orgId });
       throw Responses.unauthorized();
     }
 
@@ -191,7 +190,7 @@ class Session {
           org: currentMembership.org,
         };
       }
-      this.logger.warn("User did not have required role", { username: user.username, role: user.role, allowedRoles });
+      logger.warn("User did not have required role", { username: user.username, role: user.role, allowedRoles });
       throw Responses.unauthorized();
     }
 
@@ -207,13 +206,13 @@ class Session {
     }
 
     // Some other scenario
-    this.logger.error("Unhandled authentication scenario", { user, allowedRoles });
+    logger.error("Unhandled authentication scenario", { user, allowedRoles });
     throw Responses.unauthorized();
-  }
+  },
 
   async requireAdmin(args: LoaderFunctionArgs) {
     return this.requireUser(args, ["ADMIN"]);
-  }
+  },
 
   async createOrgSession(args: {
     fnArgs: LoaderFunctionArgs | ActionFunctionArgs;
@@ -221,7 +220,7 @@ class Session {
     redirectTo?: string;
   }) {
     const session = await this.getOrgSession(args.fnArgs.request);
-    this.logger.info("Adding orgId to session for user", { orgId: args.orgId, redirectTo: args.redirectTo });
+    logger.info("Adding orgId to session for user", { orgId: args.orgId, redirectTo: args.redirectTo });
     session.set(this.ORGANIZATION_SESSION_KEY, args.orgId);
     return redirect(args.redirectTo ?? "/", {
       headers: {
@@ -230,10 +229,8 @@ class Session {
         }),
       },
     });
-  }
-}
-
-export const SessionService = new Session();
+  },
+};
 
 export const sessionStorage = createCookieSessionStorage({
   cookie: {
