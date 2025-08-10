@@ -27,32 +27,50 @@ export async function loader(args: LoaderFunctionArgs) {
 
     const [accounts, reimbursementRequests, announcement] = await db.$transaction([
       db.account.findMany({
+        select: {
+          id: true,
+          code: true,
+          description: true,
+          transactions: {
+            select: { amountInCents: true },
+          },
+        },
         where: {
           orgId,
           typeId: AccountType.Operating,
-        },
-        include: {
-          transactions: true,
+          isHidden: false,
         },
         orderBy: { code: "asc" },
       }),
 
       db.reimbursementRequest.findMany({
-        where: {
-          orgId,
-          status: ReimbursementRequestStatus.PENDING,
-        },
-        include: {
-          account: true,
+        where: { orgId, status: ReimbursementRequestStatus.PENDING },
+        select: {
+          id: true,
+          amountInCents: true,
+          createdAt: true,
+          account: {
+            select: {
+              id: true,
+              code: true,
+              description: true,
+            },
+          },
           user: {
             include: { contact: true },
           },
         },
-        orderBy: {
-          createdAt: "desc",
-        },
+        orderBy: { createdAt: "desc" },
       }),
       db.announcement.findFirst({
+        select: {
+          id: true,
+          title: true,
+          content: true,
+          createdAt: true,
+          updatedAt: true,
+          expiresAt: true,
+        },
         where: {
           orgId,
           OR: [
@@ -62,9 +80,7 @@ export async function loader(args: LoaderFunctionArgs) {
             { expiresAt: null },
           ],
         },
-        orderBy: {
-          id: "desc",
-        },
+        orderBy: { id: "desc" },
       }),
     ]);
 

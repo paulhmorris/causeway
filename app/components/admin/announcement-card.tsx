@@ -13,7 +13,11 @@ import { Separator } from "~/components/ui/separator";
 import { useUser } from "~/hooks/useUser";
 import { schema } from "~/routes/api.announcements";
 
-export function AnnouncementCard({ announcement }: { announcement: Announcement }) {
+type Props = {
+  announcement: Pick<Announcement, "id" | "title" | "content" | "expiresAt">;
+};
+
+export function AnnouncementCard({ announcement }: Props) {
   const user = useUser();
   const fetcher = useFetcher<{ success: boolean }>();
   const isSubmitting = fetcher.state !== "idle";

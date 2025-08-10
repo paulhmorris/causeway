@@ -8,7 +8,21 @@ import { useUser } from "~/hooks/useUser";
 import { formatCentsAsDollars } from "~/lib/utils";
 
 type ReimbursementRequest = Prisma.ReimbursementRequestGetPayload<{
-  include: { user: { include: { contact: true } }; account: true };
+  select: {
+    id: true;
+    amountInCents: true;
+    createdAt: true;
+    account: {
+      select: {
+        code: true;
+      };
+    };
+    user: {
+      include: {
+        contact: true;
+      };
+    };
+  };
 }>;
 export function ReimbursementRequestsList({ requests }: { requests: Array<ReimbursementRequest> }) {
   const user = useUser();

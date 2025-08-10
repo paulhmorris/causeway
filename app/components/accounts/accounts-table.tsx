@@ -1,11 +1,12 @@
 import { Prisma } from "@prisma/client";
 import { ColumnDef } from "@tanstack/react-table";
-import { Link } from "react-router";
+import { Link, useFetcher } from "react-router";
 
+import { Button } from "~/components/ui/button";
 import { DataTable } from "~/components/ui/data-table/data-table";
 import { DataTableColumnHeader } from "~/components/ui/data-table/data-table-column-header";
 import { Facet } from "~/components/ui/data-table/data-table-toolbar";
-import { formatCentsAsDollars } from "~/lib/utils";
+import { cn, formatCentsAsDollars } from "~/lib/utils";
 import { accountsIndexSelect } from "~/routes/_app.accounts._index";
 
 type Account = Prisma.AccountGetPayload<{ select: typeof accountsIndexSelect }> & { balance: number };
@@ -79,6 +80,32 @@ const columns = [
         <div>
           <span className="max-w-[500px] truncate font-medium">{row.getValue("description")}</span>
         </div>
+      );
+    },
+    enableColumnFilter: false,
+  },
+  {
+    id: "view",
+    header: () => <span className="sr-only">Secondary Action</span>,
+    cell: ({ row }) => {
+      const fetcher = useFetcher();
+      return (
+        <fetcher.Form method="PUT" action="/accounts">
+          <input type="hidden" name="accountId" value={row.original.id} />
+          <input type="hidden" name="action" value={row.original.isHidden ? "unhide" : "hide"} />
+          <Button
+            type="submit"
+            variant="link"
+            disabled={fetcher.state !== "idle"}
+            className={cn(
+              "-my-2 h-auto font-medium text-transparent decoration-2 underline-offset-2 duration-75 hover:underline sm:h-auto",
+              row.original.isHidden && "hover:text-success focus-visible:text-success",
+              !row.original.isHidden && "hover:text-destructive focus-visible:text-destructive",
+            )}
+          >
+            {row.original.isHidden ? "Unhide" : "Hide"}
+          </Button>
+        </fetcher.Form>
       );
     },
     enableColumnFilter: false,
