@@ -10,13 +10,12 @@ import { DrawerDialog, DrawerDialogFooter } from "~/components/ui/drawer-dialog"
 import { FormField, FormTextarea } from "~/components/ui/form";
 import { schema } from "~/routes/api.announcements";
 
-export function AnnouncementModal({
-  intent,
-  announcement,
-}: {
+type Props = {
   intent: "create" | "update";
-  announcement?: Announcement;
-}) {
+  announcement?: Pick<Announcement, "id" | "title" | "content" | "expiresAt">;
+};
+
+export function AnnouncementModal({ intent, announcement }: Props) {
   const [open, setOpen] = useState(false);
   const fetcher = useFetcher<{ success: boolean }>();
   const isSubmitting = fetcher.state !== "idle";

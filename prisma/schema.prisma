@@ -116,13 +116,15 @@ model PasswordReset {
 }
 
 model Account {
-  id                    String                 @id @default(cuid())
-  code                  String
-  description           String                 @db.Text
-  user                  User?
+  id          String      @id @default(cuid())
+  code        String
+  description String      @db.Text
+  user        User?
+  type        AccountType @relation(fields: [typeId], references: [id])
+  typeId      Int
+  isHidden    Boolean     @default(false)
+
   transactions          Transaction[]
-  type                  AccountType            @relation(fields: [typeId], references: [id])
-  typeId                Int
   reimbursementRequests ReimbursementRequest[]
   subscribers           AccountSubscription[]
 
