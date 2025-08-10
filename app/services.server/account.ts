@@ -6,9 +6,9 @@ import { db } from "~/integrations/prisma.server";
 const logger = createLogger("AccountService");
 
 export const AccountService = {
-  update(id: string, data: Prisma.AccountUpdateInput) {
+  update(id: string, orgId: string, data: Prisma.AccountUpdateInput) {
     logger.debug("Updating account", { id, data });
-    return db.account.update({ where: { id }, data });
+    return db.account.update({ where: { id, orgId }, data });
   },
 
   getTypes(orgId: string) {

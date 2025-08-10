@@ -88,7 +88,7 @@ export async function action(args: ActionFunctionArgs) {
     }
 
     logger.info("Hiding account", { accountId, orgId, userId: admin.id });
-    await AccountService.update(accountId, { isHidden: action === "hide" });
+    await AccountService.update(accountId, orgId, { isHidden: action === "hide" });
   } catch (error) {
     Sentry.captureException(error);
     logger.error("Error hiding account", { error, orgId });
