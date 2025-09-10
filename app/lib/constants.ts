@@ -195,6 +195,7 @@ export const globalNavLinks: ReadonlyArray<AppNavLink> = [
   { name: "Contacts", to: "/contacts", end: false, prefetch: false, icon: IconUsers },
   { name: "Engagements", to: "/engagements", end: true, prefetch: false, icon: IconUserHeart },
   { name: "Reimbursement", to: "/reimbursements/new", end: false, prefetch: true, icon: IconCoin },
+  { name: "Attachments", to: "/attachments", end: true, prefetch: false, icon: IconPaperclip },
 ] as const;
 
 export const userNavLinks: ReadonlyArray<AppNavLink> = [] as const;
@@ -206,10 +207,8 @@ export const adminNavLinks: ReadonlyArray<AppNavLink> = [
   { name: "Accounts", to: "/accounts", end: false, prefetch: false, icon: IconBuildingBank },
   { name: "Users", to: "/users", end: false, prefetch: false, icon: IconUsersGroup },
   { name: "Reimbursements", to: "/reimbursements", end: true, prefetch: false, icon: IconCoin },
-  // { name: "Receipts", to: "/receipts", end: true, prefetch: false, icon: IconReceipt },
   { name: "Organization", to: "/organization", end: false, prefetch: true, icon: IconAffiliate },
   { name: "Reports", to: "/reports", end: true, prefetch: true, icon: IconFileSpreadsheet },
-  { name: "Attachments", to: "/attachments", end: true, prefetch: false, icon: IconPaperclip },
 ] as const;
 
 export const superAdminNavLinks: ReadonlyArray<AppNavLink> = [] as const;
