@@ -3,7 +3,6 @@ import { z } from "zod/v4";
 import { newUserSchema } from "~/components/forms/new-user-form";
 import { clerkClient } from "~/integrations/clerk.server";
 import { db } from "~/integrations/prisma.server";
-import { CONFIG } from "~/lib/env.server";
 
 export const UserService = {
   async create(data: z.infer<typeof newUserSchema> & { orgId: string }) {
@@ -48,9 +47,6 @@ export const UserService = {
   },
 
   invite(emailAddress: string) {
-    return clerkClient.invitations.createInvitation({
-      emailAddress,
-      redirectUrl: new URL("/sign-up", CONFIG.baseUrl).toString(),
-    });
+    return clerkClient.invitations.createInvitation({ emailAddress });
   },
 };
