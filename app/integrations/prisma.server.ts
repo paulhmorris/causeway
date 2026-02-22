@@ -32,10 +32,7 @@ function getPrismaClient() {
 
   neonConfig.webSocketConstructor = ws;
   const adapter = new PrismaNeon({ connectionString: `${DATABASE_URL}` });
-  const client = new PrismaClient({
-    // @ts-expect-error can't get prisma stuff working
-    adapter,
-  });
+  const client = new PrismaClient({ adapter });
   return client;
 }
 
