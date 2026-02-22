@@ -21,10 +21,9 @@ export const UserService = {
           connect: accountId ? { id: accountId } : undefined,
         },
         contact: {
-          create: {
-            orgId,
-            email: username,
-            ...contact,
+          connectOrCreate: {
+            where: { email_orgId: { email: username, orgId } },
+            create: { orgId, email: username, ...contact },
           },
         },
       },
