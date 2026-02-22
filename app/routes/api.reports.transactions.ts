@@ -118,8 +118,9 @@ export async function loader(args: LoaderFunctionArgs) {
     .sheet("Sheet1")
     .addTable({ data: transactionItems, schema })
     .build({ output: "buffer", bordered: false });
+  const body = new Uint8Array(file);
 
-  return new Response(file, {
+  return new Response(body, {
     headers: {
       "Content-Disposition": `attachment; filename=${org.name}-transactions-report-${parsedParams.data.trxStartDate}-${parsedParams.data.trxEndDate}.xlsx`,
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
