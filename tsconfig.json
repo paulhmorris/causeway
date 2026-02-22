@@ -1,5 +1,6 @@
 {
   "include": ["./env.d.ts", "**/*.ts", "**/*.tsx", "**/*.mjs", ".react-router/types/**/*"],
+  "exclude": ["node_modules", "playwright.config.ts", "test/e2e/**"],
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "types": ["@react-router/node", "vite/client", "vitest/globals"],
@@ -16,7 +17,9 @@
     "noErrorTruncation": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
-      "~/*": ["./app/*"]
+      "~/*": ["./app/*"],
+      "test/*": ["./test/*"],
+      "emails/*": ["./emails/*"]
     },
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,

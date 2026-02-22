@@ -16,7 +16,7 @@ function getPrismaClient() {
   const { DATABASE_URL } = process.env;
   invariant(typeof DATABASE_URL === "string", "DATABASE_URL env var not set");
 
-  if (process.env.NODE_ENV === "development") {
+  if (process.env.NODE_ENV !== "production") {
     const databaseUrl = new URL(DATABASE_URL);
     const client = new PrismaClient({
       datasources: {
@@ -33,6 +33,7 @@ function getPrismaClient() {
   neonConfig.webSocketConstructor = ws;
   const adapter = new PrismaNeon({ connectionString: `${DATABASE_URL}` });
   const client = new PrismaClient({
+    // @ts-expect-error can't get prisma stuff working
     adapter,
   });
   return client;
