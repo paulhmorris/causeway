@@ -7,5 +7,6 @@
     "sonner"
   ],
   "typescript.tsdk": "node_modules/typescript/lib",
-  "prisma.pinToPrisma6": true
+  "prisma.pinToPrisma6": true,
+  "typescript.native-preview.tsdk": "node_modules/@typescript/native-preview"
 }

@@ -2,7 +2,9 @@
   "name": "causeway",
   "version": "1.0.0",
   "private": true,
-  "sideEffects": false,
+  "sideEffects": [
+    "./instrument.server.mjs"
+  ],
   "type": "module",
   "scripts": {
     "build": "react-router build",
