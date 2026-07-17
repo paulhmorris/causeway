@@ -172,9 +172,11 @@ model Transaction {
   contact       Contact? @relation(fields: [contactId], references: [id])
   contactId     String?
 
-  receipts         Receipt[]
-  category         TransactionCategory? @relation(fields: [categoryId], references: [id])
-  transactionItems TransactionItem[]
+  receipts              Receipt[]
+  category              TransactionCategory?  @relation(fields: [categoryId], references: [id])
+  transactionItems      TransactionItem[]
+  reimbursement         ReimbursementRequest? @relation(fields: [reimbursementId], references: [id])
+  reimbursementId       String?               @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -258,6 +260,7 @@ model ReimbursementRequest {
   methodId      Int
   status        ReimbursementRequestStatus @default(PENDING)
   receipts      Receipt[]
+  transaction   Transaction?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

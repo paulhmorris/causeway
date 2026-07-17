@@ -17,7 +17,7 @@ type Props = {
   rr: LoaderData["reimbursementRequest"];
   transactionCategories: LoaderData["transactionCategories"];
   accounts: LoaderData["accounts"];
-  relatedTrx: LoaderData["relatedTrx"];
+  linkedTrx: LoaderData["linkedTrx"];
 };
 
 export const reimbursementRequestApprovalSchema = z
@@ -38,7 +38,7 @@ export function ReimbursementRequestApprovalForm(props: Props) {
   const navigation = useNavigation();
   const currentAction = navigation.formData?.get("_action") as ReimbursementRequestStatus | undefined;
 
-  const { rr, transactionCategories, accounts, relatedTrx } = props;
+  const { rr, transactionCategories, accounts, linkedTrx } = props;
   return (
     <ValidatedForm
       noValidate
@@ -50,7 +50,7 @@ export function ReimbursementRequestApprovalForm(props: Props) {
         _action: ReimbursementRequestStatus.APPROVED,
         approverNote: rr.approverNote ?? "",
         amount: String(rr.amountInCents / 100.0),
-        categoryId: relatedTrx?.transaction.category?.id ?? ("" as unknown as number),
+        categoryId: linkedTrx?.categoryId ?? ("" as unknown as number),
         accountId: rr.account.id,
       }}
     >
@@ -135,7 +135,7 @@ export function ReimbursementRequestApprovalForm(props: Props) {
           ) : (
             <>
               <input type="hidden" name="amount" value={rr.amountInCents} />
-              <input type="hidden" name="categoryId" value={relatedTrx?.transaction.category?.id ?? ""} />
+              <input type="hidden" name="categoryId" value={linkedTrx?.categoryId ?? ""} />
               <input type="hidden" name="accountId" value={rr.account.id} />
               <input type="hidden" name="approverNote" value={rr.approverNote ?? ""} />
               <SubmitButton

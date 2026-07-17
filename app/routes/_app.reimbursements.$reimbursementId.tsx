@@ -1,7 +1,7 @@
 import { ReimbursementRequestStatus } from "@prisma/client";
 import { parseFormData, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
-import { ActionFunctionArgs, useLoaderData } from "react-router";
+import { ActionFunctionArgs, Link, useLoaderData } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
 import {
@@ -11,6 +11,7 @@ import {
 import { PageContainer } from "~/components/page-container";
 import { ReceiptLink } from "~/components/reimbursements/receipt-link";
 import { ReimbursementStatusBadge } from "~/components/reimbursements/reimbursement-status-badge";
+import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "~/components/ui/card";
 import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
@@ -37,8 +38,8 @@ export async function loader(args: ActionFunctionArgs) {
     throw Responses.notFound();
   }
 
-  const [relatedTrx, accounts, transactionCategories] = await db.$transaction([
-    ReimbursementRequestService.getRelatedTransaction(rr.id),
+  const [linkedTrx, accounts, transactionCategories] = await db.$transaction([
+    ReimbursementRequestService.getLinkedTransaction(rr.id),
     db.account.findMany({
       where: { orgId },
       select: { id: true, code: true, description: true },
@@ -47,7 +48,7 @@ export async function loader(args: ActionFunctionArgs) {
     TransactionService.getCategories(orgId),
   ]);
 
-  return { reimbursementRequest: rr, accounts, transactionCategories, relatedTrx };
+  return { reimbursementRequest: rr, accounts, transactionCategories, linkedTrx };
 }
 
 export async function action(args: ActionFunctionArgs) {
@@ -75,6 +76,11 @@ export async function action(args: ActionFunctionArgs) {
           },
         },
       },
+    });
+    // Clear voidedAt on the linked transaction if it exists
+    await db.transaction.updateMany({
+      where: { reimbursementId: id },
+      data: { voidedAt: null },
     });
     await sendReimbursementRequestUpdateEmail({ email: rr.user.username, status: _action });
     return Toasts.dataWithInfo(null, {
@@ -112,12 +118,13 @@ export async function action(args: ActionFunctionArgs) {
         },
       });
 
-      // Verify the account has enough funds
+      // Verify the account has enough funds (exclude voided transactions)
       const account = await db.account.findUniqueOrThrow({
         where: { id: accountId, orgId },
         select: {
           code: true,
           transactions: {
+            where: { voidedAt: null },
             select: {
               amountInCents: true,
             },
@@ -136,26 +143,40 @@ export async function action(args: ActionFunctionArgs) {
         });
       }
 
+      // Upsert the linked transaction
+      const existingTrx = await db.transaction.findUnique({ where: { reimbursementId: id } });
       await db.$transaction([
-        db.transaction.create({
-          data: {
-            orgId,
-            accountId,
-            categoryId,
-            description: approverNote,
-            amountInCents: amount * -1,
-            date: dayjs().startOf("day").toDate(),
-            transactionItems: {
-              create: {
-                orgId,
+        existingTrx
+          ? db.transaction.update({
+              where: { reimbursementId: id },
+              data: {
+                accountId,
+                categoryId,
+                description: approverNote,
                 amountInCents: amount * -1,
-                methodId: TransactionItemMethod.Other,
-                typeId: TransactionItemType.Other_Outgoing,
-                description: `Reimbursement ID: ${rr.id}`,
+                voidedAt: null,
               },
-            },
-          },
-        }),
+            })
+          : db.transaction.create({
+              data: {
+                orgId,
+                accountId,
+                categoryId,
+                description: approverNote,
+                amountInCents: amount * -1,
+                date: dayjs().startOf("day").toDate(),
+                reimbursementId: id,
+                transactionItems: {
+                  create: {
+                    orgId,
+                    amountInCents: amount * -1,
+                    methodId: TransactionItemMethod.Other,
+                    typeId: TransactionItemType.Other_Outgoing,
+                    description: `Reimbursement: ${rr.id}`,
+                  },
+                },
+              },
+            }),
         db.reimbursementRequest.update({
           where: { id, orgId },
           data: { status: _action, approverNote },
@@ -182,22 +203,39 @@ export async function action(args: ActionFunctionArgs) {
     }
   }
 
-  // Rejected or Voided
+  // Voided — also void the linked transaction atomically
+  if (_action === ReimbursementRequestStatus.VOID) {
+    const rr = await db.reimbursementRequest.update({
+      where: { id, orgId },
+      data: { status: _action },
+      include: { user: true },
+    });
+    await db.transaction.updateMany({
+      where: { reimbursementId: id },
+      data: { voidedAt: new Date() },
+    });
+    await sendReimbursementRequestUpdateEmail({ email: rr.user.username, status: _action });
+    return Toasts.dataWithSuccess(null, {
+      message: "Reimbursement request voided",
+      description: "The reimbursement request has been voided and the requester will be notified.",
+    });
+  }
+
+  // Rejected
   const rr = await db.reimbursementRequest.update({
     where: { id, orgId },
     data: { status: _action },
     include: { user: true },
   });
   await sendReimbursementRequestUpdateEmail({ email: rr.user.username, status: _action });
-  const normalizedAction = _action === ReimbursementRequestStatus.REJECTED ? "rejected" : "voided";
   return Toasts.dataWithSuccess(null, {
-    message: `Reimbursement request ${normalizedAction}`,
-    description: `The reimbursement request has been ${normalizedAction} and the requester will be notified.`,
+    message: "Reimbursement request rejected",
+    description: "The reimbursement request has been rejected and the requester will be notified.",
   });
 }
 
 export default function ReimbursementRequestPage() {
-  const { reimbursementRequest: rr, accounts, transactionCategories, relatedTrx } = useLoaderData<typeof loader>();
+  const { reimbursementRequest: rr, accounts, transactionCategories, linkedTrx } = useLoaderData<typeof loader>();
 
   return (
     <>
@@ -244,6 +282,19 @@ export default function ReimbursementRequestPage() {
                 </>
               ) : null}
 
+              {linkedTrx ? (
+                <>
+                  <dt className="font-semibold capitalize">Transaction</dt>
+                  <dd className="col-span-2">
+                    <Button variant="link" className="h-auto p-0" asChild>
+                      <Link to={`/transactions/${linkedTrx.id}`} prefetch="intent">
+                        View Transaction
+                      </Link>
+                    </Button>
+                  </dd>
+                </>
+              ) : null}
+
               <dt className="self-start font-semibold capitalize">Receipts</dt>
               <dd className="text-muted-foreground col-span-2">
                 {rr.receipts.length > 0 ? (
@@ -260,7 +311,7 @@ export default function ReimbursementRequestPage() {
               rr={rr}
               transactionCategories={transactionCategories}
               accounts={accounts}
-              relatedTrx={relatedTrx}
+              linkedTrx={linkedTrx}
             />
           </CardFooter>
         </Card>
