@@ -48,9 +48,11 @@ export const loader = async (args: LoaderFunctionArgs) => {
       where: {
         orgId,
         userId: user.isMember ? user.id : undefined,
-        reimbursementRequests: { none: {} },
       },
-      include: { user: { select: { contact: { select: { email: true } } } } },
+      include: {
+        user: { select: { contact: { select: { email: true } } } },
+        reimbursementRequests: { select: { id: true } },
+      },
       orderBy: { createdAt: "desc" },
     }),
     TransactionService.getItemMethods(orgId),
