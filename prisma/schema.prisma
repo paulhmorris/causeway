@@ -177,6 +177,7 @@ model Transaction {
   transactionItems      TransactionItem[]
   reimbursement         ReimbursementRequest? @relation(fields: [reimbursementId], references: [id])
   reimbursementId       String?               @unique
+  voidedAt              DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
