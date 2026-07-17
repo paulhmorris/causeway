@@ -27,6 +27,7 @@ export const accountsIndexSelect: Prisma.AccountSelect = {
   isHidden: true,
   description: true,
   transactions: {
+    where: { voidedAt: null },
     select: {
       amountInCents: true,
     },

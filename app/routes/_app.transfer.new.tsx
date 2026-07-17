@@ -60,7 +60,7 @@ export const action = async (args: ActionFunctionArgs) => {
 
   try {
     const fromAccountBalance = await db.transaction.aggregate({
-      where: { accountId: result.data.fromAccountId, orgId },
+      where: { accountId: result.data.fromAccountId, orgId, voidedAt: null },
       _sum: { amountInCents: true },
     });
 

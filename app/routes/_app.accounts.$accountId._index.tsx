@@ -60,6 +60,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
         },
         org: true,
         transactions: {
+          where: { voidedAt: null },
           select: {
             id: true,
             date: true,
@@ -79,7 +80,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     });
 
     const total = await db.transaction.aggregate({
-      where: { accountId: account.id },
+      where: { accountId: account.id, voidedAt: null },
       _sum: { amountInCents: true },
     });
 
