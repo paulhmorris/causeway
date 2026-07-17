@@ -58,21 +58,13 @@ export const ReimbursementRequestService = {
     return rr;
   },
 
-  // In case of REOPEN, have to jump through a few hoops to get the related transaction's category to fill in the form
-  getRelatedTransaction(requestId: string) {
-    logger.debug("Fetching related transaction for reimbursement request", { requestId });
-    return db.transactionItem.findFirst({
-      where: { description: `Reimbursement ID: ${requestId}` },
+  getLinkedTransaction(requestId: string) {
+    logger.debug("Fetching linked transaction for reimbursement request", { requestId });
+    return db.transaction.findUnique({
+      where: { reimbursementId: requestId },
       select: {
-        transaction: {
-          select: {
-            category: {
-              select: {
-                id: true,
-              },
-            },
-          },
-        },
+        id: true,
+        categoryId: true,
       },
     });
   },
