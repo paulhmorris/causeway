@@ -1,7 +1,8 @@
 import { ReimbursementRequestStatus } from "@prisma/client";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { redirect, useLoaderData, type LoaderFunctionArgs } from "react-router";
+import { useState } from "react";
+import { Link, redirect, useLoaderData, type LoaderFunctionArgs } from "react-router";
 dayjs.extend(utc);
 
 import { AnnouncementCard } from "~/components/admin/announcement-card";
@@ -10,6 +11,8 @@ import { PageHeader } from "~/components/common/page-header";
 import { ErrorComponent } from "~/components/error-component";
 import { AnnouncementModal } from "~/components/modals/announcement-modal";
 import { PageContainer } from "~/components/page-container";
+import { Button } from "~/components/ui/button";
+import { Callout } from "~/components/ui/callout";
 import { AccountBalanceCard } from "~/components/users/balance-card";
 import { db } from "~/integrations/prisma.server";
 import { AccountType } from "~/lib/constants";
@@ -25,7 +28,7 @@ export async function loader(args: LoaderFunctionArgs) {
       return redirect("/dashboards/staff");
     }
 
-    const [accounts, reimbursementRequests, announcement] = await db.$transaction([
+    const [accounts, reimbursementRequests, announcement, missingEmailCount] = await db.$transaction([
       db.account.findMany({
         select: {
           id: true,
@@ -83,22 +86,45 @@ export async function loader(args: LoaderFunctionArgs) {
         },
         orderBy: { id: "desc" },
       }),
+      db.contact.count({ where: { orgId, email: null } }),
     ]);
 
-    return { accounts, reimbursementRequests, announcement };
+    return { accounts, reimbursementRequests, announcement, missingEmailCount };
   } catch (e) {
     handleLoaderError(e);
   }
 }
 
 export default function Index() {
-  const { accounts, reimbursementRequests, announcement } = useLoaderData<typeof loader>();
+  const { accounts, reimbursementRequests, announcement, missingEmailCount } = useLoaderData<typeof loader>();
+  const [healthDismissed, setHealthDismissed] = useState(false);
 
   return (
     <>
       <title>Home</title>
       <PageHeader title="Home" />
       <PageContainer className="max-w-4xl">
+        {missingEmailCount > 0 && !healthDismissed ? (
+          <Callout variant="warning" className="mb-4 flex items-center justify-between gap-4">
+            <span>
+              {missingEmailCount} contact{missingEmailCount === 1 ? " is" : "s are"} missing an email address.{" "}
+              <Button variant="link" className="h-auto p-0 font-medium" asChild>
+                <Link to="/contacts/health" prefetch="intent">
+                  Review in Contact Health
+                </Link>
+              </Button>
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setHealthDismissed(true)}
+              aria-label="Dismiss"
+              className="shrink-0"
+            >
+              Dismiss
+            </Button>
+          </Callout>
+        ) : null}
         <div className="mb-4">
           {announcement ? <AnnouncementCard announcement={announcement} /> : <AnnouncementModal intent="create" />}
         </div>
