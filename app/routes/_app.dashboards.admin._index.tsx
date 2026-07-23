@@ -32,6 +32,7 @@ export async function loader(args: LoaderFunctionArgs) {
           code: true,
           description: true,
           transactions: {
+            where: { voidedAt: null },
             select: { amountInCents: true },
           },
         },
