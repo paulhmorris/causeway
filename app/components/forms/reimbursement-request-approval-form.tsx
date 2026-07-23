@@ -17,7 +17,8 @@ type Props = {
   rr: LoaderData["reimbursementRequest"];
   transactionCategories: LoaderData["transactionCategories"];
   accounts: LoaderData["accounts"];
-  linkedTrx: LoaderData["linkedTrx"];
+  /** Only the category is read here, so the form doesn't depend on the full transaction shape. */
+  linkedTrx: Pick<NonNullable<LoaderData["linkedTrx"]>, "categoryId"> | null;
 };
 
 export const reimbursementRequestApprovalSchema = z

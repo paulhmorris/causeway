@@ -39,7 +39,7 @@ const MOCK_PENDING_PROPS = {
     { id: "acc_1", code: "1000", description: "Checking" },
     { id: "acc_2", code: "2000", description: "Savings" },
   ],
-  relatedTrx: null,
+  linkedTrx: null,
 };
 
 const MOCK_APPROVED_PROPS = {
@@ -50,12 +50,8 @@ const MOCK_APPROVED_PROPS = {
     accountId: "acc_1",
     approverNote: "Looks good",
   },
-  relatedTrx: {
-    transaction: {
-      category: {
-        id: 1,
-      },
-    },
+  linkedTrx: {
+    categoryId: 1,
   },
 };
 
