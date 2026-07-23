@@ -124,7 +124,7 @@ export async function action(args: ActionFunctionArgs) {
           id: true,
           address: { select: { id: true } },
           accountSubscriptions: { select: { id: true, accountId: true } },
-          contactAssignments: { select: { id: true, userId: true } },
+          assignedUsers: { select: { id: true, userId: true } },
         },
       }),
     ]);
@@ -162,14 +162,14 @@ export async function action(args: ActionFunctionArgs) {
       }
 
       // Transfer contact assignments (skip ones the keeper already has)
-      const assignsToTransfer = remove.contactAssignments.filter((a) => !keeperUserIds.has(a.userId));
+      const assignsToTransfer = remove.assignedUsers.filter((a) => !keeperUserIds.has(a.userId));
       if (assignsToTransfer.length > 0) {
         await tx.contactAssigment.updateMany({
           where: { id: { in: assignsToTransfer.map((a) => a.id) } },
           data: { contactId: keepId },
         });
       }
-      const assignsToDrop = remove.contactAssignments.filter((a) => keeperUserIds.has(a.userId));
+      const assignsToDrop = remove.assignedUsers.filter((a) => keeperUserIds.has(a.userId));
       if (assignsToDrop.length > 0) {
         await tx.contactAssigment.deleteMany({ where: { id: { in: assignsToDrop.map((a) => a.id) } } });
       }
@@ -197,7 +197,10 @@ export async function action(args: ActionFunctionArgs) {
   } catch (error) {
     logger.error("Error merging contacts", { error });
     Sentry.captureException(error);
-    return Toasts.dataWithError(null, { message: "Error", description: "An unknown error occurred. Please try again." });
+    return Toasts.dataWithError(null, {
+      message: "Error",
+      description: "An unknown error occurred. Please try again.",
+    });
   }
 }
 
@@ -206,8 +209,7 @@ export default function ContactHealthPage() {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   const pairKey = (a: ContactSummary, b: ContactSummary) => [a.id, b.id].sort().join("|");
-  const dismiss = (a: ContactSummary, b: ContactSummary) =>
-    setDismissed((prev) => new Set([...prev, pairKey(a, b)]));
+  const dismiss = (a: ContactSummary, b: ContactSummary) => setDismissed((prev) => new Set([...prev, pairKey(a, b)]));
   const isDismissed = (a: ContactSummary, b: ContactSummary) => dismissed.has(pairKey(a, b));
 
   const visibleNameDups = nameDuplicates.filter(([a, b]) => !isDismissed(a, b));
@@ -328,15 +330,7 @@ function Row({ label, value }: { label: string; value: string | null | undefined
   );
 }
 
-function DuplicatePairCard({
-  a,
-  b,
-  onDismiss,
-}: {
-  a: ContactSummary;
-  b: ContactSummary;
-  onDismiss: () => void;
-}) {
+function DuplicatePairCard({ a, b, onDismiss }: { a: ContactSummary; b: ContactSummary; onDismiss: () => void }) {
   return (
     <Card>
       <CardHeader className="pb-2">
