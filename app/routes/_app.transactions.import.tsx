@@ -17,7 +17,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~
 import { db } from "~/integrations/prisma.server";
 import { parseCsv, parseCurrencyToCents, type ParsedCsv } from "~/lib/csv";
 import { handleLoaderError } from "~/lib/responses.server";
-import { Toasts } from "~/lib/toast.server";
 import {
   autoDetectMapping,
   distinctFunds,
@@ -29,6 +28,7 @@ import {
   type ImportRecord,
   type RowAnalysis,
 } from "~/lib/tithely-import";
+import { Toasts } from "~/lib/toast.server";
 import { cn, formatCentsAsDollars } from "~/lib/utils";
 import { DonationImportService } from "~/services.server/donation-import";
 import { SessionService } from "~/services.server/session";
@@ -83,9 +83,11 @@ export async function action(args: ActionFunctionArgs) {
   const formData = await args.request.formData();
   const intent = formData.get("_action");
 
+  const rawPayload = formData.get("payload");
+
   let payload: z.infer<typeof payloadSchema>;
   try {
-    payload = payloadSchema.parse(JSON.parse(String(formData.get("payload") ?? "")));
+    payload = payloadSchema.parse(JSON.parse(typeof rawPayload === "string" ? rawPayload : ""));
   } catch {
     return Toasts.dataWithError(null, {
       message: "Couldn't read that file",
@@ -360,7 +362,7 @@ function MapStep({
 
   // Every fund in the file needs an account before the rows can be classified.
   const fundKeys = [...funds, ...(hasUnfunded || funds.length === 0 ? [NO_FUND] : [])];
-  const unassignedFunds = fundKeys.filter((key) => fundAccounts[key] === undefined);
+  const unassignedFunds = fundKeys.filter((key) => !Object.hasOwn(fundAccounts, key));
   const canContinue = missing.length === 0 && recordCount > 0 && unassignedFunds.length === 0 && !isBusy;
 
   return (

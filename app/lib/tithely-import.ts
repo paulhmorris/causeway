@@ -306,7 +306,8 @@ export type RowAnalysis = {
 /** Human-readable donor label for the preview table. */
 export function contactLabel(record: Pick<ImportRecord, "firstName" | "lastName" | "email">): string {
   const name = [record.firstName, record.lastName].filter(Boolean).join(" ").trim();
-  return name || record.email || "Anonymous";
+  if (name !== "") return name;
+  return record.email ?? "Anonymous";
 }
 
 /**
@@ -332,7 +333,9 @@ export function analyzeRecords({
   return records.map((record) => {
     const matched = matchContact(record, contacts);
     const label = contactLabel(record);
-    const accountId = (record.fund ? fundAccounts[record.fund] : defaultAccountId) || null;
+    // An empty string is the "don't import rows for this fund" sentinel.
+    const chosen = record.fund ? fundAccounts[record.fund] : defaultAccountId;
+    const accountId = chosen === undefined || chosen === "" ? null : chosen;
 
     const base = {
       rowIndex: record.rowIndex,
