@@ -88,6 +88,8 @@ model Organization {
   engagementTypes        EngagementType[]
   announcements          Announcement[]
   transactionCategories  TransactionCategory[]
+  reconciliations        Reconciliation[]
+  reconciliationLines    ReconciliationLine[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -127,6 +129,7 @@ model Account {
   transactions          Transaction[]
   reimbursementRequests ReimbursementRequest[]
   subscribers           AccountSubscription[]
+  reconciliations       Reconciliation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -135,6 +138,63 @@ model Account {
   orgId String
 
   @@unique([code, orgId])
+}
+
+/// A single month-end (or statement-period) reconciliation of one account
+/// against its bank statement.
+model Reconciliation {
+  id      String  @id @default(cuid())
+  account Account @relation(fields: [accountId], references: [id])
+
+  accountId String
+  /// Closing date printed on the statement.
+  statementDate DateTime
+  /// Closing balance printed on the statement. Signed: negative is valid for a
+  /// credit card, where the balance is what's owed.
+  statementBalanceInCents Int
+  /// Causeway's own balance for this account as of statementDate, captured when
+  /// the reconciliation was created so the comparison is reproducible later.
+  bookBalanceInCents Int
+  status             ReconciliationStatus @default(IN_PROGRESS)
+  notes              String?              @db.Text
+  completedAt        DateTime?
+
+  lines ReconciliationLine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  orgId String
+
+  @@index([accountId, statementDate])
+}
+
+enum ReconciliationStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+/// One line from an uploaded bank statement. Optional — an account can be
+/// reconciled on the closing balance alone, without importing any lines.
+model ReconciliationLine {
+  id             String         @id @default(cuid())
+  reconciliation Reconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
+
+  reconciliationId String
+  date             DateTime
+  description      String?  @db.Text
+  /// Positive is money into the account, negative is money out, matching the
+  /// sign convention used by Transaction.
+  amountInCents Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  orgId String
+
+  @@index([reconciliationId])
 }
 
 model AccountType {

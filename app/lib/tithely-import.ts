@@ -19,8 +19,9 @@ export type ImportFieldKey =
   | "fee"
   | "note";
 
-export type ImportField = {
-  key: ImportFieldKey;
+/** Generic over the key so other CSV importers can reuse the mapper shape. */
+export type ImportField<K extends string = ImportFieldKey> = {
+  key: K;
   label: string;
   required: boolean;
   help?: string;
