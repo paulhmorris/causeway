@@ -187,6 +187,13 @@ model ReconciliationLine {
   /// Positive is money into the account, negative is money out, matching the
   /// sign convention used by Transaction.
   amountInCents Int
+  /// The Causeway transaction this line was matched to, if any. A transaction
+  /// can back at most one line (see the unique index on Transaction).
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  transactionId String?      @unique
+  /// Set when an admin decides a line needs no matching transaction (a bank fee
+  /// they don't track, a known duplicate). Ignored lines don't count as unresolved.
+  ignoredAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -238,6 +245,7 @@ model Transaction {
   reimbursement         ReimbursementRequest? @relation(fields: [reimbursementId], references: [id])
   reimbursementId       String?               @unique
   voidedAt              DateTime?
+  reconciliationLine    ReconciliationLine?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
