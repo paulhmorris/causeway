@@ -8,6 +8,7 @@ import {
   IconCreditCardRefund,
   IconFileImport,
   IconFileSpreadsheet,
+  IconReceipt2,
   IconScale,
   IconTransfer,
   IconUserHeart,
@@ -196,6 +197,7 @@ export const globalNavLinks: ReadonlyArray<AppNavLink> = [
   { name: "Contacts", to: "/contacts", end: false, prefetch: false, icon: IconUsers },
   { name: "Engagements", to: "/engagements", end: true, prefetch: false, icon: IconUserHeart },
   { name: "Reimbursement", to: "/reimbursements/new", end: false, prefetch: true, icon: IconCoin },
+  { name: "Expense Report", to: "/expense-reports/new", end: false, prefetch: true, icon: IconReceipt2 },
 ] as const;
 
 export const userNavLinks: ReadonlyArray<AppNavLink> = [] as const;
