@@ -1,6 +1,6 @@
 import { render } from "@react-email/render";
-import { IconPaperclip, IconPlus, IconTrash } from "@tabler/icons-react";
-import { useState } from "react";
+import { IconCamera, IconPaperclip, IconPlus, IconTrash } from "@tabler/icons-react";
+import { useRef, useState } from "react";
 import { Form, useActionData, useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { z } from "zod/v4";
 
@@ -17,6 +17,7 @@ import { Label } from "~/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
+import { useReceiptScan } from "~/hooks/useReceiptScan";
 import { Mailer } from "~/integrations/email.server";
 import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
@@ -29,6 +30,7 @@ import {
   subtotalsByAccount,
   type ExpenseLine,
 } from "~/lib/expense-report";
+import type { ParsedReceipt } from "~/lib/receipt-ocr";
 import { Toasts } from "~/lib/toast.server";
 import { formatCentsAsDollars, getToday } from "~/lib/utils";
 import { ExpenseReportService } from "~/services.server/expense-report";
@@ -131,18 +133,45 @@ function newLine(): ExpenseLine {
   };
 }
 
+/** A line pre-filled from a scanned receipt. Account and method still need to be
+ * chosen — OCR can't know which fund an expense belongs to. */
+function lineFromReceipt(parsed: ParsedReceipt): ExpenseLine {
+  return {
+    ...newLine(),
+    date: parsed.date ?? getToday(),
+    vendor: parsed.vendor ?? "",
+    amountInCents: parsed.amountInCents ?? 0,
+  };
+}
+
 export default function NewExpenseReportPage() {
   const { accounts, methods, receipts } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const serverError = actionData && "error" in actionData ? actionData.error : undefined;
 
   const [lines, setLines] = useState<Array<ExpenseLine>>([newLine()]);
+  const scan = useReceiptScan();
+  const scanInputRef = useRef<HTMLInputElement>(null);
 
   function updateLine(key: string, patch: Partial<ExpenseLine>) {
     setLines((prev) => prev.map((line) => (line.key === key ? { ...line, ...patch } : line)));
   }
   function removeLine(key: string) {
     setLines((prev) => prev.filter((line) => line.key !== key));
+  }
+
+  async function handleScanFile(file: File | undefined) {
+    if (!file) return;
+    const parsed = await scan.scan(file);
+    if (parsed) {
+      // Replace a single untouched starter line; otherwise append.
+      setLines((prev) => {
+        const line = lineFromReceipt(parsed);
+        const onlyBlankStarter = prev.length === 1 && prev[0].amountInCents === 0 && prev[0].accountId === "";
+        return onlyBlankStarter ? [line] : [...prev, line];
+      });
+    }
+    if (scanInputRef.current) scanInputRef.current.value = "";
   }
 
   const total = reportTotalInCents(lines);
@@ -185,10 +214,35 @@ export default function NewExpenseReportPage() {
             ))}
           </ol>
 
-          <Button type="button" variant="outline" onClick={() => setLines((prev) => [...prev, newLine()])}>
-            <IconPlus className="mr-2 size-4" aria-hidden="true" />
-            Add expense
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" variant="outline" onClick={() => setLines((prev) => [...prev, newLine()])}>
+              <IconPlus className="mr-2 size-4" aria-hidden="true" />
+              Add expense
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={scan.status === "scanning"}
+              onClick={() => scanInputRef.current?.click()}
+            >
+              <IconCamera className="mr-2 size-4" aria-hidden="true" />
+              {scan.status === "scanning" ? `Reading receipt… ${Math.round(scan.progress * 100)}%` : "Scan a receipt"}
+            </Button>
+            <input
+              ref={scanInputRef}
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={(e) => void handleScanFile(e.target.files?.[0])}
+            />
+            {scan.status === "error" && scan.error ? (
+              <span className="text-destructive text-xs">{scan.error}</span>
+            ) : scan.status === "done" ? (
+              <span className="text-muted-foreground text-xs">
+                Added a line from your receipt — check the amount and pick an account.
+              </span>
+            ) : null}
+          </div>
 
           <div className="rounded-lg border p-4">
             <div className="flex items-baseline justify-between">
