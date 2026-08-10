@@ -170,15 +170,14 @@ export async function action(args: ActionFunctionArgs) {
             transactionItems: {
               create: {
                 orgId,
-                accountId,
-                categoryId,
-                description: approverNote,
                 amountInCents: amount * -1,
                 methodId: TransactionItemMethod.Other,
                 typeId: TransactionItemType.Other_Outgoing,
                 description: `Reimbursement: ${rr.id}`,
               },
-            }),
+            },
+          },
+        }),
         db.reimbursementRequest.update({
           where: { id, orgId },
           data: { status: _action, approverNote },
