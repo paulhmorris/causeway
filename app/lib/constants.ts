@@ -221,5 +221,8 @@ export const RECEIPT_SELECTOR_LIMIT = 200;
 /** Search param that widens the receipt gallery past RECEIPT_WINDOW_DAYS. */
 export const OLDER_RECEIPTS_PARAM = "olderReceipts";
 
+/** Search param holding the id of the last loaded receipt, for paging past RECEIPT_SELECTOR_LIMIT. */
+export const RECEIPT_CURSOR_PARAM = "receiptCursor";
+
 /** Search param carrying the receipt gallery's title filter, which the loader applies. */
 export const RECEIPT_SEARCH_PARAM = "receiptSearch";

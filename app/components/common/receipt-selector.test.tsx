@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import dayjs from "dayjs";
 import { useState } from "react";
 import { mockUseUser, renderWithBlankStub } from "test/test-utils";
+import { Mock } from "vitest";
 
 import { ReceiptSelector, type SelectableReceipt } from "~/components/common/receipt-selector";
 
@@ -22,6 +23,18 @@ function buildReceipt(overrides: Partial<SelectableReceipt> & { id: string; titl
     transactions: [],
     ...overrides,
   };
+}
+
+/** `receiptCount` defaults to "the loader returned everything there is". */
+function renderSelector(
+  receipts: Array<SelectableReceipt>,
+  options: { receiptCount?: number; loaderMock?: Mock } = {},
+) {
+  return renderWithBlankStub({
+    component: ReceiptSelector,
+    props: { receipts, receiptCount: options.receiptCount ?? receipts.length },
+    loaderMock: options.loaderMock,
+  });
 }
 
 /** Hidden inputs are what actually submit, since the gallery renders in a portal. */
@@ -57,7 +70,7 @@ describe("Receipt Selector", () => {
 
   it("still offers the gallery when there is nothing to attach yet", async () => {
     const user = userEvent.setup();
-    renderWithBlankStub({ component: ReceiptSelector, props: { receipts: [] } });
+    renderSelector([]);
 
     expect(await screen.findByText("No files attached")).toBeInTheDocument();
 
@@ -66,15 +79,10 @@ describe("Receipt Selector", () => {
   });
 
   it("preselects receipts uploaded today and exposes them as hidden inputs", async () => {
-    const { container } = renderWithBlankStub({
-      component: ReceiptSelector,
-      props: {
-        receipts: [
-          buildReceipt({ id: "today", title: "Today Receipt", createdAt: new Date() }),
-          buildReceipt({ id: "old", title: "Old Receipt" }),
-        ],
-      },
-    });
+    const { container } = renderSelector([
+      buildReceipt({ id: "today", title: "Today Receipt", createdAt: new Date() }),
+      buildReceipt({ id: "old", title: "Old Receipt" }),
+    ]);
 
     await screen.findByRole("button", { name: /attach files/i });
     expect(attachedIds(container)).toEqual(["today"]);
@@ -82,19 +90,9 @@ describe("Receipt Selector", () => {
   });
 
   it("does not preselect a receipt that is already used", async () => {
-    const { container } = renderWithBlankStub({
-      component: ReceiptSelector,
-      props: {
-        receipts: [
-          buildReceipt({
-            id: "used",
-            title: "Used Receipt",
-            createdAt: new Date(),
-            transactions: [{ id: "trx1" }],
-          }),
-        ],
-      },
-    });
+    const { container } = renderSelector([
+      buildReceipt({ id: "used", title: "Used Receipt", createdAt: new Date(), transactions: [{ id: "trx1" }] }),
+    ]);
 
     await screen.findByRole("button", { name: /attach files/i });
     expect(attachedIds(container)).toEqual([]);
@@ -102,16 +100,11 @@ describe("Receipt Selector", () => {
 
   it("disables receipts already attached to a transaction or a reimbursement request", async () => {
     const user = userEvent.setup();
-    renderWithBlankStub({
-      component: ReceiptSelector,
-      props: {
-        receipts: [
-          buildReceipt({ id: "free", title: "Free Receipt" }),
-          buildReceipt({ id: "on-trx", title: "Trx Receipt", transactions: [{ id: "trx1" }] }),
-          buildReceipt({ id: "on-rr", title: "RR Receipt", reimbursementRequests: [{ id: "rr1" }] }),
-        ],
-      },
-    });
+    renderSelector([
+      buildReceipt({ id: "free", title: "Free Receipt" }),
+      buildReceipt({ id: "on-trx", title: "Trx Receipt", transactions: [{ id: "trx1" }] }),
+      buildReceipt({ id: "on-rr", title: "RR Receipt", reimbursementRequests: [{ id: "rr1" }] }),
+    ]);
 
     const dialog = await openGallery(user);
 
@@ -135,7 +128,7 @@ describe("Receipt Selector", () => {
           <button type="button" onClick={() => setReceipts(next)}>
             revalidate
           </button>
-          <ReceiptSelector receipts={receipts} />
+          <ReceiptSelector receipts={receipts} receiptCount={receipts.length} />
         </>
       );
     }
@@ -163,10 +156,9 @@ describe("Receipt Selector", () => {
 
   it("removes an attachment from the summary list", async () => {
     const user = userEvent.setup();
-    const { container } = renderWithBlankStub({
-      component: ReceiptSelector,
-      props: { receipts: [buildReceipt({ id: "today", title: "Today Receipt", createdAt: new Date() })] },
-    });
+    const { container } = renderSelector([
+      buildReceipt({ id: "today", title: "Today Receipt", createdAt: new Date() }),
+    ]);
 
     await user.click(await screen.findByRole("button", { name: /remove today receipt/i }));
 
@@ -176,15 +168,10 @@ describe("Receipt Selector", () => {
 
   it("renders whatever the loader returned without applying its own date cutoff", async () => {
     const user = userEvent.setup();
-    renderWithBlankStub({
-      component: ReceiptSelector,
-      props: {
-        receipts: [
-          buildReceipt({ id: "recent", title: "Recent Receipt" }),
-          buildReceipt({ id: "ancient", title: "Ancient Receipt", createdAt: dayjs().subtract(1, "year").toDate() }),
-        ],
-      },
-    });
+    renderSelector([
+      buildReceipt({ id: "recent", title: "Recent Receipt" }),
+      buildReceipt({ id: "ancient", title: "Ancient Receipt", createdAt: dayjs().subtract(1, "year").toDate() }),
+    ]);
 
     const dialog = await openGallery(user);
     expect(within(dialog).getByRole("checkbox", { name: "Recent Receipt" })).toBeInTheDocument();
@@ -194,11 +181,7 @@ describe("Receipt Selector", () => {
   it("sends the search term to the loader, so receipts outside the window stay reachable", async () => {
     const user = userEvent.setup();
     const loaderMock = vi.fn((_args: { request: Request }) => null);
-    renderWithBlankStub({
-      component: ReceiptSelector,
-      props: { receipts: [buildReceipt({ id: "recent", title: "Recent Receipt" })] },
-      loaderMock,
-    });
+    renderSelector([buildReceipt({ id: "recent", title: "Recent Receipt" })], { loaderMock });
 
     const dialog = await openGallery(user);
     await user.type(within(dialog).getByPlaceholderText(/search files/i), "invoice");
@@ -218,11 +201,7 @@ describe("Receipt Selector", () => {
   it("requests older receipts from the loader rather than filtering locally", async () => {
     const user = userEvent.setup();
     const loaderMock = vi.fn((_args: { request: Request }) => null);
-    renderWithBlankStub({
-      component: ReceiptSelector,
-      props: { receipts: [buildReceipt({ id: "recent", title: "Recent Receipt" })] },
-      loaderMock,
-    });
+    renderSelector([buildReceipt({ id: "recent", title: "Recent Receipt" })], { loaderMock });
 
     const dialog = await openGallery(user);
     await user.click(within(dialog).getByRole("button", { name: /show files older than 90 days/i }));
@@ -236,5 +215,25 @@ describe("Receipt Selector", () => {
 
     // Once the wider window is loaded there is nothing left to ask for.
     expect(within(dialog).queryByRole("button", { name: /show files older than/i })).not.toBeInTheDocument();
+  });
+
+  it("reports how much of the total it is showing and offers to page further", async () => {
+    const user = userEvent.setup();
+    renderSelector([buildReceipt({ id: "one", title: "One" }), buildReceipt({ id: "two", title: "Two" })], {
+      receiptCount: 700,
+    });
+
+    const dialog = await openGallery(user);
+    expect(within(dialog).getByText("Showing 2 of 700 files")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Load more" })).toBeInTheDocument();
+  });
+
+  it("does not offer to page when everything is already loaded", async () => {
+    const user = userEvent.setup();
+    renderSelector([buildReceipt({ id: "one", title: "One" })]);
+
+    const dialog = await openGallery(user);
+    expect(within(dialog).getByText("Showing 1 of 1 files")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: "Load more" })).not.toBeInTheDocument();
   });
 });

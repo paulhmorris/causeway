@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { IconPaperclip, IconSearch, IconX } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigation, useSearchParams } from "react-router";
+import { useFetcher, useNavigation, useSearchParams } from "react-router";
 
 import { FileUploader } from "~/components/common/file-uploader";
 import { Badge } from "~/components/ui/badge";
@@ -13,7 +13,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useDebouncedValue } from "~/hooks/useDebouncedValue";
 import { useUser } from "~/hooks/useUser";
-import { OLDER_RECEIPTS_PARAM, RECEIPT_SEARCH_PARAM, RECEIPT_WINDOW_DAYS } from "~/lib/constants";
+import { OLDER_RECEIPTS_PARAM, RECEIPT_CURSOR_PARAM, RECEIPT_SEARCH_PARAM, RECEIPT_WINDOW_DAYS } from "~/lib/constants";
 import { cn } from "~/lib/utils";
 
 export type SelectableReceipt = Prisma.ReceiptGetPayload<{
@@ -37,16 +37,29 @@ function isToday(date: Date | string) {
   return dayjs(date).isSame(dayjs(), "day");
 }
 
-export function ReceiptSelector({ receipts }: { receipts: Array<SelectableReceipt> }) {
+export function ReceiptSelector({
+  receipts,
+  receiptCount,
+}: {
+  receipts: Array<SelectableReceipt>;
+  /** Total matching the current filters, which may exceed what the loader returned. */
+  receiptCount: number;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Array<string>>(() =>
     receipts.filter((r) => !isUsed(r) && isToday(r.createdAt)).map((r) => r.id),
   );
 
-  // The loader windows receipts by date, so a selected one can drop out of the list on
+  // Pages fetched past the loader's first batch. Reset whenever the loader runs again, since a new
+  // search or window makes them stale.
+  const [extraPages, setExtraPages] = useState<Array<SelectableReceipt>>([]);
+  useEffect(() => setExtraPages([]), [receipts]);
+  const allReceipts = extraPages.length > 0 ? [...receipts, ...extraPages] : receipts;
+
+  // The loader windows and caps receipts, so a selected one can drop out of the list on
   // revalidation. Remembering everything seen keeps the summary in step with what will submit.
   const seen = useRef(new Map<string, SelectableReceipt>());
-  receipts.forEach((r) => seen.current.set(r.id, r));
+  allReceipts.forEach((r) => seen.current.set(r.id, r));
 
   // Uploading revalidates the loader rather than remounting this component, so newly uploaded
   // receipts have to be selected explicitly to preserve the old defaultChecked-on-today behavior.
@@ -114,9 +127,11 @@ export function ReceiptSelector({ receipts }: { receipts: Array<SelectableReceip
       <ReceiptGallery
         open={isOpen}
         setOpen={setIsOpen}
-        receipts={receipts}
+        receipts={allReceipts}
+        receiptCount={receiptCount}
         selectedIds={selectedIds}
         onToggle={toggle}
+        onLoadMore={(page) => setExtraPages((prev) => [...prev, ...page])}
       />
     </div>
   );
@@ -126,18 +141,23 @@ function ReceiptGallery({
   open,
   setOpen,
   receipts,
+  receiptCount,
   selectedIds,
   onToggle,
+  onLoadMore,
 }: {
   open: boolean;
   setOpen: (open: boolean) => void;
   receipts: Array<SelectableReceipt>;
+  receiptCount: number;
   selectedIds: Array<string>;
   onToggle: (id: string) => void;
+  onLoadMore: (page: Array<SelectableReceipt>) => void;
 }) {
   const user = useUser();
   const navigation = useNavigation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const fetcher = useFetcher<{ receipts: Array<SelectableReceipt> }>();
 
   // The loader owns both the date window and the search, so the gallery can reach receipts it
   // never loaded. Filtering here instead would only ever narrow a list the server already cut.
@@ -145,6 +165,27 @@ function ReceiptGallery({
   const appliedSearch = searchParams.get(RECEIPT_SEARCH_PARAM) ?? "";
   const [search, setSearch] = useDebouncedValue({ minLength: 2, param: RECEIPT_SEARCH_PARAM });
   const isLoading = navigation.state === "loading";
+  const isLoadingMore = fetcher.state === "loading";
+  const hasMore = receipts.length < receiptCount;
+
+  // Append each fetched page once. Comparing the payload avoids re-appending on unrelated renders.
+  const appended = useRef<unknown>(null);
+  useEffect(() => {
+    if (fetcher.data && fetcher.data !== appended.current) {
+      appended.current = fetcher.data;
+      onLoadMore(fetcher.data.receipts);
+    }
+  }, [fetcher.data, onLoadMore]);
+
+  function loadMore() {
+    const last = receipts.at(-1);
+    if (!last) return;
+    const params = new URLSearchParams();
+    if (includesOlder) params.set(OLDER_RECEIPTS_PARAM, "true");
+    if (appliedSearch) params.set(RECEIPT_SEARCH_PARAM, appliedSearch);
+    params.set(RECEIPT_CURSOR_PARAM, last.id);
+    void fetcher.load(`/api/receipts?${params.toString()}`);
+  }
 
   const cutoffWeek = useMemo(() => dayjs().subtract(DAYS_WEEK, "day"), []);
   const cutoffMonth = useMemo(() => dayjs().subtract(DAYS_MONTH, "day"), []);
@@ -219,6 +260,26 @@ function ReceiptGallery({
           </div>
         )}
       </div>
+
+      {total > 0 ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-muted-foreground text-xs">
+            Showing {receipts.length} of {receiptCount} files
+          </span>
+          {hasMore ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              className="px-0"
+              disabled={isLoadingMore}
+              onClick={loadMore}
+            >
+              {isLoadingMore ? "Loading..." : "Load more"}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* A search already spans the full history, so the window only needs escaping when idle. */}
       {includesOlder || appliedSearch ? null : (
