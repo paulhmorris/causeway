@@ -33,6 +33,18 @@ export default function AdminReports() {
       <PageHeader title="Reports" />
       <p className="text-muted-foreground mt-2 text-sm">Generate reports for your organization.</p>
       <PageContainer>
+        <div className="mb-8 max-w-md rounded-lg border p-4">
+          <h2 className="font-bold">Financial Summary</h2>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Income and expenses totaled by fund and category over any date range, with a CSV export for 990 prep.
+          </p>
+          <Button variant="outline" asChild className="mt-3">
+            <Link to="/reports/financial" prefetch="intent">
+              Open financial summary
+            </Link>
+          </Button>
+        </div>
+
         <h2 className="mb-2 font-bold">Transactions Report</h2>
         <div className="max-w-xs space-y-2">
           <div className="space-y-1">
