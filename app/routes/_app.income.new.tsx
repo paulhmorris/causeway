@@ -6,7 +6,7 @@ import { IncomeNotificationEmail } from "emails/income-notification";
 import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
-import { ReceiptSelector } from "~/components/common/receipt-selector";
+import { ReceiptSelector, RECEIPT_SELECTOR_LIMIT } from "~/components/common/receipt-selector";
 import { TransactionItem } from "~/components/common/transaction-item";
 import { ContactDropdown } from "~/components/contacts/contact-dropdown";
 import { ErrorComponent } from "~/components/error-component";
@@ -73,8 +73,10 @@ export const loader = async (args: LoaderFunctionArgs) => {
         include: {
           user: { select: { contact: { select: { email: true } } } },
           reimbursementRequests: { select: { id: true } },
+          transactions: { select: { id: true } },
         },
         orderBy: { createdAt: "desc" },
+        take: RECEIPT_SELECTOR_LIMIT,
       }),
     ]);
 
