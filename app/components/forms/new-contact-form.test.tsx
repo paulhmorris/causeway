@@ -1,8 +1,8 @@
 import { screen } from "@testing-library/dom";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-
 import { mockUseUser, renderWithBlankStub } from "test/test-utils";
+
 import { NewContactForm } from "~/components/forms/new-contact-form";
 
 const mockFormProps = {
@@ -11,8 +11,22 @@ const mockFormProps = {
     { id: 2, name: "Type 2" },
   ],
   usersWhoCanBeAssigned: [
-    { id: "user1", contact: { firstName: "Alice", lastName: "Smith", email: "alice@smith.com" } },
-    { id: "user2", contact: { firstName: "Bob", lastName: "Johnson", email: "bob@johnson.com" } },
+    {
+      id: "user1",
+      contact: {
+        firstName: "Alice",
+        lastName: "Smith",
+        email: "alice@smith.com",
+      },
+    },
+    {
+      id: "user2",
+      contact: {
+        firstName: "Bob",
+        lastName: "Johnson",
+        email: "bob@johnson.com",
+      },
+    },
   ],
 };
 
@@ -31,7 +45,9 @@ describe("New Contact Form", () => {
     const phone = await screen.findByLabelText<HTMLInputElement>("Phone");
     const alternatePhone = await screen.findByLabelText<HTMLInputElement>(/alternate phone/i);
     const organizationName = await screen.findByLabelText<HTMLInputElement>(/organization name/i);
-    const typeId = await screen.findByRole<HTMLInputElement>("combobox", { name: /type/i });
+    const typeId = await screen.findByRole<HTMLInputElement>("combobox", {
+      name: /type/i,
+    });
     const aliceSmithOption = await screen.findByLabelText<HTMLInputElement>(/alice smith/i);
     const allCheckboxes = await screen.findAllByRole("checkbox");
 
@@ -65,10 +81,14 @@ describe("New Contact Form", () => {
   it("should render address fields when add address is clicked", async () => {
     renderWithBlankStub({ component: NewContactForm, props: mockFormProps });
 
-    const addressCheckbox = await screen.findByRole("button", { name: /add address/i });
+    const addressCheckbox = await screen.findByRole("button", {
+      name: /add address/i,
+    });
     act(() => addressCheckbox.click());
 
-    const addressFields = await screen.findByRole("group", { name: /address fields/i });
+    const addressFields = await screen.findByRole("group", {
+      name: /address fields/i,
+    });
     expect(addressFields).toBeInTheDocument();
     expect(await screen.findByLabelText(/street 1/i)).toBeInTheDocument();
     expect(await screen.findByLabelText(/street 2/i)).toBeInTheDocument();
@@ -82,10 +102,14 @@ describe("New Contact Form", () => {
   it("should remove address fields when remove address is clicked", async () => {
     renderWithBlankStub({ component: NewContactForm, props: mockFormProps });
 
-    const addAddressButton = await screen.findByRole("button", { name: /add address/i });
+    const addAddressButton = await screen.findByRole("button", {
+      name: /add address/i,
+    });
     act(() => addAddressButton.click());
 
-    const removeAddressButton = await screen.findByRole("button", { name: /remove address/i });
+    const removeAddressButton = await screen.findByRole("button", {
+      name: /remove address/i,
+    });
     act(() => removeAddressButton.click());
 
     expect(screen.queryByRole("group", { name: /address fields/i })).not.toBeInTheDocument();
@@ -94,7 +118,9 @@ describe("New Contact Form", () => {
   it("should show an error when required fields are not filled", async () => {
     renderWithBlankStub({ component: NewContactForm, props: mockFormProps });
 
-    const submitButton = await screen.findByRole("button", { name: /create contact/i });
+    const submitButton = await screen.findByRole("button", {
+      name: /create contact/i,
+    });
     act(() => submitButton.click());
 
     const errors = await screen.findAllByRole("alert");
@@ -109,7 +135,9 @@ describe("New Contact Form", () => {
     await user.click(await screen.findByRole("combobox", { name: /type/i }));
     await user.click(await screen.findByRole("option", { name: "Type 1" }));
 
-    const form = await screen.findByRole<HTMLFormElement>("form", { name: /new contact/i });
+    const form = await screen.findByRole<HTMLFormElement>("form", {
+      name: /new contact/i,
+    });
     expect(form.checkValidity()).toBe(true);
   });
 
@@ -128,7 +156,11 @@ describe("New Contact Form", () => {
   it("should not require address fields when address is added then removed", async () => {
     const action = vi.fn();
     const user = userEvent.setup();
-    renderWithBlankStub({ component: NewContactForm, props: mockFormProps, actionMock: action });
+    renderWithBlankStub({
+      component: NewContactForm,
+      props: mockFormProps,
+      actionMock: action,
+    });
 
     await user.type(await screen.findByLabelText(/first name/i), "J");
     await user.click(await screen.findByRole("combobox", { name: /type/i }));
@@ -144,7 +176,11 @@ describe("New Contact Form", () => {
   it("should submit the form with valid data", async () => {
     const action = vi.fn();
     const user = userEvent.setup();
-    renderWithBlankStub({ component: NewContactForm, props: mockFormProps, actionMock: action });
+    renderWithBlankStub({
+      component: NewContactForm,
+      props: mockFormProps,
+      actionMock: action,
+    });
 
     await user.type(await screen.findByLabelText(/first name/i), "J");
     await user.click(await screen.findByRole("combobox", { name: /type/i }));

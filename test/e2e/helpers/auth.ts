@@ -1,8 +1,8 @@
 import { faker } from "@faker-js/faker";
 import { MembershipRole, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
-
 import prisma from "test/e2e/helpers/db";
+
 import { clerkClient } from "~/integrations/clerk.server";
 import { ContactType } from "~/lib/constants";
 

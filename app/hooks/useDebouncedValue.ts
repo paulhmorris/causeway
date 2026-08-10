@@ -30,7 +30,7 @@ export function useDebouncedValue({ delay = 500, minLength = 3 }: Options = { de
 
     params.set("s", debouncedValue);
     setSearchParams(params, { replace: true });
-  }, [debouncedValue]);
+  }, [debouncedValue, setSearchParams, minLength]);
 
   return [value, setValue];
 }

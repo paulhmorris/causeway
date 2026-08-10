@@ -51,8 +51,8 @@ export function loggerMiddleware() {
     };
 
     if (resStatus >= 300 && resStatus < 400) {
-      resData.redirect_url = c.res.url;
-      httpLogger.warn("Response", resData);
+      resData.redirect_url = c.res.headers.get("location");
+      httpLogger.warn(`Redirecting from ${c.req.url} to ${resData.redirect_url as string}`, resData);
     }
 
     if (resStatus >= 400) {

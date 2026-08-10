@@ -1,8 +1,8 @@
 import { ReimbursementRequestStatus } from "@prisma/client";
 import { screen } from "@testing-library/dom";
 import userEvent from "@testing-library/user-event";
-
 import { renderWithBlankStub } from "test/test-utils";
+
 import { ReimbursementRequestApprovalForm } from "~/components/forms/reimbursement-request-approval-form";
 
 const MOCK_PENDING_PROPS = {
@@ -57,7 +57,10 @@ const MOCK_APPROVED_PROPS = {
 
 describe("Reimbursement Request Approval Form", () => {
   it("renders the approval fields correctly when status is PENDING", async () => {
-    renderWithBlankStub({ component: ReimbursementRequestApprovalForm, props: MOCK_PENDING_PROPS });
+    renderWithBlankStub({
+      component: ReimbursementRequestApprovalForm,
+      props: MOCK_PENDING_PROPS,
+    });
 
     expect(await screen.findByLabelText(/requester notes/i)).toBeInTheDocument();
     expect(await screen.findByLabelText(/amount/i)).toBeInTheDocument();
@@ -75,7 +78,10 @@ describe("Reimbursement Request Approval Form", () => {
   });
 
   it("renders only the reopen button when status is not PENDING", async () => {
-    renderWithBlankStub({ component: ReimbursementRequestApprovalForm, props: MOCK_APPROVED_PROPS });
+    renderWithBlankStub({
+      component: ReimbursementRequestApprovalForm,
+      props: MOCK_APPROVED_PROPS,
+    });
 
     // Check that approval fields are NOT visible
     expect(screen.queryByLabelText(/amount/i)).not.toBeInTheDocument();
@@ -88,7 +94,10 @@ describe("Reimbursement Request Approval Form", () => {
 
   it("should show errors when required fields are not filled for approval", async () => {
     const user = userEvent.setup();
-    renderWithBlankStub({ component: ReimbursementRequestApprovalForm, props: MOCK_PENDING_PROPS });
+    renderWithBlankStub({
+      component: ReimbursementRequestApprovalForm,
+      props: MOCK_PENDING_PROPS,
+    });
 
     // Clear the default amount
     await user.clear(await screen.findByLabelText(/amount/i));
@@ -103,7 +112,11 @@ describe("Reimbursement Request Approval Form", () => {
   it("should submit with the APPROVE action", async () => {
     const action = vi.fn();
     const user = userEvent.setup();
-    renderWithBlankStub({ component: ReimbursementRequestApprovalForm, props: MOCK_PENDING_PROPS, actionMock: action });
+    renderWithBlankStub({
+      component: ReimbursementRequestApprovalForm,
+      props: MOCK_PENDING_PROPS,
+      actionMock: action,
+    });
 
     await user.click(await screen.findByLabelText(/transaction category/i));
     await user.click(await screen.findByRole("option", { name: /category a/i }));
@@ -117,7 +130,11 @@ describe("Reimbursement Request Approval Form", () => {
   it("should submit with the REJECTED action", async () => {
     const action = vi.fn();
     const user = userEvent.setup();
-    renderWithBlankStub({ component: ReimbursementRequestApprovalForm, props: MOCK_PENDING_PROPS, actionMock: action });
+    renderWithBlankStub({
+      component: ReimbursementRequestApprovalForm,
+      props: MOCK_PENDING_PROPS,
+      actionMock: action,
+    });
 
     await user.click(await screen.findByRole("button", { name: /reject/i }));
 
