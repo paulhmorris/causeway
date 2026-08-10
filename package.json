@@ -149,12 +149,12 @@
     "*": "prettier --write --ignore-unknown"
   },
   "engines": {
-    "node": "22.x"
+    "node": "24.x"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "volta": {
-    "node": "22.16.0"
+    "node": "24.19.0"
   }
 }
