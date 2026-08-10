@@ -12,6 +12,7 @@ import { ErrorComponent } from "~/components/error-component";
 import { ConfirmDestructiveModal } from "~/components/modals/confirm-destructive-modal";
 import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
+import { Callout } from "~/components/ui/callout";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
@@ -72,6 +73,8 @@ export const loader = async (args: LoaderFunctionArgs) => {
             lastName: true,
           },
         },
+        reimbursementId: true,
+        voidedAt: true,
         transactionItems: {
           select: {
             id: true,
@@ -149,6 +152,11 @@ export default function TransactionDetailsPage() {
       </PageHeader>
 
       <PageContainer className="max-w-3xl">
+        {transaction.voidedAt ? (
+          <Callout variant="destructive" className="mb-6">
+            This transaction has been voided and is excluded from account balances.
+          </Callout>
+        ) : null}
         <div className="space-y-8">
           <div>
             <h2 className="sr-only">Details</h2>
@@ -170,6 +178,17 @@ export default function TransactionDetailsPage() {
                 </DetailItem>
               ) : null}
               <DetailItem label="Category" value={transaction.category?.name} />
+              {transaction.reimbursementId && !authorizedUser.isMember ? (
+                <DetailItem label="Source">
+                  <Link
+                    to={`/reimbursements/${transaction.reimbursementId}`}
+                    prefetch="intent"
+                    className="text-primary font-medium"
+                  >
+                    Reimbursement Request
+                  </Link>
+                </DetailItem>
+              ) : null}
               {transaction.description ? <DetailItem label="Note" value={transaction.description} /> : null}
               {transaction.receipts.length > 0 ? (
                 <div className="items-center py-1.5 text-sm sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
@@ -223,19 +242,7 @@ export default function TransactionDetailsPage() {
                   <TableRow key={item.id}>
                     <TableCell>{item.type.name}</TableCell>
                     <TableCell>{item.method?.name}</TableCell>
-                    <TableCell>
-                      {item.description?.includes("Reimbursement ID:") && !authorizedUser.isMember ? (
-                        <Link
-                          to={`/reimbursements/${item.description.split(": ")[1]}`}
-                          prefetch="intent"
-                          className="text-primary font-medium"
-                        >
-                          Reimbursement
-                        </Link>
-                      ) : (
-                        item.description
-                      )}
-                    </TableCell>
+                    <TableCell>{item.description}</TableCell>
                     <TableCell className="text-right">{formatCentsAsDollars(item.amountInCents, 2)}</TableCell>
                   </TableRow>
                 ))}

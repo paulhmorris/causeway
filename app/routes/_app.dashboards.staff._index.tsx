@@ -23,6 +23,7 @@ export async function loader(args: LoaderFunctionArgs) {
       db.transaction.aggregate({
         where: {
           orgId,
+          voidedAt: null,
           account: {
             user: { id: user.id },
           },
@@ -65,7 +66,7 @@ export async function loader(args: LoaderFunctionArgs) {
           id: { in: user.contact.accountSubscriptions.map((s) => s.accountId) },
         },
         include: {
-          transactions: true,
+          transactions: { where: { voidedAt: null } },
         },
         orderBy: { code: "asc" },
       }),
