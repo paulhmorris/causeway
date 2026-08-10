@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { summarizeFinancials, summaryToCsv, type SummarizableTransaction } from "~/lib/financial-summary";
+import { summarizeFinancials, summaryToCsv, sumTotals, type SummarizableTransaction } from "~/lib/financial-summary";
 
 function tx(over: Partial<SummarizableTransaction> = {}): SummarizableTransaction {
   return {
@@ -60,6 +60,20 @@ describe("summarizeFinancials", () => {
       byCategory: [],
       totals: { incomeInCents: 0, expenseInCents: 0, netInCents: 0 },
     });
+  });
+});
+
+describe("sumTotals", () => {
+  it("splits a list of signed amounts into income, expense, and net", () => {
+    expect(sumTotals([10000, -4000, 2500])).toEqual({
+      incomeInCents: 12500,
+      expenseInCents: 4000,
+      netInCents: 8500,
+    });
+  });
+
+  it("is all zeros for an empty list", () => {
+    expect(sumTotals([])).toEqual({ incomeInCents: 0, expenseInCents: 0, netInCents: 0 });
   });
 });
 
