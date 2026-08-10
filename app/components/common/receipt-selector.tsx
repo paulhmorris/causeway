@@ -282,7 +282,7 @@ function ReceiptGallery({
       </div>
 
       {total > 0 ? (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-muted-foreground text-xs">
             {availableCount} available · showing {receipts.length} of {receiptCount} files
           </span>
@@ -291,7 +291,7 @@ function ReceiptGallery({
               variant="ghost"
               size="sm"
               type="button"
-              className="px-0"
+              className="px-0 text-sm"
               disabled={isLoadingMore}
               onClick={loadMore}
             >
