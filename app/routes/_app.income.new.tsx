@@ -6,7 +6,7 @@ import { IncomeNotificationEmail } from "emails/income-notification";
 import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
-import { ReceiptSelector, RECEIPT_SELECTOR_LIMIT } from "~/components/common/receipt-selector";
+import { ReceiptSelector } from "~/components/common/receipt-selector";
 import { TransactionItem } from "~/components/common/transaction-item";
 import { ContactDropdown } from "~/components/contacts/contact-dropdown";
 import { ErrorComponent } from "~/components/error-component";
@@ -28,6 +28,7 @@ import { formatCentsAsDollars, getToday } from "~/lib/utils";
 import { TransactionSchema } from "~/schemas";
 import { checkbox } from "~/schemas/fields";
 import { ContactService } from "~/services.server/contact";
+import { getSelectableReceipts, receiptGalleryOptions } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
 import { TransactionService } from "~/services.server/transaction";
 
@@ -64,19 +65,11 @@ export const loader = async (args: LoaderFunctionArgs) => {
         },
       }),
       db.transactionCategory.findMany({ orderBy: { id: "asc" } }),
-      db.receipt.findMany({
-        // Admins can see all receipts, users can only see their own
-        where: {
-          orgId,
-          userId: user.isMember ? user.id : undefined,
-        },
-        include: {
-          user: { select: { contact: { select: { email: true } } } },
-          reimbursementRequests: { select: { id: true } },
-          transactions: { select: { id: true } },
-        },
-        orderBy: { createdAt: "desc" },
-        take: RECEIPT_SELECTOR_LIMIT,
+      // Admins can see all receipts, users can only see their own
+      getSelectableReceipts({
+        orgId,
+        userId: user.isMember ? user.id : undefined,
+        ...receiptGalleryOptions(args.request),
       }),
     ]);
 

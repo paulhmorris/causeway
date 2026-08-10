@@ -1,6 +1,7 @@
-import { screen, within } from "@testing-library/dom";
+import { screen, waitFor, within } from "@testing-library/dom";
 import userEvent from "@testing-library/user-event";
 import dayjs from "dayjs";
+import { useState } from "react";
 import { mockUseUser, renderWithBlankStub } from "test/test-utils";
 
 import { ReceiptSelector, type SelectableReceipt } from "~/components/common/receipt-selector";
@@ -54,11 +55,14 @@ describe("Receipt Selector", () => {
     );
   });
 
-  it("prompts for an upload when there are no receipts", async () => {
+  it("still offers the gallery when there is nothing to attach yet", async () => {
+    const user = userEvent.setup();
     renderWithBlankStub({ component: ReceiptSelector, props: { receipts: [] } });
 
-    expect(await screen.findByText(/upload receipts to get started/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /attach files/i })).not.toBeInTheDocument();
+    expect(await screen.findByText("No files attached")).toBeInTheDocument();
+
+    const dialog = await openGallery(user);
+    expect(within(dialog).getByText(/no files uploaded in the last 90 days/i)).toBeInTheDocument();
   });
 
   it("preselects receipts uploaded today and exposes them as hidden inputs", async () => {
@@ -117,30 +121,44 @@ describe("Receipt Selector", () => {
     expect(within(dialog).getAllByText("Used")).toHaveLength(2);
   });
 
-  it("keeps selections when the search filters them out of view", async () => {
+  it("keeps a selection after the loader stops returning that receipt", async () => {
     const user = userEvent.setup();
+    const alpha = buildReceipt({ id: "alpha", title: "Alpha Invoice" });
+    const beta = buildReceipt({ id: "beta", title: "Beta Invoice" });
+
+    // Searching and widening the window both re-run the loader, which can return a set that no
+    // longer contains an already-selected receipt. It still has to submit.
+    function Harness({ initial, next }: { initial: Array<SelectableReceipt>; next: Array<SelectableReceipt> }) {
+      const [receipts, setReceipts] = useState(initial);
+      return (
+        <>
+          <button type="button" onClick={() => setReceipts(next)}>
+            revalidate
+          </button>
+          <ReceiptSelector receipts={receipts} />
+        </>
+      );
+    }
+
     const { container } = renderWithBlankStub({
-      component: ReceiptSelector,
-      props: {
-        receipts: [
-          buildReceipt({ id: "alpha", title: "Alpha Invoice" }),
-          buildReceipt({ id: "beta", title: "Beta Invoice" }),
-        ],
-      },
+      component: Harness,
+      props: { initial: [alpha, beta], next: [beta] },
     });
 
     const dialog = await openGallery(user);
     await user.click(within(dialog).getByRole("checkbox", { name: "Alpha Invoice" }));
     expect(attachedIds(container)).toEqual(["alpha"]);
+    await user.click(within(dialog).getByRole("button", { name: "Done" }));
 
-    // Filtering Alpha out of the list must not drop it from the form.
-    await user.type(within(dialog).getByPlaceholderText(/search files/i), "Beta");
-    expect(within(dialog).queryByRole("checkbox", { name: "Alpha Invoice" })).not.toBeInTheDocument();
-    expect(attachedIds(container)).toEqual(["alpha"]);
+    await user.click(await screen.findByRole("button", { name: "revalidate" }));
 
-    await user.clear(within(dialog).getByPlaceholderText(/search files/i));
-    expect(within(dialog).getByRole("checkbox", { name: "Alpha Invoice" })).toBeChecked();
     expect(attachedIds(container)).toEqual(["alpha"]);
+    expect(screen.getByText("1 file attached")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /remove alpha invoice/i })).toBeInTheDocument();
+
+    const reopened = await openGallery(user);
+    expect(within(reopened).queryByRole("checkbox", { name: "Alpha Invoice" })).not.toBeInTheDocument();
+    expect(within(reopened).getByRole("checkbox", { name: "Beta Invoice" })).toBeInTheDocument();
   });
 
   it("removes an attachment from the summary list", async () => {
@@ -156,7 +174,7 @@ describe("Receipt Selector", () => {
     expect(screen.getByText("No files attached")).toBeInTheDocument();
   });
 
-  it("hides receipts older than 90 days until they are requested", async () => {
+  it("renders whatever the loader returned without applying its own date cutoff", async () => {
     const user = userEvent.setup();
     renderWithBlankStub({
       component: ReceiptSelector,
@@ -169,9 +187,54 @@ describe("Receipt Selector", () => {
     });
 
     const dialog = await openGallery(user);
-    expect(within(dialog).queryByRole("checkbox", { name: "Ancient Receipt" })).not.toBeInTheDocument();
-
-    await user.click(within(dialog).getByRole("button", { name: /show files older than 90 days/i }));
+    expect(within(dialog).getByRole("checkbox", { name: "Recent Receipt" })).toBeInTheDocument();
     expect(within(dialog).getByRole("checkbox", { name: "Ancient Receipt" })).toBeInTheDocument();
+  });
+
+  it("sends the search term to the loader, so receipts outside the window stay reachable", async () => {
+    const user = userEvent.setup();
+    const loaderMock = vi.fn((_args: { request: Request }) => null);
+    renderWithBlankStub({
+      component: ReceiptSelector,
+      props: { receipts: [buildReceipt({ id: "recent", title: "Recent Receipt" })] },
+      loaderMock,
+    });
+
+    const dialog = await openGallery(user);
+    await user.type(within(dialog).getByPlaceholderText(/search files/i), "invoice");
+
+    await waitFor(
+      () => {
+        const searched = loaderMock.mock.calls.some(
+          ([args]) =>
+            new URL((args as { request: Request }).request.url).searchParams.get("receiptSearch") === "invoice",
+        );
+        expect(searched).toBe(true);
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  it("requests older receipts from the loader rather than filtering locally", async () => {
+    const user = userEvent.setup();
+    const loaderMock = vi.fn((_args: { request: Request }) => null);
+    renderWithBlankStub({
+      component: ReceiptSelector,
+      props: { receipts: [buildReceipt({ id: "recent", title: "Recent Receipt" })] },
+      loaderMock,
+    });
+
+    const dialog = await openGallery(user);
+    await user.click(within(dialog).getByRole("button", { name: /show files older than 90 days/i }));
+
+    await waitFor(() => {
+      const requested = loaderMock.mock.calls.some(([args]) =>
+        new URL((args as { request: Request }).request.url).searchParams.has("olderReceipts", "true"),
+      );
+      expect(requested).toBe(true);
+    });
+
+    // Once the wider window is loaded there is nothing left to ask for.
+    expect(within(dialog).queryByRole("button", { name: /show files older than/i })).not.toBeInTheDocument();
   });
 });
