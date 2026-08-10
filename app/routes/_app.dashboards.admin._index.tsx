@@ -16,7 +16,9 @@ import { Callout } from "~/components/ui/callout";
 import { AccountBalanceCard } from "~/components/users/balance-card";
 import { db } from "~/integrations/prisma.server";
 import { AccountType } from "~/lib/constants";
+import { sumTotals } from "~/lib/financial-summary";
 import { handleLoaderError } from "~/lib/responses.server";
+import { cn, formatCentsAsDollars } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
 
 export async function loader(args: LoaderFunctionArgs) {
@@ -28,7 +30,7 @@ export async function loader(args: LoaderFunctionArgs) {
       return redirect("/dashboards/staff");
     }
 
-    const [accounts, reimbursementRequests, announcement, missingEmailCount] = await db.$transaction([
+    const [accounts, reimbursementRequests, announcement, missingEmailCount, ytdTransactions] = await db.$transaction([
       db.account.findMany({
         select: {
           id: true,
@@ -87,17 +89,28 @@ export async function loader(args: LoaderFunctionArgs) {
         orderBy: { id: "desc" },
       }),
       db.contact.count({ where: { orgId, email: null } }),
+      // Year-to-date activity for the headline income/expense/net tiles.
+      db.transaction.findMany({
+        where: { orgId, voidedAt: null, date: { gte: dayjs().utc().startOf("year").toDate() } },
+        select: { amountInCents: true },
+      }),
     ]);
 
-    return { accounts, reimbursementRequests, announcement, missingEmailCount };
+    const ytd = sumTotals(ytdTransactions.map((t) => t.amountInCents));
+    const pendingTotalInCents = reimbursementRequests.reduce((sum, r) => sum + r.amountInCents, 0);
+
+    return { accounts, reimbursementRequests, announcement, missingEmailCount, ytd, pendingTotalInCents };
   } catch (e) {
     handleLoaderError(e);
   }
 }
 
 export default function Index() {
-  const { accounts, reimbursementRequests, announcement, missingEmailCount } = useLoaderData<typeof loader>();
+  const { accounts, reimbursementRequests, announcement, missingEmailCount, ytd, pendingTotalInCents } =
+    useLoaderData<typeof loader>();
   const [healthDismissed, setHealthDismissed] = useState(false);
+
+  const currentYear = dayjs().year();
 
   return (
     <>
@@ -128,6 +141,41 @@ export default function Index() {
         <div className="mb-4">
           {announcement ? <AnnouncementCard announcement={announcement} /> : <AnnouncementModal intent="create" />}
         </div>
+
+        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label={`Income (${currentYear})`} value={formatCentsAsDollars(ytd.incomeInCents)} tone="good" />
+          <Stat label={`Expenses (${currentYear})`} value={formatCentsAsDollars(ytd.expenseInCents)} />
+          <Stat
+            label={`Net (${currentYear})`}
+            value={formatCentsAsDollars(ytd.netInCents)}
+            tone={ytd.netInCents >= 0 ? "good" : "warning"}
+          />
+          <Stat
+            label="Pending reimbursements"
+            value={formatCentsAsDollars(pendingTotalInCents)}
+            sublabel={`${reimbursementRequests.length} request${reimbursementRequests.length === 1 ? "" : "s"}`}
+            tone={reimbursementRequests.length > 0 ? "warning" : undefined}
+          />
+        </div>
+
+        <div className="mb-6 flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/reports/financial" prefetch="intent">
+              Financial summary
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/reconciliations" prefetch="intent">
+              Reconcile
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/transactions/import" prefetch="intent">
+              Import donations
+            </Link>
+          </Button>
+        </div>
+
         <div className="space-y-4">
           <div className="grid auto-rows-fr grid-cols-1 gap-4 lg:grid-cols-2">
             {accounts.map((a) => {
@@ -143,6 +191,34 @@ export default function Index() {
         </div>
       </PageContainer>
     </>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  sublabel,
+  tone,
+}: {
+  label: string;
+  value: string;
+  sublabel?: string;
+  tone?: "good" | "warning";
+}) {
+  return (
+    <div className="rounded-lg border p-3">
+      <p className="text-muted-foreground text-xs">{label}</p>
+      <p
+        className={cn(
+          "text-lg font-semibold tabular-nums",
+          tone === "good" && "text-success",
+          tone === "warning" && "text-warning",
+        )}
+      >
+        {value}
+      </p>
+      {sublabel ? <p className="text-muted-foreground text-xs">{sublabel}</p> : null}
+    </div>
   );
 }
 

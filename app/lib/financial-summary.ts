@@ -39,6 +39,17 @@ function emptyTotals(): Totals {
 }
 
 /**
+ * Income/expense/net for a bare list of signed amounts. The same split the full
+ * summary uses, for callers (like the dashboard) that only need the headline
+ * numbers and don't want to load account and category detail.
+ */
+export function sumTotals(amountsInCents: Array<number>): Totals {
+  const totals = emptyTotals();
+  for (const amount of amountsInCents) apply(totals, amount);
+  return totals;
+}
+
+/**
  * Summarize transactions into income/expense/net totals overall, by fund, and
  * by category. Income is the sum of money in, expense the sum of money out (as a
  * positive figure), and net their difference — the shape a statement of

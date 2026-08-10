@@ -10,11 +10,12 @@ import { PageHeader } from "~/components/common/page-header";
 import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
 import { TransactionSearch } from "~/components/transactions/transaction-search";
+import { Badge } from "~/components/ui/badge";
 import { DataTable, DEFAULT_PAGE_SIZE } from "~/components/ui/data-table/data-table";
 import { DataTableColumnHeader } from "~/components/ui/data-table/data-table-column-header";
 import { Facet } from "~/components/ui/data-table/data-table-toolbar";
 import { db } from "~/integrations/prisma.server";
-import { formatCentsAsDollars } from "~/lib/utils";
+import { cn, formatCentsAsDollars } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
 
 export async function loader(args: LoaderFunctionArgs) {
@@ -64,6 +65,7 @@ export async function loader(args: LoaderFunctionArgs) {
         date: true,
         amountInCents: true,
         description: true,
+        voidedAt: true,
         category: true,
         contact: {
           select: {
@@ -152,9 +154,22 @@ const columns = [
     accessorFn: (row) => formatCentsAsDollars(row.amountInCents, 2),
     header: ({ column }) => <DataTableColumnHeader column={column} title="Amount" />,
     cell: ({ row }) => {
+      const isVoided = row.original.voidedAt !== null;
       return (
-        <div className="max-w-[100px]">
-          <span className="sentry-mask truncate font-medium tabular-nums">{row.getValue("amountInCents")}</span>
+        <div className="flex max-w-[160px] items-center gap-2">
+          <span
+            className={cn(
+              "sentry-mask truncate font-medium tabular-nums",
+              isVoided && "text-muted-foreground line-through",
+            )}
+          >
+            {row.getValue("amountInCents")}
+          </span>
+          {isVoided ? (
+            <Badge variant="outline" className="shrink-0 text-xs">
+              Voided
+            </Badge>
+          ) : null}
         </div>
       );
     },
