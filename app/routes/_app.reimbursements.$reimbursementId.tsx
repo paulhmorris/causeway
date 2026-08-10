@@ -66,22 +66,25 @@ export async function action(args: ActionFunctionArgs) {
   // Reopen
   if (_action === ReimbursementRequestStatus.PENDING) {
     logger.info("Reopening reimbursement request...", { username: user.username });
-    const rr = await db.reimbursementRequest.update({
-      where: { id, orgId },
-      data: { status: ReimbursementRequestStatus.PENDING },
-      select: {
-        user: {
-          select: {
-            username: true,
+    // Reopening clears the void on the linked transaction, so both writes have to land together —
+    // otherwise a failure here leaves a pending request whose transaction is still excluded from balances.
+    const [rr] = await db.$transaction([
+      db.reimbursementRequest.update({
+        where: { id, orgId },
+        data: { status: ReimbursementRequestStatus.PENDING },
+        select: {
+          user: {
+            select: {
+              username: true,
+            },
           },
         },
-      },
-    });
-    // Clear voidedAt on the linked transaction if it exists
-    await db.transaction.updateMany({
-      where: { reimbursementId: id },
-      data: { voidedAt: null },
-    });
+      }),
+      db.transaction.updateMany({
+        where: { reimbursementId: id, orgId },
+        data: { voidedAt: null },
+      }),
+    ]);
     await sendReimbursementRequestUpdateEmail({ email: rr.user.username, status: _action });
     return Toasts.dataWithInfo(null, {
       message: "Success",
@@ -143,40 +146,38 @@ export async function action(args: ActionFunctionArgs) {
         });
       }
 
-      // Upsert the linked transaction
-      const existingTrx = await db.transaction.findUnique({ where: { reimbursementId: id } });
+      // Re-approving an existing request updates its transaction rather than creating a second one.
+      // Upsert rather than read-then-branch: reimbursementId is unique, so two concurrent approvals
+      // could otherwise both find no row and race into a unique-constraint violation.
       await db.$transaction([
-        existingTrx
-          ? db.transaction.update({
-              where: { reimbursementId: id },
-              data: {
-                accountId,
-                categoryId,
-                description: approverNote,
-                amountInCents: amount * -1,
-                voidedAt: null,
-              },
-            })
-          : db.transaction.create({
-              data: {
+        db.transaction.upsert({
+          where: { reimbursementId: id },
+          update: {
+            accountId,
+            categoryId,
+            description: approverNote,
+            amountInCents: amount * -1,
+            voidedAt: null,
+          },
+          create: {
+            orgId,
+            accountId,
+            categoryId,
+            description: approverNote,
+            amountInCents: amount * -1,
+            date: dayjs().startOf("day").toDate(),
+            reimbursementId: id,
+            transactionItems: {
+              create: {
                 orgId,
-                accountId,
-                categoryId,
-                description: approverNote,
                 amountInCents: amount * -1,
-                date: dayjs().startOf("day").toDate(),
-                reimbursementId: id,
-                transactionItems: {
-                  create: {
-                    orgId,
-                    amountInCents: amount * -1,
-                    methodId: TransactionItemMethod.Other,
-                    typeId: TransactionItemType.Other_Outgoing,
-                    description: `Reimbursement: ${rr.id}`,
-                  },
-                },
+                methodId: TransactionItemMethod.Other,
+                typeId: TransactionItemType.Other_Outgoing,
+                description: `Reimbursement: ${rr.id}`,
               },
-            }),
+            },
+          },
+        }),
         db.reimbursementRequest.update({
           where: { id, orgId },
           data: { status: _action, approverNote },
@@ -205,15 +206,17 @@ export async function action(args: ActionFunctionArgs) {
 
   // Voided — also void the linked transaction atomically
   if (_action === ReimbursementRequestStatus.VOID) {
-    const rr = await db.reimbursementRequest.update({
-      where: { id, orgId },
-      data: { status: _action },
-      include: { user: true },
-    });
-    await db.transaction.updateMany({
-      where: { reimbursementId: id },
-      data: { voidedAt: new Date() },
-    });
+    const [rr] = await db.$transaction([
+      db.reimbursementRequest.update({
+        where: { id, orgId },
+        data: { status: _action },
+        include: { user: true },
+      }),
+      db.transaction.updateMany({
+        where: { reimbursementId: id, orgId },
+        data: { voidedAt: new Date() },
+      }),
+    ]);
     await sendReimbursementRequestUpdateEmail({ email: rr.user.username, status: _action });
     return Toasts.dataWithSuccess(null, {
       message: "Reimbursement request voided",
