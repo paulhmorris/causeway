@@ -1,5 +1,4 @@
 import { test as setup } from "@playwright/test";
-
 import { createAdmin } from "test/e2e/helpers/auth";
 
 const authFile = `${process.cwd()}/playwright/.auth/admin.json`;

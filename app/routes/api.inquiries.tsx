@@ -1,9 +1,9 @@
 import { render } from "@react-email/render";
 import { parseFormData, validationError } from "@rvf/react-router";
+import { NewInquiryEmail } from "emails/new-inquiry";
 import { ActionFunctionArgs, data } from "react-router";
 import { z } from "zod/v4";
 
-import { NewInquiryEmail } from "emails/new-inquiry";
 import { Mailer } from "~/integrations/email.server";
 import { createLogger } from "~/integrations/logger.server";
 import { Sentry } from "~/integrations/sentry";

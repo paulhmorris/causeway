@@ -2,9 +2,9 @@ import { TransactionItemTypeDirection } from "@prisma/client";
 import { render } from "@react-email/render";
 import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import { IconPlus } from "@tabler/icons-react";
+import { IncomeNotificationEmail } from "emails/income-notification";
 import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 
-import { IncomeNotificationEmail } from "emails/income-notification";
 import { PageHeader } from "~/components/common/page-header";
 import { ReceiptSelector } from "~/components/common/receipt-selector";
 import { TransactionItem } from "~/components/common/transaction-item";

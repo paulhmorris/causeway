@@ -79,7 +79,7 @@ export async function loader(args: LoaderFunctionArgs) {
     .addTable({ data: contacts, schema })
     .build({ output: "buffer", bordered: false });
 
-  return new Response(file, {
+  return new Response(new Uint8Array(file), {
     headers: {
       "Content-Disposition": `attachment; filename=${org.name}-contacts-report-${new Date().getTime()}.xlsx`,
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

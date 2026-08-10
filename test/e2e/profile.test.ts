@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-
 import { expectVisibleNotification } from "test/e2e/helpers/notifications";
 
 test.describe("Profile", () => {

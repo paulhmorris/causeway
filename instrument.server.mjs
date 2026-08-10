@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 import { nodeProfilingIntegration } from "@sentry/profiling-node";
 import * as Sentry from "@sentry/react-router";
 
