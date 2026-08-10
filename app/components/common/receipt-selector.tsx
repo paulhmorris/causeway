@@ -190,20 +190,28 @@ function ReceiptGallery({
   const cutoffWeek = useMemo(() => dayjs().subtract(DAYS_WEEK, "day"), []);
   const cutoffMonth = useMemo(() => dayjs().subtract(DAYS_MONTH, "day"), []);
 
+  // Most receipts end up attached to something, so date alone buries the few that can still be
+  // picked. Availability leads; the dates subdivide what's actually selectable.
   const groups = useMemo(() => {
     const thisWeek: Array<SelectableReceipt> = [];
     const thisMonth: Array<SelectableReceipt> = [];
     const older: Array<SelectableReceipt> = [];
+    const attached: Array<SelectableReceipt> = [];
     for (const r of receipts) {
+      if (isUsed(r)) {
+        attached.push(r);
+        continue;
+      }
       const created = dayjs(r.createdAt);
       if (created.isAfter(cutoffWeek)) thisWeek.push(r);
       else if (created.isAfter(cutoffMonth)) thisMonth.push(r);
       else older.push(r);
     }
-    return { thisWeek, thisMonth, older };
+    return { thisWeek, thisMonth, older, attached };
   }, [receipts, cutoffWeek, cutoffMonth]);
 
-  const total = groups.thisWeek.length + groups.thisMonth.length + groups.older.length;
+  const availableCount = groups.thisWeek.length + groups.thisMonth.length + groups.older.length;
+  const total = availableCount + groups.attached.length;
 
   return (
     <DrawerDialog
@@ -236,6 +244,11 @@ function ReceiptGallery({
           </p>
         ) : (
           <div className="flex flex-col gap-y-5">
+            {availableCount === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                Every file here is already attached to a transaction or reimbursement request.
+              </p>
+            ) : null}
             <ReceiptGroup
               label="This Week"
               receipts={groups.thisWeek}
@@ -257,6 +270,13 @@ function ReceiptGallery({
               onToggle={onToggle}
               isMember={user.isMember}
             />
+            <ReceiptGroup
+              label={`Already Attached (${groups.attached.length})`}
+              receipts={groups.attached}
+              selectedIds={selectedIds}
+              onToggle={onToggle}
+              isMember={user.isMember}
+            />
           </div>
         )}
       </div>
@@ -264,7 +284,7 @@ function ReceiptGallery({
       {total > 0 ? (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-muted-foreground text-xs">
-            Showing {receipts.length} of {receiptCount} files
+            {availableCount} available · showing {receipts.length} of {receiptCount} files
           </span>
           {hasMore ? (
             <Button

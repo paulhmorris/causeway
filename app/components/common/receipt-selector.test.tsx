@@ -217,6 +217,34 @@ describe("Receipt Selector", () => {
     expect(within(dialog).queryByRole("button", { name: /show files older than/i })).not.toBeInTheDocument();
   });
 
+  it("separates attachable receipts from ones already in use", async () => {
+    const user = userEvent.setup();
+    renderSelector([
+      buildReceipt({ id: "free", title: "Free Receipt" }),
+      buildReceipt({ id: "used-1", title: "Used One", transactions: [{ id: "trx1" }] }),
+      buildReceipt({ id: "used-2", title: "Used Two", reimbursementRequests: [{ id: "rr1" }] }),
+    ]);
+
+    const dialog = await openGallery(user);
+
+    // Everything stays visible, but the one that can be picked isn't buried among the rest.
+    expect(within(dialog).getByText("Already Attached (2)")).toBeInTheDocument();
+    expect(within(dialog).getByRole("checkbox", { name: "Used One" })).toBeInTheDocument();
+    expect(within(dialog).getByText("1 available · showing 3 of 3 files")).toBeInTheDocument();
+
+    const week = within(dialog).getByText("This Week");
+    const attached = within(dialog).getByText("Already Attached (2)");
+    expect(week.compareDocumentPosition(attached) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("says so when nothing in the list can be attached", async () => {
+    const user = userEvent.setup();
+    renderSelector([buildReceipt({ id: "used", title: "Used Receipt", transactions: [{ id: "trx1" }] })]);
+
+    const dialog = await openGallery(user);
+    expect(within(dialog).getByText(/every file here is already attached/i)).toBeInTheDocument();
+  });
+
   it("reports how much of the total it is showing and offers to page further", async () => {
     const user = userEvent.setup();
     renderSelector([buildReceipt({ id: "one", title: "One" }), buildReceipt({ id: "two", title: "Two" })], {
@@ -224,7 +252,7 @@ describe("Receipt Selector", () => {
     });
 
     const dialog = await openGallery(user);
-    expect(within(dialog).getByText("Showing 2 of 700 files")).toBeInTheDocument();
+    expect(within(dialog).getByText("2 available · showing 2 of 700 files")).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Load more" })).toBeInTheDocument();
   });
 
@@ -233,7 +261,7 @@ describe("Receipt Selector", () => {
     renderSelector([buildReceipt({ id: "one", title: "One" })]);
 
     const dialog = await openGallery(user);
-    expect(within(dialog).getByText("Showing 1 of 1 files")).toBeInTheDocument();
+    expect(within(dialog).getByText("1 available · showing 1 of 1 files")).toBeInTheDocument();
     expect(within(dialog).queryByRole("button", { name: "Load more" })).not.toBeInTheDocument();
   });
 });
