@@ -7,7 +7,6 @@ import { DataTableColumnHeader } from "~/components/ui/data-table/data-table-col
 import { Facet } from "~/components/ui/data-table/data-table-toolbar";
 import { contactWarning, type ListContact } from "~/lib/contact-health";
 import { formatPhoneNumber } from "~/lib/utils";
-import { ContactWithCount } from "~/routes/_app.contacts._index";
 
 export function ContactsTable({ data }: { data: Array<ListContact> }) {
   return <DataTable data={data} columns={columns} facets={facets} />;
@@ -52,55 +51,63 @@ const columns: Array<ColumnDef<ListContact>> = [
         <div>
           <span className="max-w-[500px] truncate font-medium">{row.getValue("firstName")}</span>
         </div>
-      ),
-      enableColumnFilter: false,
+      );
     },
-    {
-      accessorKey: "lastName",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Last" />,
-      cell: ({ row }) => (
+    enableColumnFilter: false,
+  },
+  {
+    accessorKey: "lastName",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Last" />,
+    cell: ({ row }) => {
+      return (
         <div className="max-w-[100px]">
           <span className="max-w-[500px] truncate font-medium">{row.getValue("lastName")}</span>
         </div>
-      ),
-      enableColumnFilter: false,
+      );
     },
-    {
-      accessorKey: "type",
-      accessorFn: (row) => `${row.type.name}`,
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
-      cell: ({ row }) => (
+    enableColumnFilter: false,
+  },
+  {
+    accessorKey: "type",
+    accessorFn: (row) => `${row.type.name}`,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
+    cell: ({ row }) => {
+      return (
         <div className="max-w-[100px]">
           <span className="max-w-[500px] truncate font-medium">{row.getValue("type")}</span>
         </div>
-      ),
-      filterFn: (row, id, value) => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-        return value.includes(row.getValue(id));
-      },
+      );
     },
-    {
-      accessorKey: "email",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
-      cell: ({ row }) => (
+    filterFn: (row, id, value) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      return value.includes(row.getValue(id));
+    },
+  },
+  {
+    accessorKey: "email",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
+    cell: ({ row }) => {
+      return (
         <div>
           <span className="max-w-[500px] truncate font-medium">{row.getValue("email")}</span>
         </div>
-      ),
-      enableColumnFilter: false,
+      );
     },
-    {
-      accessorKey: "phone",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Phone" />,
-      cell: ({ row }) => (
+    enableColumnFilter: false,
+  },
+  {
+    accessorKey: "phone",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Phone" />,
+    cell: ({ row }) => {
+      return (
         <div>
           <span className="max-w-[500px] truncate font-medium">{formatPhoneNumber(row.getValue("phone"))}</span>
         </div>
-      ),
-      enableColumnFilter: false,
+      );
     },
-  ];
-}
+    enableColumnFilter: false,
+  },
+];
 
 const facets: Array<Facet> = [
   {
