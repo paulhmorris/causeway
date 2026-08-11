@@ -2,11 +2,11 @@ import { ReimbursementRequestStatus } from "@prisma/client";
 import { render } from "@react-email/render";
 import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import dayjs from "dayjs";
+import { ReimbursementRequestEmail } from "emails/reimbursement-request";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { useLoaderData } from "react-router";
 import { z } from "zod/v4";
 
-import { ReimbursementRequestEmail } from "emails/reimbursement-request";
 import { PageHeader } from "~/components/common/page-header";
 import { ReceiptSelector } from "~/components/common/receipt-selector";
 import { ErrorComponent } from "~/components/error-component";
@@ -22,7 +22,12 @@ import { TransactionItemMethod } from "~/lib/constants";
 import { CONFIG } from "~/lib/env.server";
 import { Toasts } from "~/lib/toast.server";
 import { checkboxGroup, cuid, currency, date, number, optionalLongText, optionalText } from "~/schemas/fields";
-import { generateS3Urls } from "~/services.server/receipt";
+import {
+  countSelectableReceipts,
+  generateS3Urls,
+  getSelectableReceipts,
+  receiptGalleryOptions,
+} from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
 import { TransactionService } from "~/services.server/transaction";
 
@@ -42,19 +47,16 @@ export const loader = async (args: LoaderFunctionArgs) => {
   const user = await SessionService.requireUser(args);
   const orgId = await SessionService.requireOrgId(args);
 
-  const [receipts, methods, accounts] = await db.$transaction([
-    db.receipt.findMany({
-      // Admins can see all receipts, users can only see their own
-      where: {
-        orgId,
-        userId: user.isMember ? user.id : undefined,
-      },
-      include: {
-        user: { select: { contact: { select: { email: true } } } },
-        reimbursementRequests: { select: { id: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
+  // Admins can see all receipts, users can only see their own
+  const receiptQuery = {
+    orgId,
+    userId: user.isMember ? user.id : undefined,
+    ...receiptGalleryOptions(args.request),
+  };
+
+  const [receipts, receiptCount, methods, accounts] = await db.$transaction([
+    getSelectableReceipts(receiptQuery),
+    countSelectableReceipts(receiptQuery),
     TransactionService.getItemMethods(orgId),
     db.account.findMany({
       where: { user: user.isMember ? { id: user.id } : undefined, orgId },
@@ -62,7 +64,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
       orderBy: { code: "asc" },
     }),
   ]);
-  return { receipts, methods, accounts };
+  return { receipts, receiptCount, methods, accounts };
 };
 
 export const action = async (args: ActionFunctionArgs) => {
@@ -151,7 +153,7 @@ export const action = async (args: ActionFunctionArgs) => {
 };
 
 export default function NewReimbursementPage() {
-  const { receipts, methods, accounts } = useLoaderData<typeof loader>();
+  const { receipts, receiptCount, methods, accounts } = useLoaderData<typeof loader>();
 
   return (
     <>
@@ -213,7 +215,7 @@ export default function NewReimbursementPage() {
                   }))}
                 />
               </div>
-              <ReceiptSelector receipts={receipts} />
+              <ReceiptSelector receipts={receipts} receiptCount={receiptCount} />
               <GenericFieldError error={form.error("receiptIds")} />
               <Callout variant="warning">
                 High quality images of itemized receipts are required. Please allow two weeks for processing.

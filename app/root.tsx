@@ -1,6 +1,7 @@
 import { ClerkProvider } from "@clerk/react-router";
 import { rootAuthLoader } from "@clerk/react-router/ssr.server";
 import { dark } from "@clerk/themes";
+
 import "@fontsource-variable/dm-sans/wght.css";
 import { Analytics } from "@vercel/analytics/react";
 import React from "react";
@@ -23,10 +24,11 @@ import { Notifications } from "~/components/notifications";
 import { Toasts } from "~/lib/toast.server";
 import { cn } from "~/lib/utils";
 import { themeSessionResolver } from "~/services.server/session";
-import tailwindUrl from "~/tailwind.css?url";
 
 // eslint-disable-next-line import/no-unresolved
 import { Route } from "./+types/root";
+
+import tailwindUrl from "~/tailwind.css?url";
 
 export const links: LinksFunction = () => [{ rel: "stylesheet", href: tailwindUrl, as: "style" }];
 

@@ -1,8 +1,6 @@
 import { IconHeartbeat, IconPlus } from "@tabler/icons-react";
-import { useState } from "react";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { Form, Link, useFetcher, useLoaderData, useSearchParams, useSubmit } from "react-router";
-import { z } from "zod/v4";
+import type { LoaderFunctionArgs } from "react-router";
+import { Form, Link, useLoaderData, useSearchParams, useSubmit } from "react-router";
 
 import { PageHeader } from "~/components/common/page-header";
 import { ContactsTable } from "~/components/contacts/contacts-table";
@@ -13,9 +11,9 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { DrawerDialog, DrawerDialogFooter } from "~/components/ui/drawer-dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { SubmitButton } from "~/components/ui/submit-button";
+import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
-import { ContactType } from "~/lib/constants";
+import { contactListSelect } from "~/lib/contact-health";
 import { handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { SessionService } from "~/services.server/session";
@@ -47,14 +45,14 @@ export async function loader(args: LoaderFunctionArgs) {
             { user: { id: user.id } },
           ],
         },
-        include: { type: true, _count: { select: { accountSubscriptions: true } } },
+        select: contactListSelect,
       });
       return { contacts };
     }
 
     const contacts = await db.contact.findMany({
       where: { orgId },
-      include: { type: true, _count: { select: { accountSubscriptions: true } } },
+      select: contactListSelect,
       orderBy: { createdAt: "desc" },
     });
     return { contacts };
@@ -90,6 +88,7 @@ export async function action(args: ActionFunctionArgs) {
 
 export default function ContactIndexPage() {
   const { contacts } = useLoaderData<typeof loader>();
+  const user = useUser();
   const submit = useSubmit();
   const [searchParams] = useSearchParams();
   const fetcher = useFetcher<typeof action>();
@@ -111,12 +110,14 @@ export default function ContactIndexPage() {
       <title>Contacts</title>
       <PageHeader title="Contacts">
         <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <Link to="/contacts/health" prefetch="intent">
-              <IconHeartbeat className="mr-2 size-4" />
-              <span>Health Check</span>
-            </Link>
-          </Button>
+          {user.isAdmin ? (
+            <Button asChild variant="ghost">
+              <Link to="/contacts/health" prefetch="intent">
+                <IconHeartbeat className="mr-2 size-5" />
+                <span>Contact Health</span>
+              </Link>
+            </Button>
+          ) : null}
           <Button asChild>
             <Link to="/contacts/new" prefetch="intent">
               <IconPlus className="mr-2 size-5" />

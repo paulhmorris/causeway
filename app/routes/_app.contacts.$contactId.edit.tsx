@@ -225,7 +225,7 @@ export default function EditContactPage() {
       alternatePhone: contact.alternatePhone ?? "",
       organizationName: contact.organizationName ?? "",
       assignedUserIds: contact.assignedUsers.map((a) => a.userId),
-      typeId: "",
+      typeId: contact.typeId ?? "",
       address: contact.address
         ? {
             street: contact.address.street,

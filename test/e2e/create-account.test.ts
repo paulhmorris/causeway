@@ -1,6 +1,5 @@
 import { expect, test } from "@playwright/test";
 import { nanoid } from "nanoid";
-
 import { expectVisibleNotification } from "test/e2e/helpers/notifications";
 
 test.describe("Create account", () => {

@@ -4,11 +4,15 @@ import { createMiddleware } from "hono/factory";
 import { isbot } from "isbot";
 
 import { httpLogger } from "~/integrations/logger.server";
+import { CONFIG } from "~/lib/env.server";
 
 const matchers = ["/assets", "favicon", ".well-known", "site.webmanifest", "sitemap.xml", "robots.txt"];
 
 export function loggerMiddleware() {
   return createMiddleware(async (c, next) => {
+    if (CONFIG.isDev) {
+      return next();
+    }
     if (matchers.some((m) => c.req.url.includes(m))) {
       return next();
     }
@@ -51,8 +55,8 @@ export function loggerMiddleware() {
     };
 
     if (resStatus >= 300 && resStatus < 400) {
-      resData.redirect_url = c.res.url;
-      httpLogger.warn("Response", resData);
+      resData.redirect_url = c.res.headers.get("location");
+      httpLogger.warn(`Redirecting from ${c.req.url} to ${resData.redirect_url as string}`, resData);
     }
 
     if (resStatus >= 400) {

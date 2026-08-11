@@ -1,6 +1,6 @@
 import { test as setup } from "@playwright/test";
-
 import db from "test/e2e/helpers/db";
+
 import { AccountType } from "~/lib/constants";
 
 setup("setup db", async () => {

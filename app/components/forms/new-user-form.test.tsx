@@ -1,8 +1,8 @@
 import { screen } from "@testing-library/dom";
 import userEvent from "@testing-library/user-event";
-
 import { MOCK_DATA } from "test/mock-data";
 import { mockUseUser, renderWithBlankStub } from "test/test-utils";
+
 import { NewUserForm } from "~/components/forms/new-user-form";
 
 const mockFormProps = {
@@ -27,10 +27,18 @@ describe("New User Form", () => {
     const firstName = await screen.findByLabelText<HTMLInputElement>(/first name/i);
     const lastName = await screen.findByLabelText<HTMLInputElement>(/last name/i);
     const username = await screen.findByLabelText<HTMLInputElement>(/username/i);
-    const typeId = await screen.findByRole<HTMLInputElement>("combobox", { name: /select a type/i });
-    const accountId = await screen.findByRole<HTMLInputElement>("combobox", { name: /select an account/i });
-    const role = await screen.findByRole<HTMLInputElement>("combobox", { name: /select an org role/i });
-    const systemRole = await screen.findByRole<HTMLInputElement>("combobox", { name: /select a system role/i });
+    const typeId = await screen.findByRole<HTMLInputElement>("combobox", {
+      name: /select a type/i,
+    });
+    const accountId = await screen.findByRole<HTMLInputElement>("combobox", {
+      name: /select an account/i,
+    });
+    const role = await screen.findByRole<HTMLInputElement>("combobox", {
+      name: /select an org role/i,
+    });
+    const systemRole = await screen.findByRole<HTMLInputElement>("combobox", {
+      name: /select a system role/i,
+    });
 
     expect(firstName).toBeInTheDocument();
     expect(lastName).toBeInTheDocument();
@@ -57,7 +65,9 @@ describe("New User Form", () => {
 
     renderWithBlankStub({ component: NewUserForm, props: mockFormProps });
 
-    const systemRole = screen.queryByRole("combobox", { name: /select a system role/i });
+    const systemRole = screen.queryByRole("combobox", {
+      name: /select a system role/i,
+    });
     expect(systemRole).not.toBeInTheDocument();
   });
 
@@ -69,7 +79,9 @@ describe("New User Form", () => {
 
     renderWithBlankStub({ component: NewUserForm, props: mockFormProps });
 
-    const systemRole = await screen.findByRole("combobox", { name: /select a system role/i });
+    const systemRole = await screen.findByRole("combobox", {
+      name: /select a system role/i,
+    });
     expect(systemRole).toBeInTheDocument();
   });
 
@@ -87,7 +99,11 @@ describe("New User Form", () => {
   it("should submit the form with valid data", async () => {
     const action = vi.fn();
     const user = userEvent.setup();
-    renderWithBlankStub({ component: NewUserForm, props: mockFormProps, actionMock: action });
+    renderWithBlankStub({
+      component: NewUserForm,
+      props: mockFormProps,
+      actionMock: action,
+    });
 
     await user.type(await screen.findByLabelText(/first name/i), "J");
     await user.type(await screen.findByLabelText(/last name/i), "D");

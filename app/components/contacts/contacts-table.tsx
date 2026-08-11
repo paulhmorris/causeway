@@ -5,70 +5,50 @@ import { Link } from "react-router";
 import { DataTable } from "~/components/ui/data-table/data-table";
 import { DataTableColumnHeader } from "~/components/ui/data-table/data-table-column-header";
 import { Facet } from "~/components/ui/data-table/data-table-toolbar";
-import { ContactType } from "~/lib/constants";
+import { contactWarning, type ListContact } from "~/lib/contact-health";
 import { formatPhoneNumber } from "~/lib/utils";
 import { ContactWithCount } from "~/routes/_app.contacts._index";
 
-type Props = {
-  data: Array<ContactWithCount>;
-  onWarningClick?: (contact: ContactWithCount) => void;
-};
-
-export function ContactsTable({ data, onWarningClick }: Props) {
-  const columns = buildColumns(onWarningClick);
+export function ContactsTable({ data }: { data: Array<ListContact> }) {
   return <DataTable data={data} columns={columns} facets={facets} />;
 }
 
-function isIncomplete(contact: ContactWithCount): string | null {
-  if (!contact.email && contact.typeId !== ContactType.Staff) {
-    return "Missing email";
-  }
-  if (
-    contact._count.accountSubscriptions === 0 &&
-    (contact.typeId === ContactType.Missionary || contact.typeId === ContactType.Donor_and_Missionary)
-  ) {
-    return "No account subscription";
-  }
-  return null;
-}
-
-function buildColumns(onWarningClick?: (contact: ContactWithCount) => void): Array<ColumnDef<ContactWithCount>> {
-  return [
-    {
-      id: "action",
-      header: () => <span className="sr-only">Action</span>,
-      cell: ({ row }) => (
-        <Link prefetch="intent" to={`/contacts/${row.original.id}`} className="text-primary font-medium">
-          View
+const columns: Array<ColumnDef<ListContact>> = [
+  {
+    id: "action",
+    header: () => <span className="sr-only">Action</span>,
+    cell: ({ row }) => (
+      <Link prefetch="intent" to={`/contacts/${row.original.id}`} className="text-primary font-medium">
+        View
+      </Link>
+    ),
+    enableColumnFilter: false,
+  },
+  {
+    id: "warning",
+    header: () => <span className="sr-only">Status</span>,
+    cell: ({ row }) => {
+      const warning = contactWarning(row.original);
+      if (!warning) return null;
+      return (
+        <Link
+          prefetch="intent"
+          to={warning.to}
+          aria-label={warning.label}
+          className="text-destructive flex items-center gap-1 text-xs transition-colors"
+        >
+          <IconAlertTriangle className="size-4 shrink-0" aria-hidden="true" />
+          <span className="hidden sm:inline">{warning.label}</span>
         </Link>
-      ),
-      enableColumnFilter: false,
+      );
     },
-    {
-      id: "warning",
-      header: () => <span className="sr-only">Status</span>,
-      cell: ({ row }) => {
-        const issue = isIncomplete(row.original);
-        if (!issue) return null;
-        return (
-          <button
-            type="button"
-            onClick={() => onWarningClick?.(row.original)}
-            title={issue}
-            aria-label={`${issue} — click to fix`}
-            className="text-warning hover:text-warning/80 flex items-center gap-1 text-xs transition-colors"
-          >
-            <IconAlertTriangle className="size-4 shrink-0" aria-hidden="true" />
-            <span className="hidden sm:inline">{issue}</span>
-          </button>
-        );
-      },
-      enableColumnFilter: false,
-    },
-    {
-      accessorKey: "firstName",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="First" />,
-      cell: ({ row }) => (
+    enableColumnFilter: false,
+  },
+  {
+    accessorKey: "firstName",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="First" />,
+    cell: ({ row }) => {
+      return (
         <div>
           <span className="max-w-[500px] truncate font-medium">{row.getValue("firstName")}</span>
         </div>
