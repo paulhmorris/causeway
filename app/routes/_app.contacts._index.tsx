@@ -29,10 +29,16 @@ export async function loader(args: LoaderFunctionArgs) {
           orgId,
           OR: [
             {
-              assignedUsers: { some: { userId: user.id } },
+              assignedUsers: {
+                some: {
+                  userId: user.id,
+                },
+              },
             },
             {
-              user: { id: user.id },
+              user: {
+                id: user.id,
+              },
             },
           ],
         },
