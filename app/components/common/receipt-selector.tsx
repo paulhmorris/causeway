@@ -219,6 +219,7 @@ function ReceiptGallery({
       setOpen={setOpen}
       title="Attach Files"
       description="Select the receipts to attach. Files already attached elsewhere can't be reused."
+      size="xl"
     >
       <div className="relative">
         <IconSearch className="text-muted-foreground absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />

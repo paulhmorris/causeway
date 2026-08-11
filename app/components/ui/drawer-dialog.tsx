@@ -1,9 +1,11 @@
+import { type VariantProps } from "class-variance-authority";
 import { JSX, ReactNode } from "react";
 import { useMediaQuery } from "usehooks-ts";
 
 import {
   Dialog,
   DialogContent,
+  dialogContentVariants,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -26,6 +28,8 @@ type Props = {
   children: ReactNode;
   icon?: JSX.Element;
   description?: string;
+  /** Desktop only — the drawer is always full width. */
+  size?: VariantProps<typeof dialogContentVariants>["size"];
 };
 
 export function DrawerDialog(props: Props) {
@@ -34,7 +38,7 @@ export function DrawerDialog(props: Props) {
   if (isDesktop) {
     return (
       <Dialog open={props.open} onOpenChange={props.setOpen}>
-        <DialogContent>
+        <DialogContent size={props.size}>
           <DialogHeader>
             {props.icon ? <div className="mb-4 size-8 self-center">{props.icon}</div> : null}
             <DialogTitle>{props.title}</DialogTitle>
