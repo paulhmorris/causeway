@@ -1,18 +1,18 @@
-import { Prisma } from "@prisma/client";
+import { IconAlertTriangle } from "@tabler/icons-react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router";
 
 import { DataTable } from "~/components/ui/data-table/data-table";
 import { DataTableColumnHeader } from "~/components/ui/data-table/data-table-column-header";
 import { Facet } from "~/components/ui/data-table/data-table-toolbar";
+import { contactWarning, type ListContact } from "~/lib/contact-health";
 import { formatPhoneNumber } from "~/lib/utils";
 
-export function ContactsTable({ data }: { data: Array<Contact> }) {
+export function ContactsTable({ data }: { data: Array<ListContact> }) {
   return <DataTable data={data} columns={columns} facets={facets} />;
 }
 
-type Contact = Prisma.ContactGetPayload<{ include: { type: true } }>;
-const columns: Array<ColumnDef<Contact>> = [
+const columns: Array<ColumnDef<ListContact>> = [
   {
     id: "action",
     header: () => <span className="sr-only">Action</span>,
@@ -21,6 +21,26 @@ const columns: Array<ColumnDef<Contact>> = [
         View
       </Link>
     ),
+    enableColumnFilter: false,
+  },
+  {
+    id: "warning",
+    header: () => <span className="sr-only">Status</span>,
+    cell: ({ row }) => {
+      const warning = contactWarning(row.original);
+      if (!warning) return null;
+      return (
+        <Link
+          prefetch="intent"
+          to={warning.to}
+          aria-label={warning.label}
+          className="text-destructive flex items-center gap-1 text-xs transition-colors"
+        >
+          <IconAlertTriangle className="size-4 shrink-0" aria-hidden="true" />
+          <span className="hidden sm:inline">{warning.label}</span>
+        </Link>
+      );
+    },
     enableColumnFilter: false,
   },
   {
@@ -93,10 +113,5 @@ const facets: Array<Facet> = [
   {
     columnId: "type",
     title: "Type",
-    // options: [
-    //   { label: "Donor", value: "Donor" },
-    //   { label: "Staff", value: "Staff" },
-    //   { label: "Admin", value: "Admin" },
-    // ],
   },
 ];

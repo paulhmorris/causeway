@@ -34,6 +34,20 @@ export type PairedContact = Prisma.ContactGetPayload<{ select: typeof pairedCont
 
 export type Pair<T> = [T, T];
 
+/** A contact row in the contacts table, which flags the same issues the health page reports. */
+export const contactListSelect = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  phone: true,
+  typeId: true,
+  type: { select: { name: true } },
+  _count: { select: { accountSubscriptions: true } },
+} satisfies Prisma.ContactSelect;
+
+export type ListContact = Prisma.ContactGetPayload<{ select: typeof contactListSelect }>;
+
 /** Stable identity for an unordered pair, used as the dismissal key in local storage. */
 export function pairKey(a: Pick<HealthContact, "id">, b: Pick<HealthContact, "id">) {
   return [a.id, b.id].sort().join("-");
@@ -110,10 +124,38 @@ export function findEmailCrossDuplicates(contacts: Array<HealthContact>): Array<
 }
 
 /** Only donors are chased for an address — the rest legitimately have no email on file. */
-const TYPES_NEEDING_EMAIL: ReadonlySet<number> = new Set([ContactType.Donor, ContactType.Donor_and_Missionary]);
+export const TYPE_IDS_NEEDING_EMAIL = [ContactType.Donor, ContactType.Donor_and_Missionary];
+
+/** Prisma filter matching {@link isMissingRequiredEmail}, for counting without loading the rows. */
+export const missingRequiredEmailWhere = {
+  email: null,
+  typeId: { in: TYPE_IDS_NEEDING_EMAIL },
+} satisfies Prisma.ContactWhereInput;
 
 export function isMissingRequiredEmail(contact: Pick<HealthContact, "email" | "typeId">) {
-  return !contact.email && TYPES_NEEDING_EMAIL.has(contact.typeId);
+  return !contact.email && TYPE_IDS_NEEDING_EMAIL.includes(contact.typeId);
+}
+
+/** Missionaries are funded through an account, so one with no subscribers is an incomplete setup. */
+const TYPE_IDS_NEEDING_SUBSCRIPTION = [ContactType.Missionary, ContactType.Donor_and_Missionary];
+
+export function isMissingAccountSubscription(contact: Pick<ListContact, "typeId" | "_count">) {
+  return contact._count.accountSubscriptions === 0 && TYPE_IDS_NEEDING_SUBSCRIPTION.includes(contact.typeId);
+}
+
+/**
+ * The single issue worth flagging on a contact row, with the page that fixes it, or null when there
+ * is nothing to fix. A missing email is fixed on the edit form; a subscription is managed from the
+ * contact's own page.
+ */
+export function contactWarning(contact: ListContact) {
+  if (isMissingRequiredEmail(contact)) {
+    return { label: "Missing email", to: `/contacts/${contact.id}/edit` };
+  }
+  if (isMissingAccountSubscription(contact)) {
+    return { label: "No account subscription", to: `/contacts/${contact.id}` };
+  }
+  return null;
 }
 
 function pluralize(count: number, noun: string) {

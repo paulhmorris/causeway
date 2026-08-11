@@ -11,6 +11,7 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { Label } from "~/components/ui/label";
 import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
+import { contactListSelect } from "~/lib/contact-health";
 import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
 
@@ -41,14 +42,14 @@ export async function loader(args: LoaderFunctionArgs) {
             },
           ],
         },
-        include: { type: true },
+        select: contactListSelect,
       });
       return { contacts };
     }
 
     const contacts = await db.contact.findMany({
       where: { orgId },
-      include: { type: true },
+      select: contactListSelect,
       orderBy: { createdAt: "desc" },
     });
     return { contacts };
