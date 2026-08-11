@@ -1,13 +1,17 @@
 import { ContactType } from "~/lib/constants";
 import {
   canBeDeleted,
+  contactWarning,
   displayName,
   findEmailCrossDuplicates,
   findNameDuplicates,
   type HealthContact,
   isMergeablePair,
+  isMissingAccountSubscription,
   isMissingRequiredEmail,
+  type ListContact,
   mergeDescription,
+  missingRequiredEmailWhere,
   type PairedContact,
   pairKey,
 } from "~/lib/contact-health";
@@ -169,6 +173,88 @@ describe("isMissingRequiredEmail", () => {
 
   it("ignores donors that already have an email", () => {
     expect(isMissingRequiredEmail({ email: "riley@x.com", typeId: ContactType.Donor })).toBe(false);
+  });
+});
+
+describe("contactWarning", () => {
+  function buildListContact(overrides: Partial<ListContact> = {}): ListContact {
+    return {
+      id: "a",
+      firstName: "Riley",
+      lastName: "Chen",
+      email: "riley@x.com",
+      phone: null,
+      typeId: ContactType.Donor,
+      type: { name: "Donor" },
+      _count: { accountSubscriptions: 1 },
+      ...overrides,
+    };
+  }
+
+  it("is null for a contact with nothing to fix", () => {
+    expect(contactWarning(buildListContact())).toBeNull();
+  });
+
+  it("flags a donor with no email and links to the edit form", () => {
+    const warning = contactWarning(buildListContact({ id: "c1", email: null }));
+
+    expect(warning).toEqual({ label: "Missing email", to: "/contacts/c1/edit" });
+  });
+
+  it("flags a missionary with no subscribers and links to the contact page", () => {
+    const warning = contactWarning(
+      buildListContact({ id: "c2", typeId: ContactType.Missionary, _count: { accountSubscriptions: 0 } }),
+    );
+
+    expect(warning).toEqual({ label: "No account subscription", to: "/contacts/c2" });
+  });
+
+  it("reports the missing email first when a contact has both problems", () => {
+    const warning = contactWarning(
+      buildListContact({
+        typeId: ContactType.Donor_and_Missionary,
+        email: null,
+        _count: { accountSubscriptions: 0 },
+      }),
+    );
+
+    expect(warning?.label).toBe("Missing email");
+  });
+
+  it("leaves types alone that have no reason to carry either", () => {
+    // Staff are not chased for an email, and only missionaries are funded through an account.
+    expect(contactWarning(buildListContact({ typeId: ContactType.Staff, email: null }))).toBeNull();
+    expect(
+      contactWarning(buildListContact({ typeId: ContactType.Donor, _count: { accountSubscriptions: 0 } })),
+    ).toBeNull();
+  });
+});
+
+describe("isMissingAccountSubscription", () => {
+  it("ignores a missionary that already has a subscriber", () => {
+    expect(isMissingAccountSubscription({ typeId: ContactType.Missionary, _count: { accountSubscriptions: 2 } })).toBe(
+      false,
+    );
+  });
+
+  it("flags both missionary types", () => {
+    expect(isMissingAccountSubscription({ typeId: ContactType.Missionary, _count: { accountSubscriptions: 0 } })).toBe(
+      true,
+    );
+    expect(
+      isMissingAccountSubscription({ typeId: ContactType.Donor_and_Missionary, _count: { accountSubscriptions: 0 } }),
+    ).toBe(true);
+  });
+});
+
+describe("missingRequiredEmailWhere", () => {
+  // The dashboard banner counts in SQL and the health page filters in memory; they must agree.
+  it("matches the types isMissingRequiredEmail accepts", () => {
+    for (const typeId of Object.values(ContactType).filter((v) => typeof v === "number")) {
+      expect(missingRequiredEmailWhere.typeId.in.includes(typeId)).toBe(
+        isMissingRequiredEmail({ email: null, typeId }),
+      );
+    }
   });
 });
 

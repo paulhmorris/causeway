@@ -1,7 +1,8 @@
 import { ReimbursementRequestStatus } from "@prisma/client";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { redirect, useLoaderData, type LoaderFunctionArgs } from "react-router";
+import { Link, redirect, useLoaderData, type LoaderFunctionArgs } from "react-router";
+import { useLocalStorage } from "usehooks-ts";
 dayjs.extend(utc);
 
 import { AnnouncementCard } from "~/components/admin/announcement-card";
@@ -10,9 +11,12 @@ import { PageHeader } from "~/components/common/page-header";
 import { ErrorComponent } from "~/components/error-component";
 import { AnnouncementModal } from "~/components/modals/announcement-modal";
 import { PageContainer } from "~/components/page-container";
+import { Button } from "~/components/ui/button";
+import { Callout } from "~/components/ui/callout";
 import { AccountBalanceCard } from "~/components/users/balance-card";
 import { db } from "~/integrations/prisma.server";
 import { AccountType } from "~/lib/constants";
+import { missingRequiredEmailWhere } from "~/lib/contact-health";
 import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
 
@@ -25,7 +29,7 @@ export async function loader(args: LoaderFunctionArgs) {
       return redirect("/dashboards/staff");
     }
 
-    const [accounts, reimbursementRequests, announcement] = await db.$transaction([
+    const [accounts, reimbursementRequests, announcement, missingEmailCount] = await db.$transaction([
       db.account.findMany({
         select: {
           id: true,
@@ -83,22 +87,46 @@ export async function loader(args: LoaderFunctionArgs) {
         },
         orderBy: { id: "desc" },
       }),
+      db.contact.count({ where: { orgId, ...missingRequiredEmailWhere } }),
     ]);
 
-    return { accounts, reimbursementRequests, announcement };
+    return { accounts, reimbursementRequests, announcement, missingEmailCount };
   } catch (e) {
     handleLoaderError(e);
   }
 }
 
+/** Dismissing hides the banner until the backlog grows past the size it was waved away at. */
+const DISMISSED_STORAGE_KEY = "dashboard-missing-email-dismissed-count";
+
 export default function Index() {
-  const { accounts, reimbursementRequests, announcement } = useLoaderData<typeof loader>();
+  const { accounts, reimbursementRequests, announcement, missingEmailCount } = useLoaderData<typeof loader>();
+  const [dismissedAtCount, setDismissedAtCount] = useLocalStorage(DISMISSED_STORAGE_KEY, 0);
 
   return (
     <>
       <title>Home</title>
       <PageHeader title="Home" />
       <PageContainer className="max-w-4xl">
+        {missingEmailCount > dismissedAtCount ? (
+          <Callout variant="warning" className="mb-4 flex items-center gap-4">
+            <span>
+              {missingEmailCount} donor{missingEmailCount === 1 ? " is" : "s are"} missing an email address, so they
+              can't be sent a giving receipt.{" "}
+              <Link to="/contacts/health" prefetch="intent" className="text-primary font-medium">
+                Review in Contact Health
+              </Link>
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDismissedAtCount(missingEmailCount)}
+              className="shrink-0"
+            >
+              Dismiss
+            </Button>
+          </Callout>
+        ) : null}
         <div className="mb-4">
           {announcement ? <AnnouncementCard announcement={announcement} /> : <AnnouncementModal intent="create" />}
         </div>
