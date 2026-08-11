@@ -1,4 +1,4 @@
-import { IconPlus } from "@tabler/icons-react";
+import { IconHeartbeat, IconPlus } from "@tabler/icons-react";
 import type { LoaderFunctionArgs } from "react-router";
 import { Form, Link, useLoaderData, useSearchParams, useSubmit } from "react-router";
 
@@ -9,6 +9,7 @@ import { PageContainer } from "~/components/page-container";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Label } from "~/components/ui/label";
+import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
 import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
@@ -58,6 +59,7 @@ export async function loader(args: LoaderFunctionArgs) {
 
 export default function ContactIndexPage() {
   const { contacts } = useLoaderData<typeof loader>();
+  const user = useUser();
   const submit = useSubmit();
   const [searchParams] = useSearchParams();
 
@@ -65,12 +67,22 @@ export default function ContactIndexPage() {
     <>
       <title>Contacts</title>
       <PageHeader title="Contacts">
-        <Button asChild>
-          <Link to="/contacts/new" prefetch="intent">
-            <IconPlus className="mr-2 size-5" />
-            <span>New Contact</span>
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          {user.isAdmin ? (
+            <Button asChild variant="ghost">
+              <Link to="/contacts/health" prefetch="intent">
+                <IconHeartbeat className="mr-2 size-5" />
+                <span>Contact Health</span>
+              </Link>
+            </Button>
+          ) : null}
+          <Button asChild>
+            <Link to="/contacts/new" prefetch="intent">
+              <IconPlus className="mr-2 size-5" />
+              <span>New Contact</span>
+            </Link>
+          </Button>
+        </div>
       </PageHeader>
 
       <PageContainer>
