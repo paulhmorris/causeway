@@ -52,7 +52,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     db.account.findMany({ where: { orgId }, orderBy: { code: "asc" } }),
     TransactionService.getItemMethods(orgId),
     TransactionService.getItemTypes(orgId),
-    db.transactionCategory.findMany({ orderBy: { id: "asc" } }),
+    TransactionService.getCategories(orgId),
     getSelectableReceipts(receiptQuery),
     countSelectableReceipts(receiptQuery),
   ]);

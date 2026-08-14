@@ -21,6 +21,7 @@ import { Toasts } from "~/lib/toast.server";
 import { cn, formatCentsAsDollars } from "~/lib/utils";
 import { cuid, optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
+import { TransactionService } from "~/services.server/transaction";
 
 const logger = createLogger("Routes.TransactionEdit");
 
@@ -52,7 +53,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     },
   });
 
-  const categories = await db.transactionCategory.findMany();
+  const categories = await TransactionService.getCategories(orgId);
 
   if (!transaction) {
     throw Responses.notFound();
