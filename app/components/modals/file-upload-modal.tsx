@@ -4,6 +4,7 @@ import { useFetcher, useNavigate } from "react-router";
 
 import { Button } from "~/components/ui/button";
 import { DrawerDialog, DrawerDialogFooter } from "~/components/ui/drawer-dialog";
+import { useUser } from "~/hooks/useUser";
 import { Sentry } from "~/integrations/sentry";
 import { cn } from "~/lib/utils";
 
@@ -17,6 +18,7 @@ const initialState: UploadState = {
 };
 
 export function FileUploadModal() {
+  const user = useUser();
   const fetcher = useFetcher();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -103,7 +105,7 @@ export function FileUploadModal() {
         message: `Uploaded ${uploadedFilesCount} out of ${files.length} file${files.length === 1 ? "" : "s"}.`,
       }));
     } catch (error) {
-      Sentry.captureException(error);
+      Sentry.captureException(error, { extra: { userId: user.id, orgId: user.org?.id } });
       setUploadStatus(() => ({
         status: "error",
         message:

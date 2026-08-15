@@ -29,7 +29,7 @@ const schema = z.object({
 });
 
 export const loader = async (args: LoaderFunctionArgs) => {
-  await SessionService.requireAdmin(args);
+  const admin = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
   try {
@@ -60,12 +60,12 @@ export const loader = async (args: LoaderFunctionArgs) => {
       accountTypes,
     };
   } catch (e) {
-    handleLoaderError(e);
+    handleLoaderError(e, { userId: admin.id, orgId });
   }
 };
 
 export const action = async (args: ActionFunctionArgs) => {
-  await SessionService.requireAdmin(args);
+  const admin = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
   const result = await parseFormData(args.request, schema);
@@ -90,8 +90,8 @@ export const action = async (args: ActionFunctionArgs) => {
       description: "Well done.",
     });
   } catch (error) {
-    logger.error("Error creating account", { error });
-    Sentry.captureException(error);
+    logger.error("Error creating account");
+    Sentry.captureException(error, { extra: { userId: admin.id, orgId } });
     return Toasts.dataWithError({ success: false }, { message: "Error creating account" });
   }
 };

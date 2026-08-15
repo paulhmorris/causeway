@@ -63,7 +63,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
 };
 
 export const action = async (args: ActionFunctionArgs) => {
-  await SessionService.requireAdmin(args);
+  const user = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
   const result = await parseFormData(args.request, schema);
@@ -88,8 +88,8 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `Transaction has been updated.`,
     });
   } catch (error) {
-    logger.error("Error updating transaction", { error });
-    Sentry.captureException(error);
+    logger.error("Error updating transaction");
+    Sentry.captureException(error, { extra: { userId: user.id, orgId } });
     return Toasts.dataWithError(null, {
       message: "Error",
       description: "An unknown error has occurred. Please try again later.",
