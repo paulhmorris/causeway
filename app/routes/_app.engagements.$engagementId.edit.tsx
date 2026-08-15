@@ -36,10 +36,10 @@ const schema = z.object({
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const { params } = args;
-  try {
-    const user = await SessionService.requireUser(args);
-    const orgId = await SessionService.requireOrgId(args);
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
+  try {
     invariant(params.engagementId, "engagementId not found");
 
     const [contacts, contactTypes, engagement, engagementTypes] = await db.$transaction([
@@ -74,12 +74,12 @@ export const loader = async (args: LoaderFunctionArgs) => {
       contactTypes,
     };
   } catch (e) {
-    handleLoaderError(e);
+    handleLoaderError(e, { userId: user.id, orgId });
   }
 };
 
 export const action = async (args: ActionFunctionArgs) => {
-  await SessionService.requireUser(args);
+  const user = await SessionService.requireUser(args);
   const orgId = await SessionService.requireOrgId(args);
 
   const result = await parseFormData(args.request, schema);
@@ -95,8 +95,8 @@ export const action = async (args: ActionFunctionArgs) => {
 
     return Toasts.redirectWithSuccess(`/engagements/${engagement.id}`, { message: "Engagement updated" });
   } catch (error) {
-    logger.error("Error updating engagement", { error });
-    Sentry.captureException(error);
+    logger.error("Error updating engagement");
+    Sentry.captureException(error, { extra: { userId: user.id, orgId } });
     return Toasts.dataWithError(null, { message: "An unknown error occurred" }, { status: 500 });
   }
 };

@@ -12,7 +12,7 @@ export const AuthService = {
       return invitations.data;
     } catch (error) {
       Sentry.captureException(error, { extra: { email } });
-      logger.error("Error fetching invitation for email", { email, error });
+      logger.error("Error fetching invitation for email", { email });
       throw error;
     }
   },
@@ -24,7 +24,7 @@ export const AuthService = {
       return revokedSession;
     } catch (error) {
       Sentry.captureException(error, { extra: { sessionId } });
-      logger.error("Error revoking session", { sessionId, error });
+      logger.error("Error revoking session", { sessionId });
       throw error;
     }
   },

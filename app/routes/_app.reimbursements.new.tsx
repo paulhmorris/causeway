@@ -139,6 +139,7 @@ export const action = async (args: ActionFunctionArgs) => {
           requesterName={`${contact.firstName} ${contact.lastName}`}
         />,
       ),
+      context: { userId: user.id, orgId },
     });
 
     return Toasts.redirectWithSuccess(`/dashboards/${user.isMember ? "staff" : "admin"}`, {
@@ -146,8 +147,8 @@ export const action = async (args: ActionFunctionArgs) => {
       description: "Your request will be processed as soon as possible.",
     });
   } catch (error) {
-    logger.error("Error creating reimbursement request", { error });
-    Sentry.captureException(error);
+    logger.error("Error creating reimbursement request");
+    Sentry.captureException(error, { extra: { userId: user.id, orgId } });
     return Toasts.dataWithError(null, { message: "An unknown error occurred" }, { status: 500 });
   }
 };

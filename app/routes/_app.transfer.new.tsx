@@ -45,7 +45,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
 };
 
 export const action = async (args: ActionFunctionArgs) => {
-  await SessionService.requireAdmin(args);
+  const admin = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
   const result = await parseFormData(args.request, schema);
@@ -114,8 +114,8 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `Transfer completed successfully.`,
     });
   } catch (error) {
-    logger.error("Error creating transfer", { error });
-    Sentry.captureException(error);
+    logger.error("Error creating transfer");
+    Sentry.captureException(error, { extra: { userId: admin.id, orgId } });
     return Toasts.dataWithError(null, { message: "An unknown error occurred" });
   }
 };

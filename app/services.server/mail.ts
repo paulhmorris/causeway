@@ -8,6 +8,8 @@ import { capitalize } from "~/lib/utils";
 export async function sendReimbursementRequestUpdateEmail(args: {
   email: User["username"];
   status: ReimbursementRequestStatus;
+  userId: string;
+  orgId: string;
 }) {
   const url = new URL("/", CONFIG.baseUrl).toString();
   const html = await getReimbursementRequestUpdateEmailHtml({ status: args.status, url });
@@ -16,5 +18,6 @@ export async function sendReimbursementRequestUpdateEmail(args: {
     to: args.email,
     subject: `Reimbursement Request ${capitalize(args.status)}`,
     html,
+    context: { userId: args.userId, orgId: args.orgId },
   });
 }

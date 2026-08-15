@@ -17,17 +17,19 @@ const schema = z.object({ orgId: text });
 
 export const action = async (args: ActionFunctionArgs) => {
   const { request } = args;
+  const userId = await SessionService.requireUserId(args);
+  let orgId: string | undefined;
+
   try {
     switch (request.method.toLowerCase()) {
       case "post": {
-        const userId = await SessionService.requireUserId(args);
         const result = await parseFormData(args.request, schema);
 
         if (result.error) {
           return validationError(result.error);
         }
 
-        const { orgId } = result.data;
+        orgId = result.data.orgId;
 
         // Ensure the user is a member of the selected organization
         const membership = await db.membership.findUniqueOrThrow({
@@ -58,8 +60,8 @@ export const action = async (args: ActionFunctionArgs) => {
       }
     }
   } catch (error) {
-    logger.error("Error changing organization", { error });
-    Sentry.captureException(error);
+    logger.error("Error changing organization");
+    Sentry.captureException(error, { extra: { userId, orgId } });
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
       return Toasts.dataWithError(null, {
         message: "Error",

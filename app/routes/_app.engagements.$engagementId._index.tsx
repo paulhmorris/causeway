@@ -18,10 +18,10 @@ import { SessionService } from "~/services.server/session";
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const { params } = args;
-  try {
-    await SessionService.requireUser(args);
-    const orgId = await SessionService.requireOrgId(args);
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
+  try {
     invariant(params.engagementId, "engagementId not found");
 
     const engagement = await db.engagement.findUniqueOrThrow({
@@ -34,7 +34,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
 
     return { engagement };
   } catch (e) {
-    handleLoaderError(e);
+    handleLoaderError(e, { userId: user.id, orgId });
   }
 };
 
@@ -79,7 +79,7 @@ export const action = async (args: ActionFunctionArgs) => {
       description: "The engagement has been deleted",
     });
   } catch (error) {
-    Sentry.captureException(error);
+    Sentry.captureException(error, { extra: { userId: user.id, orgId } });
     return Toasts.dataWithError(null, { message: "Error", description: "An unknown error occurred." });
   }
 };

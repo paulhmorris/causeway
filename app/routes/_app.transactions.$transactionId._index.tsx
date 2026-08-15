@@ -102,7 +102,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     transaction.receipts = await generateS3Urls(transaction.receipts);
     return { transaction };
   } catch (e) {
-    handleLoaderError(e);
+    handleLoaderError(e, { userId: user.id, orgId });
   }
 };
 

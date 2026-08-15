@@ -14,8 +14,8 @@ export const handleError: HandleErrorFunction = (error, { request }) => {
     return;
   }
   if (!request.signal.aborted) {
-    Sentry.captureException(error);
-    logger.error("Request handling error", { error });
+    Sentry.captureException(error, { extra: { path: new URL(request.url).pathname } });
+    logger.error("Request handling error", { path: new URL(request.url).pathname });
   }
 };
 

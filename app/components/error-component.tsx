@@ -1,8 +1,10 @@
 import { isRouteErrorResponse, useRouteError } from "react-router";
 
+import { useOptionalUser } from "~/hooks/useOptionalUser";
 import { Sentry } from "~/integrations/sentry";
 
 export function ErrorComponent({ error }: { error?: unknown }) {
+  const user = useOptionalUser();
   let _error = useRouteError();
   let message = "Oops!";
   let details = "An unexpected error occurred.";
@@ -14,7 +16,7 @@ export function ErrorComponent({ error }: { error?: unknown }) {
     message = _error.status === 404 ? "404" : "Error";
     details = _error.status === 404 ? "The requested page could not be found." : _error.statusText || details;
   } else if (_error && _error instanceof Error) {
-    Sentry.captureException(_error);
+    Sentry.captureException(_error, { extra: { userId: user?.id, orgId: user?.org?.id } });
     if (import.meta.env.DEV) {
       details = _error.message;
       stack = _error.stack;
