@@ -32,10 +32,10 @@ const logger = createLogger("Routes.ContactEdit");
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const { params } = args;
-  try {
-    const user = await SessionService.requireUser(args);
-    const orgId = await SessionService.requireOrgId(args);
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
+  try {
     invariant(params.contactId, "contactId not found");
 
     // Users can only edit their assigned contacts
@@ -98,7 +98,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
       usersWhoCanBeAssigned,
     };
   } catch (e) {
-    handleLoaderError(e);
+    handleLoaderError(e, { userId: user.id, orgId });
   }
 };
 
@@ -196,8 +196,8 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `${contact.firstName} ${contact.lastName} was updated successfully.`,
     });
   } catch (error) {
-    logger.error("Error updating contact", { error });
-    Sentry.captureException(error);
+    logger.error("Error updating contact");
+    Sentry.captureException(error, { extra: { userId: user.id, orgId } });
     return Toasts.dataWithError(null, {
       message: "Unknown error",
       description: "An error occurred while updating the contact. Please try again.",

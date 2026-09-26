@@ -77,13 +77,13 @@ export const loader = async (args: LoaderFunctionArgs) => {
 
     return { contact };
   } catch (e) {
-    handleLoaderError(e);
+    handleLoaderError(e, { userId: user.id, orgId });
   }
 };
 
 export async function action(args: ActionFunctionArgs) {
   const { request, params } = args;
-  await SessionService.requireAdmin(args);
+  const admin = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
   invariant(params.contactId, "contactId not found");
@@ -134,8 +134,8 @@ export async function action(args: ActionFunctionArgs) {
         description: `${contact.firstName} ${contact.lastName} was deleted successfully.`,
       });
     } catch (error) {
-      logger.error("Error deleting contact", { error });
-      Sentry.captureException(error);
+      logger.error("Error deleting contact");
+      Sentry.captureException(error, { extra: { userId: admin.id, orgId } });
       return Toasts.dataWithError({ success: false }, { message: "Error", description: "An unknown error occurred" });
     }
   }

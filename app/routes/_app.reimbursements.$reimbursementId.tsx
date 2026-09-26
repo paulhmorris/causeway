@@ -85,7 +85,7 @@ export async function action(args: ActionFunctionArgs) {
         data: { voidedAt: null },
       }),
     ]);
-    await sendReimbursementRequestUpdateEmail({ email: rr.user.username, status: _action });
+    await sendReimbursementRequestUpdateEmail({ email: rr.user.username, status: _action, userId: user.id, orgId });
     return Toasts.dataWithInfo(null, {
       message: "Success",
       description: "The reimbursement request has been reopened and the requester will be notified.",
@@ -188,6 +188,8 @@ export async function action(args: ActionFunctionArgs) {
       await sendReimbursementRequestUpdateEmail({
         email: rr.user.username,
         status: ReimbursementRequestStatus.APPROVED,
+        userId: user.id,
+        orgId,
       });
 
       return Toasts.dataWithSuccess(null, {
@@ -195,8 +197,8 @@ export async function action(args: ActionFunctionArgs) {
         description: `The reimbursement request has been approved and account ${account.code} has been adjusted.`,
       });
     } catch (error) {
-      logger.error("Error updating reimbursement request", { error });
-      Sentry.captureException(error);
+      logger.error("Error updating reimbursement request");
+      Sentry.captureException(error, { extra: { userId: user.id, orgId } });
       return Toasts.dataWithError(null, {
         message: "Error",
         description: "An unknown error occurred. Please try again later.",
@@ -217,7 +219,7 @@ export async function action(args: ActionFunctionArgs) {
         data: { voidedAt: new Date() },
       }),
     ]);
-    await sendReimbursementRequestUpdateEmail({ email: rr.user.username, status: _action });
+    await sendReimbursementRequestUpdateEmail({ email: rr.user.username, status: _action, userId: user.id, orgId });
     return Toasts.dataWithSuccess(null, {
       message: "Reimbursement request voided",
       description: "The reimbursement request has been voided and the requester will be notified.",
@@ -230,7 +232,7 @@ export async function action(args: ActionFunctionArgs) {
     data: { status: _action },
     include: { user: true },
   });
-  await sendReimbursementRequestUpdateEmail({ email: rr.user.username, status: _action });
+  await sendReimbursementRequestUpdateEmail({ email: rr.user.username, status: _action, userId: user.id, orgId });
   return Toasts.dataWithSuccess(null, {
     message: "Reimbursement request rejected",
     description: "The reimbursement request has been rejected and the requester will be notified.",

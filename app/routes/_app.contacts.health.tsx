@@ -49,7 +49,7 @@ const mergeSchema = z.object({
 });
 
 export async function loader(args: LoaderFunctionArgs) {
-  await SessionService.requireAdmin(args);
+  const admin = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
   // The session helpers throw Responses, which handleLoaderError would turn into a 500, so the guard
@@ -95,7 +95,7 @@ export async function loader(args: LoaderFunctionArgs) {
       missingEmail,
     };
   } catch (e) {
-    handleLoaderError(e, args.request);
+    handleLoaderError(e, { request: args.request, userId: admin.id, orgId });
   }
 }
 
@@ -267,8 +267,8 @@ export async function action(args: ActionFunctionArgs) {
       );
     }
 
-    logger.error("Error merging contacts", { error, orgId, keepId, deleteId, adminUsername: user.username });
-    Sentry.captureException(error);
+    logger.error("Error merging contacts", { orgId, keepId, deleteId, adminUsername: user.username });
+    Sentry.captureException(error, { extra: { userId: user.id, orgId, keepId, deleteId } });
     return Toasts.dataWithError(
       { success: false },
       {

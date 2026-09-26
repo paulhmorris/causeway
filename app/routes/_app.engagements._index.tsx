@@ -12,10 +12,10 @@ import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
 
 export async function loader(args: LoaderFunctionArgs) {
-  try {
-    const user = await SessionService.requireUser(args);
-    const orgId = await SessionService.requireOrgId(args);
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
+  try {
     const engagements = await db.engagement.findMany({
       where: {
         orgId,
@@ -49,7 +49,7 @@ export async function loader(args: LoaderFunctionArgs) {
     });
     return { engagements };
   } catch (e) {
-    handleLoaderError(e);
+    handleLoaderError(e, { userId: user.id, orgId });
   }
 }
 

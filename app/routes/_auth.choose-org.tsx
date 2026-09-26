@@ -111,8 +111,8 @@ export const action = async (args: ActionFunctionArgs) => {
 
     return SessionService.createOrgSession({ fnArgs: args, redirectTo: redirectUrl.toString(), orgId });
   } catch (error) {
-    Sentry.captureException(error, { tags: { userId, orgId } });
-    logger.error("Error selecting organization", { error, userId });
+    Sentry.captureException(error, { extra: { userId, orgId } });
+    logger.error("Error selecting organization", { userId });
     return Toasts.dataWithError(null, {
       message: "Error",
       description: "You are not a member of this organization.",

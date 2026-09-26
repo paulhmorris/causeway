@@ -54,7 +54,7 @@ export async function loader(args: LoaderFunctionArgs) {
     });
     return { contacts };
   } catch (e) {
-    handleLoaderError(e);
+    handleLoaderError(e, { userId: user.id, orgId });
   }
 }
 

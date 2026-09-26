@@ -8,14 +8,14 @@ import { cn } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
 
 export async function loader(args: LoaderFunctionArgs) {
-  await SessionService.requireAdmin(args);
+  const admin = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
   try {
     const org = await db.organization.findUniqueOrThrow({ where: { id: orgId } });
     return { org };
   } catch (e) {
-    handleLoaderError(e);
+    handleLoaderError(e, { userId: admin.id, orgId });
   }
 }
 

@@ -21,10 +21,10 @@ import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
 
 export async function loader(args: LoaderFunctionArgs) {
-  try {
-    const user = await SessionService.requireUser(args);
-    const orgId = await SessionService.requireOrgId(args);
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
+  try {
     if (user.isMember) {
       return redirect("/dashboards/staff");
     }
@@ -92,7 +92,7 @@ export async function loader(args: LoaderFunctionArgs) {
 
     return { accounts, reimbursementRequests, announcement, missingEmailCount };
   } catch (e) {
-    handleLoaderError(e);
+    handleLoaderError(e, { userId: user.id, orgId });
   }
 }
 

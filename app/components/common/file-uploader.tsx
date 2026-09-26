@@ -5,9 +5,11 @@ import { useNavigate } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { useUser } from "~/hooks/useUser";
 import { Sentry } from "~/integrations/sentry";
 
 export function FileUploader() {
+  const user = useUser();
   const navigate = useNavigate();
 
   const [files, setFiles] = useState<Array<File>>([]);
@@ -77,7 +79,7 @@ export function FileUploader() {
       }));
       setFiles([]);
     } catch (error) {
-      Sentry.captureException(error);
+      Sentry.captureException(error, { extra: { userId: user.id, orgId: user.org?.id } });
       setUploadStatus(() => ({
         uploading: false,
         success: false,

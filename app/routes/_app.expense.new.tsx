@@ -52,7 +52,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     db.account.findMany({ where: { orgId }, orderBy: { code: "asc" } }),
     TransactionService.getItemMethods(orgId),
     TransactionService.getItemTypes(orgId),
-    db.transactionCategory.findMany({ orderBy: { id: "asc" } }),
+    TransactionService.getCategories(orgId),
     getSelectableReceipts(receiptQuery),
     countSelectableReceipts(receiptQuery),
   ]);
@@ -70,7 +70,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
 };
 
 export const action = async (args: ActionFunctionArgs) => {
-  await SessionService.requireAdmin(args);
+  const admin = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
   const result = await parseFormData(args.request, TransactionSchema);
@@ -110,8 +110,8 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `Expense of ${formatCentsAsDollars(totalInCents)} charged to account ${transaction.account.code}`,
     });
   } catch (error) {
-    logger.error("Error creating expense", { error });
-    Sentry.captureException(error);
+    logger.error("Error creating expense");
+    Sentry.captureException(error, { extra: { userId: admin.id, orgId } });
     return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
   }
 };
