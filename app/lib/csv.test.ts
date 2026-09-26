@@ -34,13 +34,26 @@ describe("parseCsv", () => {
   });
 
   it("strips a leading BOM and trims header whitespace", () => {
-    const { headers } = parseCsv("﻿ Date , Amount \n1,2");
+    const { headers } = parseCsv("\uFEFF Date , Amount \n1,2");
     expect(headers).toEqual(["Date", "Amount"]);
   });
 
   it("ignores trailing blank lines", () => {
     const { rows } = parseCsv("A,B\n1,2\n\n");
     expect(rows).toEqual([["1", "2"]]);
+  });
+
+  it("ignores comma-only rows left by spreadsheet exports", () => {
+    const { rows } = parseCsv("A,B\n1,2\n,\n , \n");
+    expect(rows).toEqual([["1", "2"]]);
+  });
+
+  it("treats a quote in the middle of an unquoted field as literal", () => {
+    const { rows } = parseCsv('Note,Amount\n5" frame,10\n2,20');
+    expect(rows).toEqual([
+      ['5" frame', "10"],
+      ["2", "20"],
+    ]);
   });
 });
 
@@ -57,6 +70,9 @@ describe("parseCurrencyToCents", () => {
   it("handles negatives written with a minus or parentheses", () => {
     expect(parseCurrencyToCents("-12.00")).toBe(-1200);
     expect(parseCurrencyToCents("(12.00)")).toBe(-1200);
+    expect(parseCurrencyToCents("-$12.00")).toBe(-1200);
+    expect(parseCurrencyToCents("$-12.00")).toBe(-1200);
+    expect(parseCurrencyToCents("($12.00)")).toBe(-1200);
   });
 
   it("rounds fractional cents to the nearest cent", () => {

@@ -18,6 +18,7 @@ import {
   missingRequiredFields,
   UNMAPPED,
   type ColumnMapping,
+  type ImportFieldKey,
 } from "~/lib/tithely-import";
 import { cn, formatCentsAsDollars } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
@@ -69,7 +70,10 @@ export default function TransactionsImportPage() {
   return (
     <>
       <title>Import Donations</title>
-      <PageHeader title="Import Donations" description="Upload a Tithe.ly giving export and match its columns to Causeway." />
+      <PageHeader
+        title="Import Donations"
+        description="Upload a Tithe.ly giving export and match its columns to Causeway."
+      />
       <PageContainer className="max-w-3xl">
         {!parsed || !mapping ? (
           <UploadStep
@@ -255,7 +259,7 @@ function MapStep({
   );
 }
 
-function PreviewCell({ fieldKey, value }: { fieldKey: string; value: string }) {
+function PreviewCell({ fieldKey, value }: { fieldKey: ImportFieldKey; value: string }) {
   if (fieldKey === "amount" || fieldKey === "fee") {
     const cents = parseCurrencyToCents(value);
     if (cents === null) {
