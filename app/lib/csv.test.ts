@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseCsv, parseCurrencyToCents } from "~/lib/csv";
+import { CsvParseError, parseCsv, parseCurrencyToCents } from "~/lib/csv";
 
 describe("parseCsv", () => {
   it("parses headers and rows", () => {
@@ -46,6 +46,11 @@ describe("parseCsv", () => {
   it("ignores comma-only rows left by spreadsheet exports", () => {
     const { rows } = parseCsv("A,B\n1,2\n,\n , \n");
     expect(rows).toEqual([["1", "2"]]);
+  });
+
+  it("throws on an unclosed quote, reporting the line it opened on", () => {
+    expect(() => parseCsv('A,B\n1,"two\nlines\n3,4')).toThrow(CsvParseError);
+    expect(() => parseCsv('A,B\r\n1,2\r\n"open,2')).toThrow("Line 3");
   });
 
   it("treats a quote in the middle of an unquoted field as literal", () => {

@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { autoDetectMapping, missingRequiredFields, normalizeHeader, UNMAPPED } from "~/lib/tithely-import";
+import {
+  assignColumn,
+  autoDetectMapping,
+  missingRequiredFields,
+  normalizeHeader,
+  UNMAPPED,
+} from "~/lib/tithely-import";
 
 describe("normalizeHeader", () => {
   it("lowercases and strips non-alphanumerics", () => {
@@ -39,5 +45,22 @@ describe("missingRequiredFields", () => {
   it("is empty once date and amount are mapped", () => {
     const mapping = autoDetectMapping(["Date", "Amount"]);
     expect(missingRequiredFields(mapping)).toEqual([]);
+  });
+});
+
+describe("assignColumn", () => {
+  it("unmaps any other field already using the column", () => {
+    const mapping = autoDetectMapping(["Date", "Amount", "Fee"]);
+    const next = assignColumn(mapping, "fee", 1);
+    expect(next.fee).toBe(1);
+    expect(next.amount).toBe(UNMAPPED);
+    expect(next.date).toBe(0);
+  });
+
+  it("allows unmapping without touching other fields", () => {
+    const mapping = autoDetectMapping(["Date", "Amount"]);
+    const next = assignColumn(mapping, "date", UNMAPPED);
+    expect(next.date).toBe(UNMAPPED);
+    expect(next.amount).toBe(1);
   });
 });

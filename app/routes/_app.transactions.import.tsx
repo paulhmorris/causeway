@@ -11,8 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/com
 import { Label } from "~/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
-import { parseCsv, parseCurrencyToCents, type ParsedCsv } from "~/lib/csv";
+import { CsvParseError, parseCsv, parseCurrencyToCents, type ParsedCsv } from "~/lib/csv";
 import {
+  assignColumn,
   autoDetectMapping,
   importFields,
   missingRequiredFields,
@@ -46,8 +47,14 @@ export default function TransactionsImportPage() {
       return;
     }
 
-    const text = await file.text();
-    const result = parseCsv(text);
+    let result: ParsedCsv;
+    try {
+      result = parseCsv(await file.text());
+    } catch (e) {
+      if (!(e instanceof CsvParseError)) throw e;
+      setError(`That file couldn't be read. ${e.message} Try exporting it from Tithe.ly again.`);
+      return;
+    }
     if (result.headers.length === 0 || result.rows.length === 0) {
       setError("That file needs a header row and at least one row of data.");
       return;
@@ -197,7 +204,7 @@ function MapStep({
               </div>
               <Select
                 value={String(mapping[field.key])}
-                onValueChange={(value) => onMappingChange({ ...mapping, [field.key]: Number(value) })}
+                onValueChange={(value) => onMappingChange(assignColumn(mapping, field.key, Number(value)))}
               >
                 <SelectTrigger id={`map-${field.key}`} aria-label={field.label}>
                   <SelectValue />

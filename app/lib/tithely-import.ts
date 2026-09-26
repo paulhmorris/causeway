@@ -79,6 +79,16 @@ export function autoDetectMapping(headers: Array<string>): ColumnMapping {
   return mapping;
 }
 
+/** Map `key` to `column`, unmapping any other field that was using that column. */
+export function assignColumn(mapping: ColumnMapping, key: ImportFieldKey, column: number): ColumnMapping {
+  const next = { ...mapping, [key]: column };
+  if (column === UNMAPPED) return next;
+  for (const field of importFields) {
+    if (field.key !== key && next[field.key] === column) next[field.key] = UNMAPPED;
+  }
+  return next;
+}
+
 /** Import fields whose required source column has not yet been mapped. */
 export function missingRequiredFields(mapping: ColumnMapping): Array<ImportField> {
   return importFields.filter((f) => f.required && (mapping[f.key] ?? UNMAPPED) === UNMAPPED);

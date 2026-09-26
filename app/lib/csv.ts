@@ -3,11 +3,15 @@ export type ParsedCsv = {
   rows: Array<Array<string>>;
 };
 
+export class CsvParseError extends Error {}
+
 /**
  * Minimal RFC 4180-style CSV parser with no external dependencies. Handles
  * quoted fields, escaped quotes ("") inside quotes, and commas / newlines that
  * appear within quoted fields. A quote mid-field (e.g. `5" screen`) is literal.
- * Strips a leading UTF-8 BOM and ignores blank lines, including comma-only ones. The first non-empty record is treated as the header row.
+ * Strips a leading UTF-8 BOM and ignores blank lines, including comma-only ones.
+ * The first non-empty record is the header row. Throws CsvParseError on an
+ * unclosed quote.
  */
 export function parseCsv(input: string): ParsedCsv {
   if (input.charCodeAt(0) === 0xfeff) {
@@ -18,6 +22,8 @@ export function parseCsv(input: string): ParsedCsv {
   let field = "";
   let record: Array<string> = [];
   let inQuotes = false;
+  let quoteLine = 0;
+  let line = 1;
   let i = 0;
 
   const pushField = () => {
@@ -44,6 +50,7 @@ export function parseCsv(input: string): ParsedCsv {
         i++;
         continue;
       }
+      if (char === "\n") line++;
       field += char;
       i++;
       continue;
@@ -51,6 +58,7 @@ export function parseCsv(input: string): ParsedCsv {
 
     if (char === '"' && field === "") {
       inQuotes = true;
+      quoteLine = line;
       i++;
       continue;
     }
@@ -62,17 +70,23 @@ export function parseCsv(input: string): ParsedCsv {
     if (char === "\r") {
       pushRecord();
       if (input[i + 1] === "\n") i++;
+      line++;
       i++;
       continue;
     }
     if (char === "\n") {
       pushRecord();
+      line++;
       i++;
       continue;
     }
 
     field += char;
     i++;
+  }
+
+  if (inQuotes) {
+    throw new CsvParseError(`Line ${quoteLine} has an opening quote (") that is never closed.`);
   }
 
   if (field.length > 0 || record.length > 0) {
