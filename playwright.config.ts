@@ -1,12 +1,19 @@
+import { existsSync } from "node:fs";
+
 import { defineConfig, devices } from "@playwright/test";
+
+if (existsSync(".env")) {
+  process.loadEnvFile(".env");
+}
 
 const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL ?? "http://localhost:3002";
 const isCI = process.env.CI;
 
 export default defineConfig({
   testDir: "./test/e2e",
+  globalSetup: "./test/e2e/helpers/global.setup.ts",
   timeout: isCI ? 30_000 : 15_000,
-  testIgnore: !isCI ? "./test/e2e/a11y.test.ts" : undefined,
+  testIgnore: !isCI ? "**/a11y.test.ts" : undefined,
   fullyParallel: true,
   forbidOnly: !!isCI,
   workers: isCI ? 1 : undefined,
@@ -19,9 +26,14 @@ export default defineConfig({
   projects: [
     // Setup
     {
-      name: "setup",
-      testMatch: /.*\.setup\.ts/,
+      name: "db setup",
+      testMatch: /db\.setup\.ts/,
       teardown: "cleanup db",
+    },
+    {
+      name: "setup",
+      testMatch: /auth\.setup\.ts/,
+      dependencies: ["db setup"],
     },
     {
       name: "cleanup db",
@@ -66,7 +78,7 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     url: baseURL,
-    command: "npm run dev",
+    command: `npm run dev -- --port ${new URL(baseURL).port}`,
     reuseExistingServer: true,
   },
 });

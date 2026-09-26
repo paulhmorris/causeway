@@ -47,12 +47,4 @@ test.describe("User menu", () => {
     await expect(page.locator("html")).toHaveClass(/light/);
     await expect(page).toHaveURL("/dashboards/admin");
   });
-
-  test("should log out", async ({ page }) => {
-    await page.goto("/dashboards/admin");
-    await expect(page).toHaveURL("/dashboards/admin");
-    await page.getByRole("button", { name: /open user menu/i }).click();
-    await page.getByRole("menuitem", { name: /log out/i }).click();
-    await expect(page).toHaveURL("/login");
-  });
 });

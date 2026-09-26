@@ -31,15 +31,7 @@ export const Responses = {
   },
 
   redirectToSignIn(redirect_url?: string) {
-    const url = CONFIG.signInUrl;
-    if (redirect_url) {
-      url.searchParams.set("redirect_url", redirect_url);
-    }
-    return redirect(url.toString());
-  },
-
-  redirectToSignUp(redirect_url?: string) {
-    const url = CONFIG.signUpUrl;
+    const url = new URL(CONFIG.signInUrl);
     if (redirect_url) {
       url.searchParams.set("redirect_url", redirect_url);
     }
