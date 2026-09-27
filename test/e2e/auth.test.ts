@@ -11,7 +11,7 @@ test.describe("Signed out", () => {
 
   test("redirects protected pages to sign-in with a return url", async ({ page }) => {
     await page.goto("/accounts");
-    await page.waitForURL(/\/sign-in/);
+    await page.waitForURL(/\/sign-in/, { waitUntil: "commit" });
 
     const redirectUrl = new URL(page.url()).searchParams.get("redirect_url");
     expect(redirectUrl).toMatch(/\/accounts$/);
@@ -65,7 +65,7 @@ test.describe("Signed in", () => {
       await expect(page).toHaveURL(/\/no-access$/);
 
       await page.getByRole("button", { name: /sign out/i }).click();
-      await page.waitForURL(/\/sign-in/);
+      await page.waitForURL(/\/sign-in/, { waitUntil: "commit" });
     } finally {
       await clerkClient.users.deleteUser(clerkUser.id);
     }
@@ -78,9 +78,9 @@ test.describe("Signed in", () => {
 
     await page.getByRole("button", { name: /open user menu/i }).click();
     await page.getByRole("menuitem", { name: /log out/i }).click();
-    await page.waitForURL(/\/sign-in/);
+    await page.waitForURL(/\/sign-in/, { waitUntil: "commit" });
 
     await page.goto("/dashboards/admin");
-    await page.waitForURL(/\/sign-in/);
+    await page.waitForURL(/\/sign-in/, { waitUntil: "commit" });
   });
 });
