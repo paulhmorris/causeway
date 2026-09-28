@@ -2,9 +2,9 @@ import { expect, test } from "./helpers/axe-test";
 
 test.describe("should have no a11y issues on", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
-  test("login", async ({ page, makeAxeBuilder }) => {
-    await page.goto("/login");
-    await expect(page).toHaveURL("/login");
+  test("no access", async ({ page, makeAxeBuilder }) => {
+    await page.goto("/no-access");
+    await expect(page).toHaveURL("/no-access");
     const accessibilityScanResults = await makeAxeBuilder().analyze();
     expect(accessibilityScanResults.violations).toEqual([]);
   });

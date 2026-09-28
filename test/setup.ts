@@ -11,5 +11,7 @@ const MockResizeObserver = vi.fn(() => ({
 vi.stubGlobal("ResizeObserver", MockResizeObserver);
 
 // Radix UI uses PointerEvents, which are not available in JSDOM by default and cause some userEvent tests to fail
-window.HTMLElement.prototype.scrollIntoView = vi.fn();
-window.HTMLElement.prototype.hasPointerCapture = vi.fn();
+if (typeof window !== "undefined") {
+  window.HTMLElement.prototype.scrollIntoView = vi.fn();
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn();
+}

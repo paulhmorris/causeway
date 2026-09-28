@@ -1,6 +1,6 @@
 import { ClerkProvider } from "@clerk/react-router";
-import { rootAuthLoader } from "@clerk/react-router/ssr.server";
-import { dark } from "@clerk/themes";
+import { clerkMiddleware, rootAuthLoader } from "@clerk/react-router/server";
+import { dark } from "@clerk/ui/themes";
 
 import "@fontsource-variable/dm-sans/wght.css";
 import { Analytics } from "@vercel/analytics/react";
@@ -29,6 +29,8 @@ import { themeSessionResolver } from "~/services.server/session";
 import { Route } from "./+types/root";
 
 import tailwindUrl from "~/tailwind.css?url";
+
+export const middleware: Route.MiddlewareFunction[] = [clerkMiddleware()];
 
 export const links: LinksFunction = () => [{ rel: "stylesheet", href: tailwindUrl, as: "style" }];
 
@@ -78,7 +80,7 @@ export default function App({ loaderData }: Route.ComponentProps) {
   return (
     <ClerkProvider
       loaderData={loaderData}
-      appearance={{ baseTheme: theme === Theme.DARK ? dark : undefined }}
+      appearance={{ theme: theme === Theme.DARK ? dark : undefined }}
       publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
       telemetry={{ disabled: true }}
     >

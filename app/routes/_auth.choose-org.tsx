@@ -1,8 +1,7 @@
-import {} from "@clerk/react-router/";
 import { parseFormData, ValidatedForm, validationError } from "@rvf/react-router";
 import { IconChevronRight } from "@tabler/icons-react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useSearchParams } from "react-router";
+import { redirect, useLoaderData, useSearchParams } from "react-router";
 import { z } from "zod/v4";
 
 import { AuthCard } from "~/components/auth/auth-card";
@@ -16,7 +15,7 @@ import { Sentry } from "~/integrations/sentry";
 import { Toasts } from "~/lib/toast.server";
 import { normalizeEnum } from "~/lib/utils";
 import { checkbox, optionalText, text } from "~/schemas/fields";
-import { SessionService } from "~/services.server/session";
+import { NO_ACCESS_PATH, SessionService } from "~/services.server/session";
 
 const logger = createLogger("Routes.ChooseOrg");
 
@@ -28,47 +27,30 @@ const schema = z.object({
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const userId = await SessionService.requireUserId(args);
-  const session = await SessionService.getSession(args);
+  const redirectTo = new URL(args.request.url).searchParams.get("redirectTo");
 
-  const user = await db.user.findUnique({
-    where: { id: userId },
+  const memberships = await db.membership.findMany({
+    where: { userId },
     select: {
-      id: true,
-      memberships: {
-        select: {
-          org: {
-            select: { id: true, name: true },
-          },
-          role: true,
-          isDefault: true,
-        },
-      },
+      org: { select: { id: true, name: true } },
+      role: true,
+      isDefault: true,
     },
   });
 
-  if (!user) {
-    throw await SessionService.logout(session.sessionId);
+  if (memberships.length === 0) {
+    logger.warn(`User ${userId} has no memberships`);
+    throw redirect(NO_ACCESS_PATH);
   }
 
-  if (user.memberships.length === 0) {
-    logger.warn(`User ${userId} has no memberships, logging them out.`);
-    throw await SessionService.logout(session.sessionId);
+  // Only auto-select on sign-in; users switching orgs should see the picker.
+  const hasOrg = Boolean(await SessionService.getOrgId(args));
+  const autoSelected = memberships.length === 1 ? memberships[0] : memberships.find((m) => m.isDefault);
+  if (!hasOrg && autoSelected) {
+    return SessionService.createOrgSession({ fnArgs: args, redirectTo, orgId: autoSelected.org.id });
   }
 
-  if (user.memberships.length === 1) {
-    logger.info(`User ${userId} has only one membership, redirecting to that organization.`);
-    const orgId = user.memberships[0].org.id;
-    return SessionService.createOrgSession({ fnArgs: args, redirectTo: "/", orgId });
-  }
-
-  const defaultMembership = user.memberships.find((m) => m.isDefault);
-  if (defaultMembership) {
-    logger.info(`User ${userId} has a default membership, redirecting to that organization.`);
-    const orgId = defaultMembership.org.id;
-    return SessionService.createOrgSession({ fnArgs: args, redirectTo: "/", orgId });
-  }
-
-  const orgs = user.memberships.map((m) => ({
+  const orgs = memberships.map((m) => ({
     id: m.org.id,
     name: m.org.name,
     role: normalizeEnum(m.role),
@@ -92,24 +74,14 @@ export const action = async (args: ActionFunctionArgs) => {
     await db.membership.findUniqueOrThrow({ where: { userId_orgId: { userId, orgId } }, select: { id: true } });
 
     // Skip this screen on future logins
-    if (rememberSelection) {
-      await db.membership.update({
-        data: { isDefault: true },
-        where: {
-          userId_orgId: { orgId, userId },
-        },
-      });
-    } else {
-      await db.membership.updateMany({
-        where: { userId },
-        data: { isDefault: false },
-      });
-    }
+    await db.$transaction([
+      db.membership.updateMany({ where: { userId }, data: { isDefault: false } }),
+      ...(rememberSelection
+        ? [db.membership.update({ where: { userId_orgId: { orgId, userId } }, data: { isDefault: true } })]
+        : []),
+    ]);
 
-    const url = new URL(args.request.url);
-    const redirectUrl = new URL(redirectTo ?? "/", url.origin);
-
-    return SessionService.createOrgSession({ fnArgs: args, redirectTo: redirectUrl.toString(), orgId });
+    return SessionService.createOrgSession({ fnArgs: args, redirectTo, orgId });
   } catch (error) {
     Sentry.captureException(error, { extra: { userId, orgId } });
     logger.error("Error selecting organization", { userId });

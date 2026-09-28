@@ -17,24 +17,25 @@ export const AuthService = {
     }
   },
 
-  async revokeSession(sessionId: string) {
-    try {
-      const revokedSession = await client.sessions.revokeSession(sessionId);
-      logger.info("Session revoked successfully", { sessionId });
-      return revokedSession;
-    } catch (error) {
-      Sentry.captureException(error, { extra: { sessionId } });
-      logger.error("Error revoking session", { sessionId });
-      throw error;
+  /**
+   * Links a Clerk user to the user whose username matches their primary email (`pem` session claim).
+   * Users are created in our DB and invited by email, so they have no `clerkId` until first sign-in.
+   */
+  async linkClerkUser(clerkId: string, primaryEmail: string | undefined) {
+    if (!primaryEmail) {
+      logger.error("No pem session claim, cannot link Clerk user", { clerkId });
+      return null;
     }
-  },
 
-  linkOAuthUserToExistingUser(username: string, clerkId: string) {
-    logger.info("Linking OAuth user to existing user", { username, clerkId });
-    return db.user.update({
-      select: { id: true },
-      where: { username },
-      data: { clerkId },
-    });
+    const user = await db.user.findUnique({ where: { username: primaryEmail }, select: { id: true, clerkId: true } });
+    if (!user) {
+      return null;
+    }
+    if (user.clerkId) {
+      logger.warn("Relinking user to a different Clerk user", { userId: user.id, from: user.clerkId, to: clerkId });
+    }
+
+    logger.info("Linking Clerk user", { userId: user.id, clerkId });
+    return db.user.update({ where: { id: user.id }, data: { clerkId }, select: { id: true } });
   },
 };
