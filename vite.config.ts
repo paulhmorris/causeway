@@ -19,6 +19,7 @@ const sentryConfig: SentryReactRouterBuildOptions = {
 };
 
 const isCI = process.env.CI;
+const serverEntry = "./app/server/index.ts";
 
 export default defineConfig((config) => ({
   resolve: {
@@ -43,7 +44,17 @@ export default defineConfig((config) => ({
     sourcemap: !!process.env.CI,
     rollupOptions: config.isSsrBuild
       ? {
-          input: "./app/server/index.ts",
+          input: serverEntry,
+          output: {
+            /**
+             * The entry top-level awaits the React Router build. Any module it shares with that build must live
+             * outside the entry chunk, or the import cycle deadlocks module evaluation.
+             */
+            manualChunks: (id, { getModuleInfo }) =>
+              getModuleInfo(id)?.importers.some((importer) => importer.endsWith(serverEntry.slice(1)))
+                ? "server"
+                : undefined,
+          },
         }
       : undefined,
   },
