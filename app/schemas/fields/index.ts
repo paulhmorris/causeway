@@ -1,13 +1,18 @@
 import { EnumLike } from "zod";
 import { z } from "zod/v4";
 
+/** A submitted-but-blank field clears the column; a field missing from the form stays `undefined` so updates leave it alone. */
+function blankToNull<T>(v: T | "" | undefined) {
+  return v === "" ? null : v;
+}
+
 const _text = z.string().max(255, "Must be 255 characters or less").trim();
 export const text = _text.min(1, "Required");
-export const optionalText = _text.optional().transform((v) => (v === "" ? undefined : v));
+export const optionalText = _text.optional().transform(blankToNull);
 
 const _longText = z.string().max(1000, "Must be 1000 characters or less").trim();
 export const longText = _longText.min(1, "Required");
-export const optionalLongText = _longText.optional().transform((v) => (v === "" ? undefined : v));
+export const optionalLongText = _longText.optional().transform(blankToNull);
 
 export const number = z.coerce.number({ error: (e) => (!e.input ? "Required" : "Must be a number") });
 export const optionalNumber = number.optional();
@@ -34,7 +39,7 @@ export const optionalCheckboxGroup = checkboxGroup.optional();
 
 export const _select = z.coerce.string().max(255, { error: "Must be 255 characters or less" }).trim();
 export const select = _select.min(1, { error: "Required" });
-export const optionalSelect = _select.optional().transform((v) => (v === "" ? undefined : v));
+export const optionalSelect = _select.optional().transform(blankToNull);
 export const selectEnum = <T extends EnumLike>(enumValue: T) => {
   return z.enum(enumValue, { error: (e) => (!e.input ? "Required" : "Invalid option") });
 };
@@ -44,7 +49,7 @@ export const email = z.email({ error: (e) => (!e.input ? "Required" : "Invalid e
 export const optionalEmail = z
   .union([email, z.literal("")])
   .optional()
-  .transform((v) => (v === "" ? undefined : v));
+  .transform(blankToNull);
 export const password = _text.min(8, "Must be 8 or more characters").max(255);
 export const url = z.url({ error: (e) => (!e.input ? "Required" : "Invalid URL") }).max(255);
 export const currency = z
@@ -65,4 +70,4 @@ export const phoneNumber = _text
 export const optionalPhoneNumber = z
   .union([phoneNumber, z.literal("")])
   .optional()
-  .transform((v) => (v === "" ? undefined : v));
+  .transform(blankToNull);

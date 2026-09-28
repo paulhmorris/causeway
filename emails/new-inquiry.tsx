@@ -5,8 +5,8 @@ interface Props {
   username: string;
   name: string;
   method: string;
-  email?: string;
-  phone?: string;
+  email?: string | null;
+  phone?: string | null;
   message: string;
 }
 
