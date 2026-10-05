@@ -92,7 +92,7 @@ export function autoDetectMapping(headers: Array<string>): ColumnMapping {
 
 /** Import fields whose required source column has not yet been mapped. */
 export function missingRequiredFields(mapping: ColumnMapping): Array<ImportField> {
-  return importFields.filter((f) => f.required && (mapping[f.key] ?? UNMAPPED) === UNMAPPED);
+  return importFields.filter((f) => f.required && mapping[f.key] === UNMAPPED);
 }
 
 /**
@@ -328,7 +328,7 @@ export function analyzeRecords({
   records: Array<ImportRecord>;
   contacts: Array<ExistingContact>;
   transactions: Array<ExistingTransaction>;
-  fundAccounts: Record<string, string>;
+  fundAccounts: Partial<Record<string, string>>;
   defaultAccountId: string | null;
 }): Array<RowAnalysis> {
   return records.map((record) => {

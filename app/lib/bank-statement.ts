@@ -57,14 +57,15 @@ export function autoDetectStatementMapping(headers: Array<string>): StatementMap
 
 /**
  * A statement needs a date plus some way to read an amount: either the single
- * Amount column, or at least one of Debit / Credit.
+ * Amount column, or both Debit and Credit — with only one of the pair, rows in
+ * the other direction would be unreadable.
  */
 export function statementMappingProblem(mapping: StatementMapping): string | null {
   if (mapping.date === UNMAPPED) return "Choose which column holds the date.";
   const hasAmount = mapping.amount !== UNMAPPED;
-  const hasDebitCredit = mapping.debit !== UNMAPPED || mapping.credit !== UNMAPPED;
+  const hasDebitCredit = mapping.debit !== UNMAPPED && mapping.credit !== UNMAPPED;
   if (!hasAmount && !hasDebitCredit) {
-    return "Choose an Amount column, or a Debit and Credit pair.";
+    return "Choose an Amount column, or both a Debit and a Credit column.";
   }
   return null;
 }
@@ -95,8 +96,12 @@ function readAmountInCents(row: Array<string>, mapping: StatementMapping): numbe
     return parseCurrencyToCents(cell(row, mapping.amount));
   }
 
-  const credit = parseCurrencyToCents(cell(row, mapping.credit));
-  const debit = parseCurrencyToCents(cell(row, mapping.debit));
+  const rawCredit = cell(row, mapping.credit);
+  const rawDebit = cell(row, mapping.debit);
+  if (rawCredit === null && rawDebit === null) return 0;
+
+  const credit = parseCurrencyToCents(rawCredit);
+  const debit = parseCurrencyToCents(rawDebit);
 
   if (credit !== null && credit !== 0) return credit;
   if (debit !== null && debit !== 0) return debit < 0 ? debit : -debit;

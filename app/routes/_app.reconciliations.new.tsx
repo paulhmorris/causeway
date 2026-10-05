@@ -153,6 +153,7 @@ export default function NewReconciliationPage() {
     return toStatementLines(parsed, mapping, { reverseSigns });
   }, [parsed, mapping, mappingProblem, reverseSigns]);
 
+  const fileHasNoLines = parsed !== null && lines.length === 0;
   const lateLines = useMemo(() => linesOutsidePeriod(lines, statementDate), [lines, statementDate]);
 
   async function handleFile(file: File | undefined) {
@@ -365,7 +366,9 @@ export default function NewReconciliationPage() {
           <input type="hidden" name="lines" value={lines.length > 0 ? JSON.stringify(lines) : ""} />
 
           <div className="flex justify-end">
-            <Button type="submit">Start reconciliation</Button>
+            <Button type="submit" disabled={fileHasNoLines}>
+              Start reconciliation
+            </Button>
           </div>
         </Form>
       </PageContainer>

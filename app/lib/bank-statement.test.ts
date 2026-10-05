@@ -45,8 +45,9 @@ describe("statementMappingProblem", () => {
   it("requires an amount or a debit/credit pair", () => {
     expect(statementMappingProblem({ ...none, date: 0 })).toContain("Amount");
     expect(statementMappingProblem({ ...none, date: 0, amount: 1 })).toBeNull();
-    expect(statementMappingProblem({ ...none, date: 0, credit: 1 })).toBeNull();
-    expect(statementMappingProblem({ ...none, date: 0, debit: 1 })).toBeNull();
+    expect(statementMappingProblem({ ...none, date: 0, credit: 1 })).toContain("Debit");
+    expect(statementMappingProblem({ ...none, date: 0, debit: 1 })).toContain("Credit");
+    expect(statementMappingProblem({ ...none, date: 0, debit: 1, credit: 2 })).toBeNull();
   });
 });
 
@@ -117,6 +118,16 @@ describe("toStatementLines", () => {
 
     expect(lines).toHaveLength(1);
     expect(errors.map((e) => e.rowIndex)).toEqual([0, 1]);
+  });
+
+  it("reads a row with blank debit and credit as zero", () => {
+    const parsed = {
+      headers: ["Date", "Description", "Debit", "Credit"],
+      rows: [["7/1/2026", "Balance forward", "", ""]],
+    };
+    const { lines, errors } = toStatementLines(parsed, autoDetectStatementMapping(parsed.headers));
+    expect(lines.map((l) => l.amountInCents)).toEqual([0]);
+    expect(errors).toEqual([]);
   });
 
   it("ignores fully blank rows", () => {
