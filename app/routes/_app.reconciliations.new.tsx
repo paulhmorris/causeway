@@ -75,7 +75,7 @@ const signedCurrency = z.string().transform((value, ctx) => {
 });
 
 const lineSchema = z.object({
-  rowIndex: z.number().int().nonnegative(),
+  rowNumber: z.number().int().positive(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   description: z.string().nullable(),
   amountInCents: z.number().int(),
@@ -153,6 +153,7 @@ export default function NewReconciliationPage() {
     return toStatementLines(parsed, mapping, { reverseSigns });
   }, [parsed, mapping, mappingProblem, reverseSigns]);
 
+  const fileHasNoLines = parsed !== null && lines.length === 0;
   const lateLines = useMemo(() => linesOutsidePeriod(lines, statementDate), [lines, statementDate]);
 
   async function handleFile(file: File | undefined) {
@@ -345,7 +346,7 @@ export default function NewReconciliationPage() {
                   {errors.length > 0 ? (
                     <Callout variant="warning">
                       {errors.length} row{errors.length === 1 ? "" : "s"} will be skipped — for example row{" "}
-                      {errors[0].rowIndex + 2}: {errors[0].message}.
+                      {errors[0].rowNumber}: {errors[0].message}.
                     </Callout>
                   ) : null}
 
@@ -365,7 +366,9 @@ export default function NewReconciliationPage() {
           <input type="hidden" name="lines" value={lines.length > 0 ? JSON.stringify(lines) : ""} />
 
           <div className="flex justify-end">
-            <Button type="submit">Start reconciliation</Button>
+            <Button type="submit" disabled={fileHasNoLines}>
+              Start reconciliation
+            </Button>
           </div>
         </Form>
       </PageContainer>
@@ -430,7 +433,7 @@ function LinePreview({ lines }: { lines: Array<StatementLine> }) {
           </TableHeader>
           <TableBody>
             {shown.map((line) => (
-              <TableRow key={line.rowIndex}>
+              <TableRow key={line.rowNumber}>
                 <TableCell className="whitespace-nowrap tabular-nums">{line.date}</TableCell>
                 <TableCell className="max-w-[320px] truncate">
                   {line.description ?? <span className="text-muted-foreground">—</span>}

@@ -1,7 +1,7 @@
 import { screen } from "@testing-library/dom";
 import userEvent from "@testing-library/user-event";
-
 import { renderWithBlankStub } from "test/test-utils";
+
 import { OrgSettingsForm } from "~/components/forms/org-settings-form";
 
 const MOCK_PROPS = {
@@ -39,7 +39,11 @@ describe("Org Settings Form", () => {
   it("should submit the form with valid data", async () => {
     const action = vi.fn();
     const user = userEvent.setup();
-    renderWithBlankStub({ component: OrgSettingsForm, props: MOCK_PROPS, actionMock: action });
+    renderWithBlankStub({
+      component: OrgSettingsForm,
+      props: MOCK_PROPS,
+      actionMock: action,
+    });
 
     const nameInput = await screen.findByLabelText<HTMLInputElement>(/organization name/i);
     await user.clear(nameInput);

@@ -21,6 +21,7 @@ import { Toasts } from "~/lib/toast.server";
 import { cn, formatCentsAsDollars } from "~/lib/utils";
 import { cuid, optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
+import { TransactionService } from "~/services.server/transaction";
 
 const logger = createLogger("Routes.TransactionEdit");
 
@@ -52,7 +53,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     },
   });
 
-  const categories = await db.transactionCategory.findMany();
+  const categories = await TransactionService.getCategories(orgId);
 
   if (!transaction) {
     throw Responses.notFound();
@@ -62,7 +63,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
 };
 
 export const action = async (args: ActionFunctionArgs) => {
-  await SessionService.requireAdmin(args);
+  const user = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
   const result = await parseFormData(args.request, schema);
@@ -87,8 +88,8 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `Transaction has been updated.`,
     });
   } catch (error) {
-    logger.error("Error updating transaction", { error });
-    Sentry.captureException(error);
+    logger.error("Error updating transaction");
+    Sentry.captureException(error, { extra: { userId: user.id, orgId } });
     return Toasts.dataWithError(null, {
       message: "Error",
       description: "An unknown error has occurred. Please try again later.",

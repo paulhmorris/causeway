@@ -2,9 +2,9 @@ import { TransactionItemTypeDirection } from "@prisma/client";
 import { render } from "@react-email/render";
 import { parseFormData, useForm, validationError } from "@rvf/react-router";
 import { IconPlus } from "@tabler/icons-react";
+import { IncomeNotificationEmail } from "emails/income-notification";
 import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 
-import { IncomeNotificationEmail } from "emails/income-notification";
 import { PageHeader } from "~/components/common/page-header";
 import { ReceiptSelector } from "~/components/common/receipt-selector";
 import { TransactionItem } from "~/components/common/transaction-item";
@@ -28,6 +28,7 @@ import { formatCentsAsDollars, getToday } from "~/lib/utils";
 import { TransactionSchema } from "~/schemas";
 import { checkbox } from "~/schemas/fields";
 import { ContactService } from "~/services.server/contact";
+import { countSelectableReceipts, getSelectableReceipts, receiptGalleryOptions } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
 import { TransactionService } from "~/services.server/transaction";
 
@@ -39,44 +40,49 @@ export const loader = async (args: LoaderFunctionArgs) => {
   const user = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
-  const [contacts, contactTypes, accounts, transactionItemMethods, transactionItemTypes, categories, receipts] =
-    await db.$transaction([
-      db.contact.findMany({ where: { orgId }, include: { type: true } }),
-      ContactService.getTypes(orgId),
-      db.account.findMany({
-        where: { orgId },
-        select: {
-          id: true,
-          code: true,
-          description: true,
-          user: { select: { id: true } },
-          _count: { select: { subscribers: true } },
-        },
-        orderBy: { code: "asc" },
-      }),
-      TransactionService.getItemMethods(orgId),
-      db.transactionItemType.findMany({
-        where: {
-          AND: [
-            { OR: [{ orgId }, { orgId: null }] },
-            { OR: [{ direction: TransactionItemTypeDirection.IN }, { id: TransactionItemType.Fee }] },
-          ],
-        },
-      }),
-      db.transactionCategory.findMany({ orderBy: { id: "asc" } }),
-      db.receipt.findMany({
-        // Admins can see all receipts, users can only see their own
-        where: {
-          orgId,
-          userId: user.isMember ? user.id : undefined,
-        },
-        include: {
-          user: { select: { contact: { select: { email: true } } } },
-          reimbursementRequests: { select: { id: true } },
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-    ]);
+  // Admins can see all receipts, users can only see their own
+  const receiptQuery = {
+    orgId,
+    userId: user.isMember ? user.id : undefined,
+    ...receiptGalleryOptions(args.request),
+  };
+
+  const [
+    contacts,
+    contactTypes,
+    accounts,
+    transactionItemMethods,
+    transactionItemTypes,
+    categories,
+    receipts,
+    receiptCount,
+  ] = await db.$transaction([
+    db.contact.findMany({ where: { orgId }, include: { type: true } }),
+    ContactService.getTypes(orgId),
+    db.account.findMany({
+      where: { orgId },
+      select: {
+        id: true,
+        code: true,
+        description: true,
+        user: { select: { id: true } },
+        _count: { select: { subscribers: true } },
+      },
+      orderBy: { code: "asc" },
+    }),
+    TransactionService.getItemMethods(orgId),
+    db.transactionItemType.findMany({
+      where: {
+        AND: [
+          { OR: [{ orgId }, { orgId: null }] },
+          { OR: [{ direction: TransactionItemTypeDirection.IN }, { id: TransactionItemType.Fee }] },
+        ],
+      },
+    }),
+    TransactionService.getCategories(orgId),
+    getSelectableReceipts(receiptQuery),
+    countSelectableReceipts(receiptQuery),
+  ]);
 
   return {
     contacts,
@@ -86,11 +92,12 @@ export const loader = async (args: LoaderFunctionArgs) => {
     transactionItemTypes,
     categories,
     receipts,
+    receiptCount,
   };
 };
 
 export const action = async (args: ActionFunctionArgs) => {
-  await SessionService.requireAdmin(args);
+  const admin = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
   const result = await parseFormData(args.request, schema);
@@ -155,6 +162,7 @@ export const action = async (args: ActionFunctionArgs) => {
             userFirstname={transaction.account.user?.contact.firstName ?? "User"}
           />,
         ),
+        context: { userId: admin.id, orgId },
       });
     }
 
@@ -163,15 +171,23 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `Income of ${formatCentsAsDollars(totalInCents)} added to account ${transaction.account.code}`,
     });
   } catch (error) {
-    logger.error("Error creating income", { error });
-    Sentry.captureException(error);
+    logger.error("Error creating income");
+    Sentry.captureException(error, { extra: { userId: admin.id, orgId } });
     return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
   }
 };
 
 export default function AddIncomePage() {
-  const { contacts, contactTypes, accounts, transactionItemMethods, transactionItemTypes, receipts, categories } =
-    useLoaderData<typeof loader>();
+  const {
+    contacts,
+    contactTypes,
+    accounts,
+    transactionItemMethods,
+    transactionItemTypes,
+    receipts,
+    receiptCount,
+    categories,
+  } = useLoaderData<typeof loader>();
   const form = useForm({
     schema: TransactionSchema,
     method: "post",
@@ -281,7 +297,7 @@ export default function AddIncomePage() {
               <span>Add item</span>
             </Button>
             <Separator className="my-4" />
-            <ReceiptSelector receipts={receipts} />
+            <ReceiptSelector receipts={receipts} receiptCount={receiptCount} />
             <div className="space-y-1">
               <p className="text-primary text-sm font-bold">Total: {formatCentsAsDollars(total)}</p>
               <SubmitButton isSubmitting={form.formState.isSubmitting}>Submit Income</SubmitButton>

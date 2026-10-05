@@ -37,14 +37,15 @@ export async function action(args: ActionFunctionArgs) {
       to: "paul@paulmorris.dev",
       subject: `New ${type}: ${title}`,
       html: `A new ${type} has been submitted by ${user.contact.email}.\n\n${description}`,
+      context: { userId: user.id, orgId: user.org.id },
     });
 
     return Toasts.redirectWithSuccess(user.isMember ? "/dashboards/staff" : "/dashboards/admin", {
       message: "Request Sent",
     });
   } catch (error) {
-    logger.error("Error sending feature request", { error });
-    Sentry.captureException(error);
+    logger.error("Error sending feature request");
+    Sentry.captureException(error, { extra: { userId: user.id, orgId: user.org.id } });
     return Toasts.dataWithError(null, { message: "Error", description: "An unknown error occurred." });
   }
 }

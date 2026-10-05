@@ -89,7 +89,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
       account,
     };
   } catch (e) {
-    handleLoaderError(e);
+    handleLoaderError(e, { userId: user.id, orgId });
   }
 };
 

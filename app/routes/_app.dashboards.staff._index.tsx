@@ -15,10 +15,10 @@ import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
 
 export async function loader(args: LoaderFunctionArgs) {
-  try {
-    const user = await SessionService.requireUser(args);
-    const orgId = await SessionService.requireOrgId(args);
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
+  try {
     const [total, reimbursementRequests, announcement, accountSubscriptions] = await db.$transaction([
       db.transaction.aggregate({
         where: {
@@ -74,7 +74,7 @@ export async function loader(args: LoaderFunctionArgs) {
 
     return { total: total._sum.amountInCents, reimbursementRequests, announcement, accountSubscriptions };
   } catch (e) {
-    handleLoaderError(e);
+    handleLoaderError(e, { userId: user.id, orgId });
   }
 }
 

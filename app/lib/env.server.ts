@@ -9,9 +9,6 @@ const _serverEnv = z.object({
   // CI
   CI: z.string().optional(),
 
-  // Axiom
-  AXIOM_TOKEN: z.string(),
-
   // Clerk
   CLERK_SECRET_KEY: z.string().min(1),
   AUTH_DOMAIN: z.url(),

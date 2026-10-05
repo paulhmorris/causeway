@@ -45,8 +45,9 @@ describe("statementMappingProblem", () => {
   it("requires an amount or a debit/credit pair", () => {
     expect(statementMappingProblem({ ...none, date: 0 })).toContain("Amount");
     expect(statementMappingProblem({ ...none, date: 0, amount: 1 })).toBeNull();
-    expect(statementMappingProblem({ ...none, date: 0, credit: 1 })).toBeNull();
-    expect(statementMappingProblem({ ...none, date: 0, debit: 1 })).toBeNull();
+    expect(statementMappingProblem({ ...none, date: 0, credit: 1 })).toContain("Debit");
+    expect(statementMappingProblem({ ...none, date: 0, debit: 1 })).toContain("Credit");
+    expect(statementMappingProblem({ ...none, date: 0, debit: 1, credit: 2 })).toBeNull();
   });
 });
 
@@ -58,12 +59,17 @@ describe("toStatementLines", () => {
         ["7/1/2026", "Deposit", "$1,200.00"],
         ["7/2/2026", "Office supplies", "-45.30"],
       ],
+      rowNumbers: [2, 3],
     };
     const { lines, errors } = toStatementLines(parsed, autoDetectStatementMapping(parsed.headers));
 
     expect(errors).toEqual([]);
     expect(lines).toHaveLength(2);
-    expect(lines[0]).toMatchObject({ date: "2026-07-01", description: "Deposit", amountInCents: 120000 });
+    expect(lines[0]).toMatchObject({
+      date: "2026-07-01",
+      description: "Deposit",
+      amountInCents: 120000,
+    });
     expect(lines[1].amountInCents).toBe(-4530);
   });
 
@@ -74,6 +80,7 @@ describe("toStatementLines", () => {
         ["7/1/2026", "Donation deposit", "", "500.00"],
         ["7/2/2026", "Utility bill", "120.00", ""],
       ],
+      rowNumbers: [2, 3],
     };
     const { lines } = toStatementLines(parsed, autoDetectStatementMapping(parsed.headers));
 
@@ -85,6 +92,7 @@ describe("toStatementLines", () => {
     const parsed = {
       headers: ["Date", "Payee", "Debit", "Credit"],
       rows: [["7/2/2026", "Utility bill", "-120.00", ""]],
+      rowNumbers: [2],
     };
     const { lines } = toStatementLines(parsed, autoDetectStatementMapping(parsed.headers));
     expect(lines[0].amountInCents).toBe(-12000);
@@ -97,6 +105,7 @@ describe("toStatementLines", () => {
         ["7/1/2026", "Card charge", "75.00"],
         ["7/2/2026", "Payment received", "-200.00"],
       ],
+      rowNumbers: [2, 3],
     };
     const { lines } = toStatementLines(parsed, autoDetectStatementMapping(parsed.headers), { reverseSigns: true });
 
@@ -112,15 +121,31 @@ describe("toStatementLines", () => {
         ["7/2/2026", "Mystery", "n/a"],
         ["7/3/2026", "Good row", "10.00"],
       ],
+      rowNumbers: [2, 3, 4],
     };
     const { lines, errors } = toStatementLines(parsed, autoDetectStatementMapping(parsed.headers));
 
     expect(lines).toHaveLength(1);
-    expect(errors.map((e) => e.rowIndex)).toEqual([0, 1]);
+    expect(errors.map((e) => e.rowNumber)).toEqual([2, 3]);
+  });
+
+  it("reads a row with blank debit and credit as zero", () => {
+    const parsed = {
+      headers: ["Date", "Description", "Debit", "Credit"],
+      rows: [["7/1/2026", "Balance forward", "", ""]],
+      rowNumbers: [2],
+    };
+    const { lines, errors } = toStatementLines(parsed, autoDetectStatementMapping(parsed.headers));
+    expect(lines.map((l) => l.amountInCents)).toEqual([0]);
+    expect(errors).toEqual([]);
   });
 
   it("ignores fully blank rows", () => {
-    const parsed = { headers: ["Date", "Description", "Amount"], rows: [["", "", ""]] };
+    const parsed = {
+      headers: ["Date", "Description", "Amount"],
+      rows: [["", "", ""]],
+      rowNumbers: [2],
+    };
     const { lines, errors } = toStatementLines(parsed, autoDetectStatementMapping(parsed.headers));
     expect(lines).toEqual([]);
     expect(errors).toEqual([]);
@@ -129,11 +154,30 @@ describe("toStatementLines", () => {
 
 describe("sumLines", () => {
   it("nets deposits against withdrawals", () => {
-    expect(sumLines([{ rowIndex: 0, date: "2026-07-01", description: null, amountInCents: 10000 }])).toBe(10000);
     expect(
       sumLines([
-        { rowIndex: 0, date: "2026-07-01", description: null, amountInCents: 10000 },
-        { rowIndex: 1, date: "2026-07-02", description: null, amountInCents: -2500 },
+        {
+          rowNumber: 2,
+          date: "2026-07-01",
+          description: null,
+          amountInCents: 10000,
+        },
+      ]),
+    ).toBe(10000);
+    expect(
+      sumLines([
+        {
+          rowNumber: 2,
+          date: "2026-07-01",
+          description: null,
+          amountInCents: 10000,
+        },
+        {
+          rowNumber: 3,
+          date: "2026-07-02",
+          description: null,
+          amountInCents: -2500,
+        },
       ]),
     ).toBe(7500);
     expect(sumLines([])).toBe(0);
@@ -143,10 +187,25 @@ describe("sumLines", () => {
 describe("linesOutsidePeriod", () => {
   it("flags lines dated after the statement close", () => {
     const lines = [
-      { rowIndex: 0, date: "2026-07-30", description: null, amountInCents: 100 },
-      { rowIndex: 1, date: "2026-07-31", description: null, amountInCents: 100 },
-      { rowIndex: 2, date: "2026-08-01", description: null, amountInCents: 100 },
+      {
+        rowNumber: 2,
+        date: "2026-07-30",
+        description: null,
+        amountInCents: 100,
+      },
+      {
+        rowNumber: 3,
+        date: "2026-07-31",
+        description: null,
+        amountInCents: 100,
+      },
+      {
+        rowNumber: 4,
+        date: "2026-08-01",
+        description: null,
+        amountInCents: 100,
+      },
     ];
-    expect(linesOutsidePeriod(lines, "2026-07-31").map((l) => l.rowIndex)).toEqual([2]);
+    expect(linesOutsidePeriod(lines, "2026-07-31").map((l) => l.rowNumber)).toEqual([4]);
   });
 });

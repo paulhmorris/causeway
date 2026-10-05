@@ -17,7 +17,9 @@ export type ImportFieldKey =
   | "fund"
   | "paymentMethod"
   | "fee"
-  | "note";
+  | "note"
+  | "status"
+  | "refundedAt";
 
 /** Generic over the key so other CSV importers can reuse the mapper shape. */
 export type ImportField<K extends string = ImportFieldKey> = {
@@ -39,14 +41,14 @@ export const importFields: Array<ImportField> = [
     key: "date",
     label: "Gift date",
     required: true,
-    aliases: ["date", "giftdate", "transactiondate", "createddate", "createdat"],
+    aliases: ["date", "giftdate", "transactiondate", "createddate", "createdat", "createdatdate"],
   },
   {
     key: "amount",
     label: "Amount",
     required: true,
     help: "Gross gift amount",
-    aliases: ["amount", "grossamount", "giftamount", "totalamount", "total"],
+    aliases: ["amount", "gross", "grossamount", "giftamount", "totalamount", "total"],
   },
   { key: "firstName", label: "Donor first name", required: false, aliases: ["firstname", "first"] },
   { key: "lastName", label: "Donor last name", required: false, aliases: ["lastname", "last"] },
@@ -66,7 +68,24 @@ export const importFields: Array<ImportField> = [
   },
   { key: "fee", label: "Processing fee", required: false, aliases: ["fee", "fees", "processingfee"] },
   { key: "note", label: "Note / memo", required: false, aliases: ["note", "notes", "memo", "comment", "comments"] },
+  {
+    key: "status",
+    label: "Payment status",
+    required: false,
+    help: "Only completed payments are imported",
+    aliases: ["status", "transactionstatus", "paymentstatus"],
+  },
+  {
+    key: "refundedAt",
+    label: "Refund date",
+    required: false,
+    help: "Refunded gifts are skipped",
+    aliases: ["refundedatdate", "refundedat", "refunddate", "refundeddate"],
+  },
 ];
+
+/** Payment statuses that mean the money actually arrived. */
+const COMPLETED_STATUSES = ["succeeded", "success", "completed", "complete", "paid", "settled"];
 
 /** Sentinel used by the mapper UI to represent "not mapped to any column". */
 export const UNMAPPED = -1;
@@ -90,9 +109,19 @@ export function autoDetectMapping(headers: Array<string>): ColumnMapping {
   return mapping;
 }
 
+/** Map `key` to `column`, unmapping any other field that was using that column. */
+export function assignColumn(mapping: ColumnMapping, key: ImportFieldKey, column: number): ColumnMapping {
+  const next = { ...mapping, [key]: column };
+  if (column === UNMAPPED) return next;
+  for (const field of importFields) {
+    if (field.key !== key && next[field.key] === column) next[field.key] = UNMAPPED;
+  }
+  return next;
+}
+
 /** Import fields whose required source column has not yet been mapped. */
 export function missingRequiredFields(mapping: ColumnMapping): Array<ImportField> {
-  return importFields.filter((f) => f.required && (mapping[f.key] ?? UNMAPPED) === UNMAPPED);
+  return importFields.filter((f) => f.required && mapping[f.key] === UNMAPPED);
 }
 
 /**
@@ -111,17 +140,22 @@ export function parseImportDate(input: string | null | undefined): string | null
     if (parsed.isValid()) return parsed.format("YYYY-MM-DD");
   }
 
-  // Fall back to loose parsing so ISO timestamps ("2026-03-04T12:00:00Z") work.
+  // Take the calendar date of an ISO timestamp as written, ignoring its offset.
+  const isoDate = /^(\d{4}-\d{2}-\d{2})[T ]/.exec(value)?.[1];
+  if (isoDate) return dayjs(isoDate, "YYYY-MM-DD", true).isValid() ? isoDate : null;
+
   const loose = dayjs(value);
   return loose.isValid() ? loose.format("YYYY-MM-DD") : null;
 }
 
 /** One CSV row normalized into the shape the importer works with. */
 export type ImportRecord = {
-  /** Zero-based index into the CSV's data rows, used to tie back to the file. */
-  rowIndex: number;
+  /** The row's spreadsheet row number; unique within a file, so it doubles as the row's id. */
+  rowNumber: number;
   date: string;
+  /** The gross gift, before Tithe.ly's processing fee. */
   amountInCents: number;
+  feeInCents: number;
   firstName: string | null;
   lastName: string | null;
   email: string | null;
@@ -130,7 +164,7 @@ export type ImportRecord = {
   note: string | null;
 };
 
-export type RowError = { rowIndex: number; message: string };
+export type RowError = { rowNumber: number; message: string };
 
 function cell(row: Array<string>, index: number): string | null {
   if (index === UNMAPPED) return null;
@@ -147,33 +181,63 @@ export function toImportRecords(parsed: ParsedCsv, mapping: ColumnMapping) {
   const records: Array<ImportRecord> = [];
   const errors: Array<RowError> = [];
 
-  parsed.rows.forEach((row, rowIndex) => {
+  parsed.rows.forEach((row, i) => {
+    const rowNumber = parsed.rowNumbers[i];
     const rawDate = cell(row, mapping.date);
     const rawAmount = cell(row, mapping.amount);
 
     // Skip rows that are entirely blank rather than reporting them as errors.
     if (row.every((c) => c.trim() === "")) return;
 
+    const status = cell(row, mapping.status);
+    if (status && !COMPLETED_STATUSES.includes(status.toLowerCase())) {
+      errors.push({ rowNumber, message: `Payment status is "${status}"` });
+      return;
+    }
+    const refundedAt = cell(row, mapping.refundedAt);
+    if (refundedAt) {
+      errors.push({ rowNumber, message: `Refunded ${refundedAt}` });
+      return;
+    }
+
     const date = parseImportDate(rawDate);
     if (!date) {
-      errors.push({ rowIndex, message: rawDate ? `Unrecognized date "${rawDate}"` : "Missing date" });
+      errors.push({ rowNumber, message: rawDate ? `Unrecognized date "${rawDate}"` : "Missing date" });
       return;
     }
 
     const amountInCents = parseCurrencyToCents(rawAmount);
     if (amountInCents === null) {
-      errors.push({ rowIndex, message: rawAmount ? `Unrecognized amount "${rawAmount}"` : "Missing amount" });
+      errors.push({ rowNumber, message: rawAmount ? `Unrecognized amount "${rawAmount}"` : "Missing amount" });
       return;
     }
     if (amountInCents === 0) {
-      errors.push({ rowIndex, message: "Amount is $0.00" });
+      errors.push({ rowNumber, message: "Amount is $0.00" });
+      return;
+    }
+    if (amountInCents < 0) {
+      errors.push({ rowNumber, message: "Negative amounts (refunds) aren't imported" });
+      return;
+    }
+
+    const rawFee = cell(row, mapping.fee);
+    const fee = rawFee ? parseCurrencyToCents(rawFee) : 0;
+    if (fee === null) {
+      errors.push({ rowNumber, message: `Unrecognized fee "${rawFee}"` });
+      return;
+    }
+    // Some exports show the fee as a negative deduction.
+    const feeInCents = Math.abs(fee);
+    if (feeInCents >= amountInCents) {
+      errors.push({ rowNumber, message: "Fee is as large as the gift" });
       return;
     }
 
     records.push({
-      rowIndex,
+      rowNumber,
       date,
       amountInCents,
+      feeInCents,
       firstName: cell(row, mapping.firstName),
       lastName: cell(row, mapping.lastName),
       email: cell(row, mapping.email),
@@ -245,7 +309,7 @@ export function matchContact(
 
 /**
  * A row is treated as already imported when a non-voided transaction exists on
- * the same day, for the same amount, against the same contact. Voided
+ * the same day, for the same net amount, against the same contact. Voided
  * transactions are excluded by the caller so a corrected gift can be re-imported.
  *
  * Dates are compared in UTC because transactions are stored at UTC midnight
@@ -253,14 +317,14 @@ export function matchContact(
  * the previous day west of UTC and let a duplicate through.
  */
 export function findDuplicateTransaction(
-  record: Pick<ImportRecord, "date" | "amountInCents">,
+  record: Pick<ImportRecord, "date" | "amountInCents" | "feeInCents">,
   contactId: string | null,
   transactions: Array<ExistingTransaction>,
 ): ExistingTransaction | null {
   return (
     transactions.find(
       (t) =>
-        t.amountInCents === record.amountInCents &&
+        t.amountInCents === record.amountInCents - record.feeInCents &&
         t.contactId === contactId &&
         dayjs.utc(t.date).format("YYYY-MM-DD") === record.date,
     ) ?? null
@@ -291,18 +355,23 @@ export function matchPaymentMethod(value: string | null | undefined): Transactio
   return TransactionItemMethod.Tithely;
 }
 
-export type RowStatus = "ready" | "duplicate" | "error";
+export type RowStatus = "ready" | "duplicate" | "skipped" | "error";
 
 export type RowAnalysis = {
-  rowIndex: number;
+  rowNumber: number;
   status: RowStatus;
-  /** Why a row is a duplicate or an error; null when the row is ready. */
+  /** Why a row isn't ready; null when it is. */
   message: string | null;
   contactLabel: string;
   matchedContactId: string | null;
   willCreateContact: boolean;
   accountId: string | null;
 };
+
+/** `fundAccounts` key for records with no fund (or files with no fund column). */
+export const NO_FUND = "__none__";
+/** `fundAccounts` value meaning "don't import rows for this fund". */
+export const SKIP_FUND = "__skip__";
 
 /** Human-readable donor label for the preview table. */
 export function contactLabel(record: Pick<ImportRecord, "firstName" | "lastName" | "email">): string {
@@ -315,39 +384,45 @@ export function contactLabel(record: Pick<ImportRecord, "firstName" | "lastName"
  * Classify every record against the org's existing contacts and transactions.
  * Pure so it can be unit tested; the service layer supplies the DB reads.
  *
- * `fundAccounts` maps a CSV fund name to an account id, and `defaultAccountId`
- * covers records with no fund (or files with no fund column at all).
+ * `fundAccounts` maps a CSV fund name (or `NO_FUND`) to an account id or `SKIP_FUND`.
+ * Each existing transaction can only mark one row as a duplicate, so a donor's
+ * second identical gift in the file is still imported.
  */
 export function analyzeRecords({
   records,
   contacts,
   transactions,
   fundAccounts,
-  defaultAccountId,
 }: {
   records: Array<ImportRecord>;
   contacts: Array<ExistingContact>;
   transactions: Array<ExistingTransaction>;
-  fundAccounts: Record<string, string>;
-  defaultAccountId: string | null;
+  fundAccounts: Partial<Record<string, string>>;
 }): Array<RowAnalysis> {
+  const unclaimed = [...transactions];
+
   return records.map((record) => {
     const matched = matchContact(record, contacts);
-    const label = contactLabel(record);
-    // An empty string is the "don't import rows for this fund" sentinel.
-    const chosen = record.fund ? fundAccounts[record.fund] : defaultAccountId;
-    const accountId = chosen === undefined || chosen === "" ? null : chosen;
+    const chosen = fundAccounts[record.fund ?? NO_FUND];
+    // Anonymous rows (no name and no email) don't get a contact created.
+    const willCreateContact = !matched && Boolean(record.email ?? nameKey(record.firstName, record.lastName));
 
     const base = {
-      rowIndex: record.rowIndex,
-      contactLabel: label,
+      rowNumber: record.rowNumber,
+      contactLabel: contactLabel(record),
       matchedContactId: matched?.id ?? null,
-      // Anonymous rows (no name and no email) don't get a contact created.
-      willCreateContact: !matched && Boolean(record.email ?? nameKey(record.firstName, record.lastName)),
-      accountId,
+      willCreateContact,
+      accountId: chosen && chosen !== SKIP_FUND ? chosen : null,
     };
 
-    if (!accountId) {
+    if (chosen === SKIP_FUND) {
+      return {
+        ...base,
+        status: "skipped" as const,
+        message: record.fund ? `Fund "${record.fund}" excluded` : "Excluded",
+      };
+    }
+    if (!chosen) {
       return {
         ...base,
         status: "error" as const,
@@ -355,9 +430,13 @@ export function analyzeRecords({
       };
     }
 
-    const duplicate = findDuplicateTransaction(record, matched?.id ?? null, transactions);
-    if (duplicate) {
-      return { ...base, status: "duplicate" as const, message: "Already in Causeway" };
+    // A donor who doesn't exist yet can't have given before.
+    if (!willCreateContact) {
+      const duplicate = findDuplicateTransaction(record, matched?.id ?? null, unclaimed);
+      if (duplicate) {
+        unclaimed.splice(unclaimed.indexOf(duplicate), 1);
+        return { ...base, status: "duplicate" as const, message: "Already in Causeway" };
+      }
     }
 
     return { ...base, status: "ready" as const, message: null };

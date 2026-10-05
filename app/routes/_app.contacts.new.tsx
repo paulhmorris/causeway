@@ -57,12 +57,12 @@ export const loader = async (args: LoaderFunctionArgs) => {
       usersWhoCanBeAssigned,
     };
   } catch (e) {
-    handleLoaderError(e);
+    handleLoaderError(e, { userId: user.id, orgId });
   }
 };
 
 export const action = async (args: ActionFunctionArgs) => {
-  await SessionService.requireUser(args);
+  const user = await SessionService.requireUser(args);
   const orgId = await SessionService.requireOrgId(args);
 
   const result = await parseFormData(args.request, newContactSchema);
@@ -108,8 +108,8 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `${contact.firstName} ${contact.lastName} was created successfully.`,
     });
   } catch (error) {
-    logger.error("Error creating contact", { error });
-    Sentry.captureException(error);
+    logger.error("Error creating contact");
+    Sentry.captureException(error, { extra: { userId: user.id, orgId } });
     return Toasts.dataWithError(null, { message: "Error", description: "An unknown error occurred." });
   }
 };

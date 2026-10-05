@@ -1,6 +1,6 @@
 import { FormScope, useField, ValueOfInputType } from "@rvf/react-router";
 import { IconCurrencyDollar, IconEye, IconEyeOff } from "@tabler/icons-react";
-import { ComponentPropsWithoutRef, ComponentPropsWithRef, forwardRef, JSX, useId, useRef, useState } from "react";
+import { ComponentPropsWithoutRef, ComponentPropsWithRef, forwardRef, JSX, useId, useState } from "react";
 
 import { Checkbox } from "~/components/ui/checkbox";
 import { Combobox } from "~/components/ui/combobox";
@@ -331,13 +331,6 @@ export function FormCombobox(props: FormComboboxProps) {
   const field = useField(scope);
   const { onChange, name, ...input } = field.getControlProps();
   const error = field.error();
-  const comboboxTriggerRef = useRef<HTMLButtonElement>(null);
-
-  function handleLabelClick() {
-    if (comboboxTriggerRef.current) {
-      comboboxTriggerRef.current.click();
-    }
-  }
 
   return (
     <>
@@ -349,15 +342,12 @@ export function FormCombobox(props: FormComboboxProps) {
           hideLabel && "sr-only",
         )}
       >
-        <Label onClick={handleLabelClick} htmlFor={selectId}>
-          {label}
-        </Label>
+        <Label htmlFor={selectId}>{label}</Label>
         <LabelOptionalIndicator required={required} error={error} />
       </div>
       <input type="hidden" name={name} value={input.value?.toString()} />
       <Combobox
         id={selectId}
-        ref={comboboxTriggerRef}
         options={props.options}
         value={input.value}
         onChange={onChange}

@@ -1,3 +1,6 @@
+import { randomUUID } from "node:crypto";
+
+import type { Prisma } from "@prisma/client";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 
@@ -8,6 +11,7 @@ import {
   analyzeRecords,
   matchContact,
   matchPaymentMethod,
+  type ExistingContact,
   type ImportRecord,
   type RowAnalysis,
 } from "~/lib/tithely-import";
@@ -19,7 +23,6 @@ const logger = createLogger("DonationImportService");
 type AnalyzeArgs = {
   records: Array<ImportRecord>;
   fundAccounts: Record<string, string>;
-  defaultAccountId: string | null;
   orgId: string;
 };
 
@@ -35,7 +38,7 @@ export const DonationImportService = {
    * in full (orgs here have hundreds, not millions) and existing transactions
    * are narrowed to the date range covered by the file.
    */
-  async analyze({ records, fundAccounts, defaultAccountId, orgId }: AnalyzeArgs): Promise<Array<RowAnalysis>> {
+  async analyze({ records, fundAccounts, orgId }: AnalyzeArgs): Promise<Array<RowAnalysis>> {
     if (records.length === 0) return [];
 
     // UTC to match how transaction dates are stored (see the transaction schema).
@@ -58,104 +61,102 @@ export const DonationImportService = {
       }),
     ]);
 
-    return analyzeRecords({ records, contacts, transactions, fundAccounts, defaultAccountId });
+    return analyzeRecords({ records, contacts, transactions, fundAccounts });
   },
 
   /**
    * Import the selected rows. The analysis is re-run server-side rather than
    * trusted from the client, so a row that became a duplicate since the preview
    * — or that points at an account outside this org — is never written.
+   *
+   * Ids are generated up front so the whole import is three bulk inserts in one
+   * batch transaction, which stays well inside Prisma's transaction timeout.
    */
   async execute({
     records,
     fundAccounts,
-    defaultAccountId,
-    selectedRowIndexes,
+    selectedRowNumbers,
     orgId,
-  }: AnalyzeArgs & { selectedRowIndexes: Array<number> }): Promise<ImportSummary> {
-    const analyses = await this.analyze({ records, fundAccounts, defaultAccountId, orgId });
-    const analysisByRow = new Map(analyses.map((a) => [a.rowIndex, a]));
-    const selected = new Set(selectedRowIndexes);
+  }: AnalyzeArgs & { selectedRowNumbers: Array<number> }): Promise<ImportSummary> {
+    const analyses = await this.analyze({ records, fundAccounts, orgId });
+    const analysisByRow = new Map(analyses.map((a) => [a.rowNumber, a]));
+    const selected = new Set(selectedRowNumbers);
 
-    const toImport = records.filter((record) => {
-      const analysis = analysisByRow.get(record.rowIndex);
-      return selected.has(record.rowIndex) && analysis?.status === "ready";
+    const toImport = records.flatMap((record) => {
+      const analysis = analysisByRow.get(record.rowNumber);
+      return selected.has(record.rowNumber) && analysis?.status === "ready" && analysis.accountId
+        ? [{ record, analysis, accountId: analysis.accountId }]
+        : [];
     });
 
     if (toImport.length === 0) {
-      return { imported: 0, contactsCreated: 0, skipped: selectedRowIndexes.length };
+      return { imported: 0, contactsCreated: 0, skipped: selectedRowNumbers.length };
     }
 
-    // Confirm every target account belongs to this org before writing anything.
-    const accountIds = [...new Set(toImport.map((r) => analysisByRow.get(r.rowIndex)!.accountId!))];
-    const ownedAccounts = await db.account.findMany({
-      where: { id: { in: accountIds }, orgId },
-      select: { id: true },
-    });
-    if (ownedAccounts.length !== accountIds.length) {
+    const accountIds = [...new Set(toImport.map((r) => r.accountId))];
+    const ownedAccounts = await db.account.count({ where: { id: { in: accountIds }, orgId } });
+    if (ownedAccounts !== accountIds.length) {
       throw new Error("One or more selected accounts do not belong to this organization.");
     }
 
-    let contactsCreated = 0;
+    // Two rows for the same new donor share one contact instead of colliding on the unique email.
+    const newContacts: Array<ExistingContact> = [];
+    const transactions: Array<Prisma.TransactionCreateManyInput> = [];
+    const items: Array<Prisma.TransactionItemCreateManyInput> = [];
 
-    await db.$transaction(async (tx) => {
-      // Contacts created during this import, so two rows for the same new donor
-      // share one contact instead of colliding on the unique email constraint.
-      const created: Array<{ id: string; firstName: string | null; lastName: string | null; email: string | null }> =
-        [];
-
-      for (const record of toImport) {
-        const analysis = analysisByRow.get(record.rowIndex)!;
-        let contactId = analysis.matchedContactId;
-
-        if (!contactId && analysis.willCreateContact) {
-          const alreadyCreated = matchContact(record, created);
-          if (alreadyCreated) {
-            contactId = alreadyCreated.id;
-          } else {
-            const contact = await tx.contact.create({
-              data: {
-                orgId,
-                typeId: ContactType.Donor,
-                firstName: record.firstName,
-                lastName: record.lastName,
-                email: record.email,
-              },
-              select: { id: true, firstName: true, lastName: true, email: true },
-            });
-            created.push(contact);
-            contactId = contact.id;
-            contactsCreated++;
-          }
+    for (const { record, analysis, accountId } of toImport) {
+      let contactId = analysis.matchedContactId;
+      if (!contactId && analysis.willCreateContact) {
+        let contact = matchContact(record, newContacts);
+        if (!contact) {
+          contact = { id: randomUUID(), firstName: record.firstName, lastName: record.lastName, email: record.email };
+          newContacts.push(contact);
         }
+        contactId = contact.id;
+      }
 
-        await tx.transaction.create({
-          data: {
-            orgId,
-            accountId: analysis.accountId!,
-            contactId,
-            date: dayjs.utc(record.date).startOf("day").toDate(),
-            amountInCents: record.amountInCents,
-            categoryId: TransactionCategory.Donation_Standard,
-            description: record.note,
-            transactionItems: {
-              create: {
-                orgId,
-                amountInCents: record.amountInCents,
-                typeId: TransactionItemType.Donation,
-                methodId: matchPaymentMethod(record.paymentMethod),
-                description: record.note,
-              },
-            },
-          },
+      const transactionId = randomUUID();
+      transactions.push({
+        id: transactionId,
+        orgId,
+        accountId,
+        contactId,
+        date: dayjs.utc(record.date).startOf("day").toDate(),
+        amountInCents: record.amountInCents - record.feeInCents,
+        categoryId: TransactionCategory.Donation_Standard,
+        description: record.note,
+      });
+      const methodId = matchPaymentMethod(record.paymentMethod);
+      items.push({
+        orgId,
+        transactionId,
+        amountInCents: record.amountInCents,
+        typeId: TransactionItemType.Donation,
+        methodId,
+        description: record.note,
+      });
+      if (record.feeInCents > 0) {
+        // Fee items are outgoing, so they're stored negative and the transaction total is net.
+        items.push({
+          orgId,
+          transactionId,
+          amountInCents: -record.feeInCents,
+          typeId: TransactionItemType.Fee,
+          methodId,
         });
       }
-    });
+    }
+
+    await db.$transaction([
+      db.contact.createMany({ data: newContacts.map((c) => ({ ...c, orgId, typeId: ContactType.Donor })) }),
+      db.transaction.createMany({ data: transactions }),
+      db.transactionItem.createMany({ data: items }),
+    ]);
 
     const summary: ImportSummary = {
       imported: toImport.length,
-      contactsCreated,
-      skipped: selectedRowIndexes.length - toImport.length,
+      contactsCreated: newContacts.length,
+      skipped: selectedRowNumbers.length - toImport.length,
     };
     logger.info("Donation import complete", { orgId, ...summary });
     return summary;

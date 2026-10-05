@@ -2,8 +2,9 @@ import { render } from "@testing-library/react";
 import { createRoutesStub } from "react-router";
 import { Mock } from "vitest";
 
-import { MOCK_DATA } from "test/mock-data";
 import { useUser } from "~/hooks/useUser";
+
+import { MOCK_DATA } from "./mock-data";
 
 export function renderWithBlankStub<T extends Record<string, unknown>>({
   props = {} as T,

@@ -17,6 +17,8 @@ type SendInput = {
   from?: string;
   bcc?: string | Array<string>;
   cc?: string | Array<string>;
+  /** Attached to Sentry when the send fails. */
+  context?: { userId?: string; orgId?: string };
 };
 
 export const Mailer = {
@@ -67,8 +69,8 @@ export const Mailer = {
           }
         >;
       } catch (e) {
-        logger.error("Error sending email", { error: e });
-        Sentry.captureException(e);
+        logger.error("Error sending email", { ...props.context });
+        Sentry.captureException(e, { extra: { ...props.context } });
         throw e;
       }
     }
