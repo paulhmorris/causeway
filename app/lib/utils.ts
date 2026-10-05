@@ -25,7 +25,8 @@ export function safeRedirect(
     return defaultRedirect;
   }
 
-  if (!to.startsWith("/") || to.startsWith("//")) {
+  // Browsers treat "/\" like "//", a protocol-relative URL to another host
+  if (!to.startsWith("/") || to.startsWith("//") || to.startsWith("/\\")) {
     return defaultRedirect;
   }
 

@@ -1,8 +1,8 @@
 import { ReimbursementRequestStatus } from "@prisma/client";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { useState } from "react";
 import { Link, redirect, useLoaderData, type LoaderFunctionArgs } from "react-router";
+import { useLocalStorage } from "usehooks-ts";
 dayjs.extend(utc);
 
 import { AnnouncementCard } from "~/components/admin/announcement-card";
@@ -16,14 +16,15 @@ import { Callout } from "~/components/ui/callout";
 import { AccountBalanceCard } from "~/components/users/balance-card";
 import { db } from "~/integrations/prisma.server";
 import { AccountType } from "~/lib/constants";
+import { missingRequiredEmailWhere } from "~/lib/contact-health";
 import { handleLoaderError } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
 
 export async function loader(args: LoaderFunctionArgs) {
-  try {
-    const user = await SessionService.requireUser(args);
-    const orgId = await SessionService.requireOrgId(args);
+  const user = await SessionService.requireUser(args);
+  const orgId = await SessionService.requireOrgId(args);
 
+  try {
     if (user.isMember) {
       return redirect("/dashboards/staff");
     }
@@ -86,39 +87,40 @@ export async function loader(args: LoaderFunctionArgs) {
         },
         orderBy: { id: "desc" },
       }),
-      db.contact.count({ where: { orgId, email: null } }),
+      db.contact.count({ where: { orgId, ...missingRequiredEmailWhere } }),
     ]);
 
     return { accounts, reimbursementRequests, announcement, missingEmailCount };
   } catch (e) {
-    handleLoaderError(e);
+    handleLoaderError(e, { userId: user.id, orgId });
   }
 }
 
+/** Dismissing hides the banner until the backlog grows past the size it was waved away at. */
+const DISMISSED_STORAGE_KEY = "dashboard-missing-email-dismissed-count";
+
 export default function Index() {
   const { accounts, reimbursementRequests, announcement, missingEmailCount } = useLoaderData<typeof loader>();
-  const [healthDismissed, setHealthDismissed] = useState(false);
+  const [dismissedAtCount, setDismissedAtCount] = useLocalStorage(DISMISSED_STORAGE_KEY, 0);
 
   return (
     <>
       <title>Home</title>
       <PageHeader title="Home" />
       <PageContainer className="max-w-4xl">
-        {missingEmailCount > 0 && !healthDismissed ? (
-          <Callout variant="warning" className="mb-4 flex items-center justify-between gap-4">
+        {missingEmailCount > dismissedAtCount ? (
+          <Callout variant="warning" className="mb-4 flex items-center gap-4">
             <span>
-              {missingEmailCount} contact{missingEmailCount === 1 ? " is" : "s are"} missing an email address.{" "}
-              <Button variant="link" className="h-auto p-0 font-medium" asChild>
-                <Link to="/contacts/health" prefetch="intent">
-                  Review in Contact Health
-                </Link>
-              </Button>
+              {missingEmailCount} donor{missingEmailCount === 1 ? " is" : "s are"} missing an email address, so they
+              can't be sent a giving receipt.{" "}
+              <Link to="/contacts/health" prefetch="intent" className="text-primary font-medium">
+                Review in Contact Health
+              </Link>
             </span>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setHealthDismissed(true)}
-              aria-label="Dismiss"
+              onClick={() => setDismissedAtCount(missingEmailCount)}
               className="shrink-0"
             >
               Dismiss

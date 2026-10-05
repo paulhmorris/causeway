@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { TransactionItemMethod } from "~/lib/constants";
 import {
   analyzeRecords,
+  assignColumn,
   autoDetectMapping,
   contactLabel,
   distinctFunds,
@@ -258,5 +259,22 @@ describe("analyzeRecords", () => {
     });
     expect(row.willCreateContact).toBe(false);
     expect(row.contactLabel).toBe("Anonymous");
+  });
+});
+
+describe("assignColumn", () => {
+  it("unmaps any other field already using the column", () => {
+    const mapping = autoDetectMapping(["Date", "Amount", "Fee"]);
+    const next = assignColumn(mapping, "fee", 1);
+    expect(next.fee).toBe(1);
+    expect(next.amount).toBe(UNMAPPED);
+    expect(next.date).toBe(0);
+  });
+
+  it("allows unmapping without touching other fields", () => {
+    const mapping = autoDetectMapping(["Date", "Amount"]);
+    const next = assignColumn(mapping, "date", UNMAPPED);
+    expect(next.date).toBe(UNMAPPED);
+    expect(next.amount).toBe(1);
   });
 });

@@ -34,10 +34,10 @@ const schema = z.object({
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const { params } = args;
-  try {
-    await SessionService.requireAdmin(args);
-    const orgId = await SessionService.requireOrgId(args);
+  const admin = await SessionService.requireAdmin(args);
+  const orgId = await SessionService.requireOrgId(args);
 
+  try {
     invariant(params.accountId, "accountId not found");
 
     const [account, accountTypes, users] = await db.$transaction([
@@ -67,12 +67,12 @@ export const loader = async (args: LoaderFunctionArgs) => {
       users,
     };
   } catch (e) {
-    handleLoaderError(e);
+    handleLoaderError(e, { userId: admin.id, orgId });
   }
 };
 
 export const action = async (args: ActionFunctionArgs) => {
-  await SessionService.requireAdmin(args);
+  const admin = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
   const result = await parseFormData(args.request, schema);
@@ -102,8 +102,8 @@ export const action = async (args: ActionFunctionArgs) => {
       description: "Great job.",
     });
   } catch (error) {
-    logger.error("Error updating account", { error });
-    Sentry.captureException(error);
+    logger.error("Error updating account");
+    Sentry.captureException(error, { extra: { userId: admin.id, orgId } });
     return Toasts.dataWithError(null, { message: "An unknown error occurred" }, { status: 500 });
   }
 };

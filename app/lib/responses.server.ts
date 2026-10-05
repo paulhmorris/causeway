@@ -31,15 +31,7 @@ export const Responses = {
   },
 
   redirectToSignIn(redirect_url?: string) {
-    const url = CONFIG.signInUrl;
-    if (redirect_url) {
-      url.searchParams.set("redirect_url", redirect_url);
-    }
-    return redirect(url.toString());
-  },
-
-  redirectToSignUp(redirect_url?: string) {
-    const url = CONFIG.signUpUrl;
+    const url = new URL(CONFIG.signInUrl);
     if (redirect_url) {
       url.searchParams.set("redirect_url", redirect_url);
     }
@@ -47,13 +39,19 @@ export const Responses = {
   },
 };
 
-export function handleLoaderError(e: unknown, request?: Request): never {
+interface LoaderErrorContext {
+  request?: Request;
+  userId?: string;
+  orgId?: string;
+}
+
+export function handleLoaderError(e: unknown, { request, userId, orgId }: LoaderErrorContext = {}): never {
   if (e instanceof Error && request) {
-    logger.error(`Loader error at path ${new URL(request.url).pathname}: ${e.message}`);
+    logger.error(`Loader error at path ${new URL(request.url).pathname}: ${e.message}`, { userId, orgId });
   } else {
-    logger.error("Loader error", { error: e });
+    logger.error("Loader error", { userId, orgId });
   }
-  Sentry.captureException(e);
+  Sentry.captureException(e, { extra: { userId, orgId } });
 
   // Handle Prisma Errors
   if (e instanceof Prisma.PrismaClientKnownRequestError) {

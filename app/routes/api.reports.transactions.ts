@@ -82,7 +82,7 @@ export async function loader(args: LoaderFunctionArgs) {
   });
 
   if (!transactionItems.length) {
-    return Toasts.redirectWithError("/reports", {
+    return Toasts.redirectWithWarning("/reports", {
       message: "No transactions found",
       description: `No transactions found from ${trxStartDate} to ${trxEndDate}. Update your date filters.`,
     });
@@ -119,7 +119,7 @@ export async function loader(args: LoaderFunctionArgs) {
     .addTable({ data: transactionItems, schema })
     .build({ output: "buffer", bordered: false });
 
-  return new Response(file, {
+  return new Response(new Uint8Array(file), {
     headers: {
       "Content-Disposition": `attachment; filename=${org.name}-transactions-report-${parsedParams.data.trxStartDate}-${parsedParams.data.trxEndDate}.xlsx`,
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

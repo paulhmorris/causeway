@@ -39,7 +39,7 @@ export const schema = z.discriminatedUnion("intent", [
 ]);
 
 export async function action(args: ActionFunctionArgs) {
-  await SessionService.requireAdmin(args);
+  const admin = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
   const result = await parseFormData(args.request, schema);
@@ -123,8 +123,8 @@ export async function action(args: ActionFunctionArgs) {
       );
     }
   } catch (error) {
-    logger.error("Error processing announcement", { error });
-    Sentry.captureException(error);
+    logger.error("Error processing announcement");
+    Sentry.captureException(error, { extra: { userId: admin.id, orgId } });
     return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred." });
   }
 }

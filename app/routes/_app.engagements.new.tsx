@@ -82,8 +82,8 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `Engagement recorded.`,
     });
   } catch (error) {
-    Sentry.captureException(error);
-    logger.error("Error creating engagement", { error });
+    Sentry.captureException(error, { extra: { userId: user.id, orgId } });
+    logger.error("Error creating engagement");
     return Toasts.dataWithError(null, { message: "An unknown error occurred" });
   }
 };

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   capitalize,
+  safeRedirect,
   cn,
   formatCentsAsDollars,
   formatCurrency,
@@ -80,4 +81,17 @@ describe("utils", () => {
     expect(capitalize("h")).toBe("H");
     expect(capitalize("")).toBe("");
   });
+});
+
+describe("safeRedirect", () => {
+  it.each(["/", "/accounts", "/accounts?page=2"])("allows local path %s", (to) => {
+    expect(safeRedirect(to)).toBe(to);
+  });
+
+  it.each([undefined, null, "", "accounts", "https://evil.example.com", "//evil.example.com", "/\\evil.example.com"])(
+    "falls back for %s",
+    (to) => {
+      expect(safeRedirect(to, "/home")).toBe("/home");
+    },
+  );
 });

@@ -1,6 +1,7 @@
 import { test as setup } from "@playwright/test";
-
+import { E2E_ORG_EMAIL } from "test/e2e/helpers/auth";
 import db from "test/e2e/helpers/db";
+
 import { AccountType } from "~/lib/constants";
 
 setup("setup db", async () => {
@@ -9,13 +10,13 @@ setup("setup db", async () => {
     db.transaction.deleteMany({ where: { account: { description: { contains: "E2E" } } } }),
     db.transactionItem.deleteMany({ where: { description: { contains: "E2E" } } }),
     db.account.deleteMany({ where: { description: { contains: "E2E" } } }),
-    db.membership.deleteMany({ where: { org: { primaryEmail: "e2e-test@teamcauseway.com" } } }),
-    db.organization.deleteMany({ where: { primaryEmail: "e2e-test@teamcauseway.com" } }),
+    db.membership.deleteMany({ where: { org: { primaryEmail: E2E_ORG_EMAIL } } }),
+    db.organization.deleteMany({ where: { primaryEmail: E2E_ORG_EMAIL } }),
   ]);
 
   const org = await db.organization.create({
     data: {
-      primaryEmail: "e2e-test@teamcauseway.com",
+      primaryEmail: E2E_ORG_EMAIL,
       name: "E2E-Test Organization",
     },
   });

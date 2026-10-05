@@ -3,14 +3,17 @@ export type ParsedCsv = {
   rows: Array<Array<string>>;
 };
 
+export class CsvParseError extends Error {}
+
 /**
  * Minimal RFC 4180-style CSV parser with no external dependencies. Handles
  * quoted fields, escaped quotes ("") inside quotes, and commas / newlines that
- * appear within quoted fields. Strips a leading UTF-8 BOM and ignores fully
- * blank lines. The first non-empty record is treated as the header row.
+ * appear within quoted fields. A quote mid-field (e.g. `5" screen`) is literal.
+ * Strips a leading UTF-8 BOM and ignores blank lines, including comma-only ones.
+ * The first non-empty record is the header row. Throws CsvParseError on an
+ * unclosed quote.
  */
 export function parseCsv(input: string): ParsedCsv {
-  // Strip a leading UTF-8 BOM if present (common in exports from spreadsheets).
   if (input.charCodeAt(0) === 0xfeff) {
     input = input.slice(1);
   }
@@ -19,6 +22,8 @@ export function parseCsv(input: string): ParsedCsv {
   let field = "";
   let record: Array<string> = [];
   let inQuotes = false;
+  let quoteLine = 0;
+  let line = 1;
   let i = 0;
 
   const pushField = () => {
@@ -36,7 +41,6 @@ export function parseCsv(input: string): ParsedCsv {
 
     if (inQuotes) {
       if (char === '"') {
-        // A doubled quote ("") is an escaped literal quote.
         if (input[i + 1] === '"') {
           field += '"';
           i += 2;
@@ -46,13 +50,15 @@ export function parseCsv(input: string): ParsedCsv {
         i++;
         continue;
       }
+      if (char === "\n") line++;
       field += char;
       i++;
       continue;
     }
 
-    if (char === '"') {
+    if (char === '"' && field === "") {
       inQuotes = true;
+      quoteLine = line;
       i++;
       continue;
     }
@@ -63,13 +69,14 @@ export function parseCsv(input: string): ParsedCsv {
     }
     if (char === "\r") {
       pushRecord();
-      // Swallow the \n of a CRLF pair.
       if (input[i + 1] === "\n") i++;
+      line++;
       i++;
       continue;
     }
     if (char === "\n") {
       pushRecord();
+      line++;
       i++;
       continue;
     }
@@ -78,13 +85,15 @@ export function parseCsv(input: string): ParsedCsv {
     i++;
   }
 
-  // Flush any trailing field/record that wasn't terminated by a newline.
+  if (inQuotes) {
+    throw new CsvParseError(`Line ${quoteLine} has an opening quote (") that is never closed.`);
+  }
+
   if (field.length > 0 || record.length > 0) {
     pushRecord();
   }
 
-  // Drop fully blank records (e.g. trailing empty lines).
-  const nonEmpty = records.filter((r) => !(r.length === 1 && r[0].trim() === ""));
+  const nonEmpty = records.filter((r) => r.some((f) => f.trim() !== ""));
 
   const [headerRow, ...dataRows] = nonEmpty;
   return {
@@ -101,7 +110,7 @@ export function parseCsv(input: string): ParsedCsv {
  */
 export function parseCurrencyToCents(input: string | null | undefined): number | null {
   if (input == null) return null;
-  let s = input.trim();
+  let s = input.replace(/[$,\s]/g, "");
   if (s === "") return null;
 
   let negative = false;
@@ -114,8 +123,6 @@ export function parseCurrencyToCents(input: string | null | undefined): number |
     s = s.slice(1);
   }
 
-  // Remove currency symbols, thousands separators, and whitespace.
-  s = s.replace(/[$,\s]/g, "");
   if (!/^(\d+(\.\d+)?|\.\d+)$/.test(s)) return null;
 
   const cents = Math.round(Number(s) * 100);

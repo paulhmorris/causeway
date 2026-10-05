@@ -39,7 +39,7 @@ export const accountsIndexSelect: Prisma.AccountSelect = {
   },
 };
 export async function loader(args: LoaderFunctionArgs) {
-  await SessionService.requireAdmin(args);
+  const admin = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
   const url = new URL(args.request.url);
@@ -67,7 +67,7 @@ export async function loader(args: LoaderFunctionArgs) {
 
     return { accounts: accountsWithBalance };
   } catch (e) {
-    handleLoaderError(e);
+    handleLoaderError(e, { userId: admin.id, orgId });
   }
 }
 
@@ -91,8 +91,8 @@ export async function action(args: ActionFunctionArgs) {
     logger.info("Hiding account", { accountId, orgId, userId: admin.id });
     await AccountService.update(accountId, orgId, { isHidden: action === "hide" });
   } catch (error) {
-    Sentry.captureException(error);
-    logger.error("Error hiding account", { error, orgId });
+    Sentry.captureException(error, { extra: { userId: admin.id, orgId } });
+    logger.error("Error hiding account", { orgId });
     return Toasts.dataWithError(null, { message: "Error hiding account", description: "An unknown error occurred" });
   }
 }
