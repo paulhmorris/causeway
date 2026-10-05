@@ -1,6 +1,8 @@
 export type ParsedCsv = {
   headers: Array<string>;
   rows: Array<Array<string>>;
+  /** The 1-based spreadsheet row of each data row, counting skipped blank lines. */
+  rowNumbers: Array<number>;
 };
 
 export class CsvParseError extends Error {}
@@ -93,12 +95,15 @@ export function parseCsv(input: string): ParsedCsv {
     pushRecord();
   }
 
-  const nonEmpty = records.filter((r) => r.some((f) => f.trim() !== ""));
+  const nonEmpty = records
+    .map((r, i) => ({ fields: r, rowNumber: i + 1 }))
+    .filter((r) => r.fields.some((f) => f.trim() !== ""));
 
   const [headerRow, ...dataRows] = nonEmpty;
   return {
-    headers: (headerRow ?? []).map((h) => h.trim()),
-    rows: dataRows,
+    headers: (headerRow?.fields ?? []).map((h) => h.trim()),
+    rows: dataRows.map((r) => r.fields),
+    rowNumbers: dataRows.map((r) => r.rowNumber),
   };
 }
 
