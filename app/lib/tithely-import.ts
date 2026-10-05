@@ -120,15 +120,18 @@ export function parseImportDate(input: string | null | undefined): string | null
     if (parsed.isValid()) return parsed.format("YYYY-MM-DD");
   }
 
-  // Fall back to loose parsing so ISO timestamps ("2026-03-04T12:00:00Z") work.
+  // Take the calendar date of an ISO timestamp as written, ignoring its offset.
+  const isoDate = /^(\d{4}-\d{2}-\d{2})[T ]/.exec(value)?.[1];
+  if (isoDate) return dayjs(isoDate, "YYYY-MM-DD", true).isValid() ? isoDate : null;
+
   const loose = dayjs(value);
   return loose.isValid() ? loose.format("YYYY-MM-DD") : null;
 }
 
 /** One CSV row normalized into the shape the importer works with. */
 export type ImportRecord = {
-  /** Zero-based index into the CSV's data rows, used to tie back to the file. */
-  rowIndex: number;
+  /** The row's spreadsheet row number; unique within a file, so it doubles as the row's id. */
+  rowNumber: number;
   date: string;
   amountInCents: number;
   firstName: string | null;
@@ -139,7 +142,7 @@ export type ImportRecord = {
   note: string | null;
 };
 
-export type RowError = { rowIndex: number; message: string };
+export type RowError = { rowNumber: number; message: string };
 
 function cell(row: Array<string>, index: number): string | null {
   if (index === UNMAPPED) return null;
@@ -156,7 +159,8 @@ export function toImportRecords(parsed: ParsedCsv, mapping: ColumnMapping) {
   const records: Array<ImportRecord> = [];
   const errors: Array<RowError> = [];
 
-  parsed.rows.forEach((row, rowIndex) => {
+  parsed.rows.forEach((row, i) => {
+    const rowNumber = parsed.rowNumbers[i];
     const rawDate = cell(row, mapping.date);
     const rawAmount = cell(row, mapping.amount);
 
@@ -165,22 +169,26 @@ export function toImportRecords(parsed: ParsedCsv, mapping: ColumnMapping) {
 
     const date = parseImportDate(rawDate);
     if (!date) {
-      errors.push({ rowIndex, message: rawDate ? `Unrecognized date "${rawDate}"` : "Missing date" });
+      errors.push({ rowNumber, message: rawDate ? `Unrecognized date "${rawDate}"` : "Missing date" });
       return;
     }
 
     const amountInCents = parseCurrencyToCents(rawAmount);
     if (amountInCents === null) {
-      errors.push({ rowIndex, message: rawAmount ? `Unrecognized amount "${rawAmount}"` : "Missing amount" });
+      errors.push({ rowNumber, message: rawAmount ? `Unrecognized amount "${rawAmount}"` : "Missing amount" });
       return;
     }
     if (amountInCents === 0) {
-      errors.push({ rowIndex, message: "Amount is $0.00" });
+      errors.push({ rowNumber, message: "Amount is $0.00" });
+      return;
+    }
+    if (amountInCents < 0) {
+      errors.push({ rowNumber, message: "Negative amounts (refunds) aren't imported" });
       return;
     }
 
     records.push({
-      rowIndex,
+      rowNumber,
       date,
       amountInCents,
       firstName: cell(row, mapping.firstName),
@@ -300,18 +308,23 @@ export function matchPaymentMethod(value: string | null | undefined): Transactio
   return TransactionItemMethod.Tithely;
 }
 
-export type RowStatus = "ready" | "duplicate" | "error";
+export type RowStatus = "ready" | "duplicate" | "skipped" | "error";
 
 export type RowAnalysis = {
-  rowIndex: number;
+  rowNumber: number;
   status: RowStatus;
-  /** Why a row is a duplicate or an error; null when the row is ready. */
+  /** Why a row isn't ready; null when it is. */
   message: string | null;
   contactLabel: string;
   matchedContactId: string | null;
   willCreateContact: boolean;
   accountId: string | null;
 };
+
+/** `fundAccounts` key for records with no fund (or files with no fund column). */
+export const NO_FUND = "__none__";
+/** `fundAccounts` value meaning "don't import rows for this fund". */
+export const SKIP_FUND = "__skip__";
 
 /** Human-readable donor label for the preview table. */
 export function contactLabel(record: Pick<ImportRecord, "firstName" | "lastName" | "email">): string {
@@ -324,39 +337,45 @@ export function contactLabel(record: Pick<ImportRecord, "firstName" | "lastName"
  * Classify every record against the org's existing contacts and transactions.
  * Pure so it can be unit tested; the service layer supplies the DB reads.
  *
- * `fundAccounts` maps a CSV fund name to an account id, and `defaultAccountId`
- * covers records with no fund (or files with no fund column at all).
+ * `fundAccounts` maps a CSV fund name (or `NO_FUND`) to an account id or `SKIP_FUND`.
+ * Each existing transaction can only mark one row as a duplicate, so a donor's
+ * second identical gift in the file is still imported.
  */
 export function analyzeRecords({
   records,
   contacts,
   transactions,
   fundAccounts,
-  defaultAccountId,
 }: {
   records: Array<ImportRecord>;
   contacts: Array<ExistingContact>;
   transactions: Array<ExistingTransaction>;
   fundAccounts: Record<string, string>;
-  defaultAccountId: string | null;
 }): Array<RowAnalysis> {
+  const unclaimed = [...transactions];
+
   return records.map((record) => {
     const matched = matchContact(record, contacts);
-    const label = contactLabel(record);
-    // An empty string is the "don't import rows for this fund" sentinel.
-    const chosen = record.fund ? fundAccounts[record.fund] : defaultAccountId;
-    const accountId = chosen === undefined || chosen === "" ? null : chosen;
+    const chosen = fundAccounts[record.fund ?? NO_FUND];
+    // Anonymous rows (no name and no email) don't get a contact created.
+    const willCreateContact = !matched && Boolean(record.email ?? nameKey(record.firstName, record.lastName));
 
     const base = {
-      rowIndex: record.rowIndex,
-      contactLabel: label,
+      rowNumber: record.rowNumber,
+      contactLabel: contactLabel(record),
       matchedContactId: matched?.id ?? null,
-      // Anonymous rows (no name and no email) don't get a contact created.
-      willCreateContact: !matched && Boolean(record.email ?? nameKey(record.firstName, record.lastName)),
-      accountId,
+      willCreateContact,
+      accountId: chosen && chosen !== SKIP_FUND ? chosen : null,
     };
 
-    if (!accountId) {
+    if (chosen === SKIP_FUND) {
+      return {
+        ...base,
+        status: "skipped" as const,
+        message: record.fund ? `Fund "${record.fund}" excluded` : "Excluded",
+      };
+    }
+    if (!chosen) {
       return {
         ...base,
         status: "error" as const,
@@ -364,9 +383,13 @@ export function analyzeRecords({
       };
     }
 
-    const duplicate = findDuplicateTransaction(record, matched?.id ?? null, transactions);
-    if (duplicate) {
-      return { ...base, status: "duplicate" as const, message: "Already in Causeway" };
+    // A donor who doesn't exist yet can't have given before.
+    if (!willCreateContact) {
+      const duplicate = findDuplicateTransaction(record, matched?.id ?? null, unclaimed);
+      if (duplicate) {
+        unclaimed.splice(unclaimed.indexOf(duplicate), 1);
+        return { ...base, status: "duplicate" as const, message: "Already in Causeway" };
+      }
     }
 
     return { ...base, status: "ready" as const, message: null };

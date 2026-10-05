@@ -11,8 +11,10 @@ import {
   matchContact,
   matchPaymentMethod,
   missingRequiredFields,
+  NO_FUND,
   normalizeHeader,
   parseImportDate,
+  SKIP_FUND,
   toImportRecords,
   UNMAPPED,
   type ImportRecord,
@@ -64,6 +66,7 @@ describe("parseImportDate", () => {
     expect(parseImportDate("3/4/2026")).toBe("2026-03-04");
     expect(parseImportDate("03/04/2026")).toBe("2026-03-04");
     expect(parseImportDate("2026-03-04T12:30:00Z")).toBe("2026-03-04");
+    expect(parseImportDate("2026-03-04T23:30:00-08:00")).toBe("2026-03-04");
   });
 
   it("returns null for blank or unparseable values", () => {
@@ -85,27 +88,31 @@ describe("toImportRecords", () => {
         ["bad date", "$50.00", "Bob", "Smith", "", "General"],
         ["3/5/2026", "", "Ann", "Lee", "", "General"],
         ["3/6/2026", "$0.00", "Zero", "Gift", "", "General"],
+        ["3/7/2026", "-$20.00", "Re", "Fund", "", "General"],
       ],
+      rowNumbers: [2, 3, 5, 6, 7],
     };
 
     const { records, errors } = toImportRecords(parsed, mapping);
 
     expect(records).toHaveLength(1);
     expect(records[0]).toMatchObject({
-      rowIndex: 0,
+      rowNumber: 2,
       date: "2026-03-04",
       amountInCents: 125000,
       firstName: "Jane",
       email: "jane@example.com",
       fund: "General",
     });
-    expect(errors.map((e) => e.rowIndex)).toEqual([1, 2, 3]);
+    expect(errors.map((e) => e.rowNumber)).toEqual([3, 5, 6, 7]);
+    expect(errors[3].message).toContain("Negative");
   });
 
   it("ignores fully blank rows without reporting an error", () => {
     const parsed = {
       headers: ["Date", "Amount", "First Name", "Last Name", "Email", "Fund"],
       rows: [["", "", "", "", "", ""]],
+      rowNumbers: [2],
     };
     const { records, errors } = toImportRecords(parsed, mapping);
     expect(records).toEqual([]);
@@ -114,7 +121,7 @@ describe("toImportRecords", () => {
 
   it("leaves unmapped optional fields null", () => {
     const dateAmountOnly = autoDetectMapping(["Date", "Amount"]);
-    const parsed = { headers: ["Date", "Amount"], rows: [["3/4/2026", "10"]] };
+    const parsed = { headers: ["Date", "Amount"], rows: [["3/4/2026", "10"]], rowNumbers: [2] };
     const { records } = toImportRecords(parsed, dateAmountOnly);
     expect(records[0].email).toBeNull();
     expect(records[0].fund).toBeNull();
@@ -202,11 +209,10 @@ describe("analyzeRecords", () => {
     contacts: [{ id: "c1", firstName: "Jane", lastName: "Doe", email: "jane@example.com" }],
     transactions: [{ id: "t1", date: "2026-03-04", amountInCents: 5000, contactId: "c1" }],
     fundAccounts: { General: "acct-1" },
-    defaultAccountId: null,
   };
 
   const record = (over: Partial<ImportRecord> = {}): ImportRecord => ({
-    rowIndex: 0,
+    rowNumber: 2,
     date: "2026-03-10",
     amountInCents: 2500,
     firstName: "New",
@@ -246,10 +252,47 @@ describe("analyzeRecords", () => {
     expect(row.message).toContain("Missions");
   });
 
-  it("uses the default account for records with no fund", () => {
-    const [row] = analyzeRecords({ ...base, defaultAccountId: "acct-9", records: [record({ fund: null })] });
+  it("uses the NO_FUND account for records with no fund", () => {
+    const [row] = analyzeRecords({
+      ...base,
+      fundAccounts: { [NO_FUND]: "acct-9" },
+      records: [record({ fund: null })],
+    });
     expect(row.status).toBe("ready");
     expect(row.accountId).toBe("acct-9");
+  });
+
+  it("skips rows whose fund is excluded", () => {
+    const [row] = analyzeRecords({ ...base, fundAccounts: { General: SKIP_FUND }, records: [record()] });
+    expect(row.status).toBe("skipped");
+    expect(row.accountId).toBeNull();
+  });
+
+  it("does not flag a new donor against an anonymous gift on the same day", () => {
+    const [row] = analyzeRecords({
+      ...base,
+      transactions: [{ id: "t2", date: "2026-03-10", amountInCents: 2500, contactId: null }],
+      records: [record()],
+    });
+    expect(row.status).toBe("ready");
+  });
+
+  it("flags a re-imported anonymous gift as a duplicate", () => {
+    const [row] = analyzeRecords({
+      ...base,
+      transactions: [{ id: "t2", date: "2026-03-10", amountInCents: 2500, contactId: null }],
+      records: [record({ firstName: null, lastName: null, email: null })],
+    });
+    expect(row.status).toBe("duplicate");
+  });
+
+  it("lets each existing transaction match only one row", () => {
+    const gift = { email: "jane@example.com", date: "2026-03-04", amountInCents: 5000 };
+    const rows = analyzeRecords({
+      ...base,
+      records: [record({ ...gift, rowNumber: 2 }), record({ ...gift, rowNumber: 3 })],
+    });
+    expect(rows.map((r) => r.status)).toEqual(["duplicate", "ready"]);
   });
 
   it("does not create a contact for an anonymous gift", () => {

@@ -43,6 +43,11 @@ describe("parseCsv", () => {
     expect(rows).toEqual([["1", "2"]]);
   });
 
+  it("reports spreadsheet row numbers that account for skipped blank lines", () => {
+    const { rowNumbers } = parseCsv('\nA,B\n1,2\n\n,\n"multi\nline",3\n4,5');
+    expect(rowNumbers).toEqual([3, 6, 7]);
+  });
+
   it("ignores comma-only rows left by spreadsheet exports", () => {
     const { rows } = parseCsv("A,B\n1,2\n,\n , \n");
     expect(rows).toEqual([["1", "2"]]);
