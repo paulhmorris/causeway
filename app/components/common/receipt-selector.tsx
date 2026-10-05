@@ -42,9 +42,9 @@ export function ReceiptSelector({ receipts }: { receipts: Array<Receipt> }) {
   }, [receipts, search, showOlder, cutoff90]);
 
   const groups = useMemo(() => {
-    const thisWeek: Receipt[] = [];
-    const thisMonth: Receipt[] = [];
-    const older: Receipt[] = [];
+    const thisWeek: Array<Receipt> = [];
+    const thisMonth: Array<Receipt> = [];
+    const older: Array<Receipt> = [];
     for (const r of filtered) {
       const d = dayjs(r.createdAt);
       if (d.isAfter(cutoffWeek)) thisWeek.push(r);
@@ -99,15 +99,7 @@ export function ReceiptSelector({ receipts }: { receipts: Array<Receipt> }) {
   );
 }
 
-function ReceiptGroup({
-  label,
-  receipts,
-  isMember,
-}: {
-  label: string;
-  receipts: Receipt[];
-  isMember: boolean;
-}) {
+function ReceiptGroup({ label, receipts, isMember }: { label: string; receipts: Array<Receipt>; isMember: boolean }) {
   if (receipts.length === 0) return null;
 
   return (
@@ -130,9 +122,7 @@ function ReceiptGroup({
                   value={r.id}
                   aria-label={r.title}
                   disabled={isUsed}
-                  defaultChecked={
-                    !isUsed && dayjs(r.createdAt).format("YYYY-MM-DD") === dayjs().format("YYYY-MM-DD")
-                  }
+                  defaultChecked={isUsed ? false : dayjs(r.createdAt).isSame(dayjs(), "day")}
                 />
                 <span className="-my-1 max-w-[calc(100dvw-60px)] truncate py-1">{r.title}</span>
                 {isUsed ? (
@@ -145,9 +135,7 @@ function ReceiptGroup({
                 <span className="text-muted-foreground ml-6 text-xs sm:ml-auto">
                   {dayjs(r.createdAt).format("M/D/YY h:mma")}
                 </span>
-                {!isMember ? (
-                  <span className="text-muted-foreground text-xs"> by {r.user.contact.email}</span>
-                ) : null}
+                {!isMember ? <span className="text-muted-foreground text-xs"> by {r.user.contact.email}</span> : null}
               </div>
             </Label>
           );

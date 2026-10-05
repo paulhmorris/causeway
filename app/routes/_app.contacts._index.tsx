@@ -15,7 +15,6 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { db } from "~/integrations/prisma.server";
-import { ContactType } from "~/lib/constants";
 import { handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
 import { SessionService } from "~/services.server/session";
@@ -42,10 +41,7 @@ export async function loader(args: LoaderFunctionArgs) {
       const contacts = await db.contact.findMany({
         where: {
           orgId,
-          OR: [
-            { assignedUsers: { some: { userId: user.id } } },
-            { user: { id: user.id } },
-          ],
+          OR: [{ assignedUsers: { some: { userId: user.id } } }, { user: { id: user.id } }],
         },
         include: { type: true, _count: { select: { accountSubscriptions: true } } },
       });
@@ -66,7 +62,11 @@ export async function loader(args: LoaderFunctionArgs) {
 const quickEditSchema = z.object({
   _action: z.literal("quick-edit-email"),
   contactId: z.string().min(1),
-  email: z.string().email("Must be a valid email").optional().or(z.literal("")),
+  email: z
+    .string()
+    .email("Must be a valid email")
+    .optional()
+    .or(z.literal("").transform(() => null)),
 });
 
 export async function action(args: ActionFunctionArgs) {
@@ -82,7 +82,7 @@ export async function action(args: ActionFunctionArgs) {
   const { contactId, email } = result.data;
   await db.contact.update({
     where: { id: contactId, orgId },
-    data: { email: email || null },
+    data: { email: email ?? null },
   });
 
   return Toasts.dataWithSuccess({ ok: true }, { message: "Contact updated", description: "Email address saved." });
@@ -167,9 +167,7 @@ export default function ContactIndexPage() {
               />
             </div>
             <DrawerDialogFooter className="gap-2">
-              <SubmitButton isSubmitting={isSubmitting}>
-                {submitSucceeded ? "Saved" : "Save"}
-              </SubmitButton>
+              <SubmitButton isSubmitting={isSubmitting}>{submitSucceeded ? "Saved" : "Save"}</SubmitButton>
               <Button type="button" variant="outline" onClick={() => setQuickEditContact(null)}>
                 Close
               </Button>

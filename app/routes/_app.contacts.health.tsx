@@ -6,7 +6,6 @@ import { z } from "zod/v4";
 import { PageHeader } from "~/components/common/page-header";
 import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Callout } from "~/components/ui/callout";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -57,7 +56,7 @@ export async function loader(args: LoaderFunctionArgs) {
   });
 
   // Name duplicates: same normalized full name
-  const nameMap = new Map<string, ContactSummary[]>();
+  const nameMap = new Map<string, Array<ContactSummary>>();
   for (const c of contacts) {
     const key = `${(c.firstName ?? "").trim()} ${(c.lastName ?? "").trim()}`.toLowerCase().trim();
     if (!key || key === " ") continue;

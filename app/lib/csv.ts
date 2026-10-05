@@ -86,9 +86,9 @@ export function parseCsv(input: string): ParsedCsv {
   // Drop fully blank records (e.g. trailing empty lines).
   const nonEmpty = records.filter((r) => !(r.length === 1 && r[0].trim() === ""));
 
-  const [headerRow, ...dataRows] = nonEmpty;
+  const [headerRow = [], ...dataRows] = nonEmpty;
   return {
-    headers: (headerRow ?? []).map((h) => h.trim()),
+    headers: headerRow.map((h) => h.trim()),
     rows: dataRows,
   };
 }
