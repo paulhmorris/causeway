@@ -128,6 +128,25 @@ describe("toImportRecords", () => {
     expect(records[0].feeInCents).toBe(0);
   });
 
+  it("skips payments that didn't complete or were refunded", () => {
+    const headers = ["Gross", "Transaction Status", "Created At Date", "Refunded At Date"];
+    const parsed = {
+      headers,
+      rows: [
+        ["50.00", "succeeded", "2026-09-25", ""],
+        ["50.00", "failed", "2026-09-25", ""],
+        ["50.00", "succeeded", "2026-09-25", "2026-09-27"],
+      ],
+      rowNumbers: [2, 3, 4],
+    };
+    const { records, errors } = toImportRecords(parsed, autoDetectMapping(headers));
+    expect(records.map((r) => r.rowNumber)).toEqual([2]);
+    expect(errors).toEqual([
+      { rowNumber: 3, message: 'Payment status is "failed"' },
+      { rowNumber: 4, message: "Refunded 2026-09-27" },
+    ]);
+  });
+
   it("reads the fee as a positive amount and rejects unusable fees", () => {
     const withFee = autoDetectMapping(["Date", "Amount", "Fee"]);
     const parsed = {

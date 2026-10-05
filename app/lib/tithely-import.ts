@@ -17,7 +17,9 @@ export type ImportFieldKey =
   | "fund"
   | "paymentMethod"
   | "fee"
-  | "note";
+  | "note"
+  | "status"
+  | "refundedAt";
 
 export type ImportField = {
   key: ImportFieldKey;
@@ -38,14 +40,14 @@ export const importFields: Array<ImportField> = [
     key: "date",
     label: "Gift date",
     required: true,
-    aliases: ["date", "giftdate", "transactiondate", "createddate", "createdat"],
+    aliases: ["date", "giftdate", "transactiondate", "createddate", "createdat", "createdatdate"],
   },
   {
     key: "amount",
     label: "Amount",
     required: true,
     help: "Gross gift amount",
-    aliases: ["amount", "grossamount", "giftamount", "totalamount", "total"],
+    aliases: ["amount", "gross", "grossamount", "giftamount", "totalamount", "total"],
   },
   { key: "firstName", label: "Donor first name", required: false, aliases: ["firstname", "first"] },
   { key: "lastName", label: "Donor last name", required: false, aliases: ["lastname", "last"] },
@@ -65,7 +67,24 @@ export const importFields: Array<ImportField> = [
   },
   { key: "fee", label: "Processing fee", required: false, aliases: ["fee", "fees", "processingfee"] },
   { key: "note", label: "Note / memo", required: false, aliases: ["note", "notes", "memo", "comment", "comments"] },
+  {
+    key: "status",
+    label: "Payment status",
+    required: false,
+    help: "Only completed payments are imported",
+    aliases: ["status", "transactionstatus", "paymentstatus"],
+  },
+  {
+    key: "refundedAt",
+    label: "Refund date",
+    required: false,
+    help: "Refunded gifts are skipped",
+    aliases: ["refundedatdate", "refundedat", "refunddate", "refundeddate"],
+  },
 ];
+
+/** Payment statuses that mean the money actually arrived. */
+const COMPLETED_STATUSES = ["succeeded", "success", "completed", "complete", "paid", "settled"];
 
 /** Sentinel used by the mapper UI to represent "not mapped to any column". */
 export const UNMAPPED = -1;
@@ -168,6 +187,17 @@ export function toImportRecords(parsed: ParsedCsv, mapping: ColumnMapping) {
 
     // Skip rows that are entirely blank rather than reporting them as errors.
     if (row.every((c) => c.trim() === "")) return;
+
+    const status = cell(row, mapping.status);
+    if (status && !COMPLETED_STATUSES.includes(status.toLowerCase())) {
+      errors.push({ rowNumber, message: `Payment status is "${status}"` });
+      return;
+    }
+    const refundedAt = cell(row, mapping.refundedAt);
+    if (refundedAt) {
+      errors.push({ rowNumber, message: `Refunded ${refundedAt}` });
+      return;
+    }
 
     const date = parseImportDate(rawDate);
     if (!date) {

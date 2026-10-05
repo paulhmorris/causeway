@@ -473,8 +473,8 @@ function MapStep({
 
       {rowErrors.length > 0 ? (
         <Callout variant="warning">
-          {rowErrors.length} row{rowErrors.length === 1 ? "" : "s"} will be skipped because the date or amount
-          couldn&apos;t be read — for example row {rowErrors[0].rowNumber}: {rowErrors[0].message}.
+          {rowErrors.length} row{rowErrors.length === 1 ? "" : "s"} will be skipped — for example row{" "}
+          {rowErrors[0].rowNumber}: {rowErrors[0].message}.
         </Callout>
       ) : null}
 
