@@ -21,8 +21,9 @@ export type ImportFieldKey =
   | "status"
   | "refundedAt";
 
-export type ImportField = {
-  key: ImportFieldKey;
+/** Generic over the key so other CSV importers can reuse the mapper shape. */
+export type ImportField<K extends string = ImportFieldKey> = {
+  key: K;
   label: string;
   required: boolean;
   help?: string;
@@ -120,7 +121,7 @@ export function assignColumn(mapping: ColumnMapping, key: ImportFieldKey, column
 
 /** Import fields whose required source column has not yet been mapped. */
 export function missingRequiredFields(mapping: ColumnMapping): Array<ImportField> {
-  return importFields.filter((f) => f.required && (mapping[f.key] ?? UNMAPPED) === UNMAPPED);
+  return importFields.filter((f) => f.required && mapping[f.key] === UNMAPPED);
 }
 
 /**
@@ -396,7 +397,7 @@ export function analyzeRecords({
   records: Array<ImportRecord>;
   contacts: Array<ExistingContact>;
   transactions: Array<ExistingTransaction>;
-  fundAccounts: Record<string, string>;
+  fundAccounts: Partial<Record<string, string>>;
 }): Array<RowAnalysis> {
   const unclaimed = [...transactions];
 
