@@ -13,7 +13,7 @@ import { SessionService } from "~/services.server/session";
 const logger = createLogger("Routes.OrganizationSettings");
 
 export async function action(args: ActionFunctionArgs) {
-  await SessionService.requireAdmin(args);
+  const admin = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
   const result = await parseFormData(args.request, orgSettingsSchema);
@@ -25,8 +25,8 @@ export async function action(args: ActionFunctionArgs) {
     await db.organization.update({ where: { id: orgId }, data: result.data });
     return Toasts.redirectWithSuccess("/organization/settings", { message: "Organization settings updated" });
   } catch (error) {
-    logger.error("Error updating organization settings", { error });
-    Sentry.captureException(error);
+    logger.error("Error updating organization settings");
+    Sentry.captureException(error, { extra: { userId: admin.id, orgId } });
     return Toasts.dataWithError({ success: false }, { message: "Error", description: "An unknown error occurred" });
   }
 }

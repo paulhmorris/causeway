@@ -14,19 +14,26 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { Label } from "~/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { createLogger } from "~/integrations/logger.server";
 import { db } from "~/integrations/prisma.server";
-import { parseCsv, parseCurrencyToCents, type ParsedCsv } from "~/lib/csv";
+import { Sentry } from "~/integrations/sentry";
+import { CsvParseError, parseCsv, parseCurrencyToCents, type ParsedCsv } from "~/lib/csv";
 import { handleLoaderError } from "~/lib/responses.server";
 import {
+  assignColumn,
   autoDetectMapping,
   distinctFunds,
   importFields,
   missingRequiredFields,
+  NO_FUND,
+  SKIP_FUND,
   toImportRecords,
   UNMAPPED,
   type ColumnMapping,
   type ImportRecord,
+  type RowError,
   type RowAnalysis,
+  type ImportFieldKey,
 } from "~/lib/tithely-import";
 import { Toasts } from "~/lib/toast.server";
 import { cn, formatCentsAsDollars } from "~/lib/utils";
@@ -35,11 +42,7 @@ import { SessionService } from "~/services.server/session";
 
 const PREVIEW_ROWS = 8;
 const MAX_ROWS = 5000;
-
-/** Sentinel for "don't import rows for this fund". */
-const SKIP_FUND = "";
-/** Key used for records that have no fund value (or files with no fund column). */
-const NO_FUND = "__none__";
+const logger = createLogger("Routes.TransactionsImport");
 
 export async function loader(args: LoaderFunctionArgs) {
   await SessionService.requireAdmin(args);
@@ -58,9 +61,10 @@ export async function loader(args: LoaderFunctionArgs) {
 }
 
 const importRecordSchema = z.object({
-  rowIndex: z.number().int().nonnegative(),
+  rowNumber: z.number().int().positive(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  amountInCents: z.number().int(),
+  amountInCents: z.number().int().positive(),
+  feeInCents: z.number().int().nonnegative(),
   firstName: z.string().nullable(),
   lastName: z.string().nullable(),
   email: z.string().nullable(),
@@ -70,10 +74,12 @@ const importRecordSchema = z.object({
 });
 
 const payloadSchema = z.object({
-  records: z.array(importRecordSchema).min(1).max(MAX_ROWS),
+  records: z
+    .array(importRecordSchema.refine((r) => r.feeInCents < r.amountInCents))
+    .min(1)
+    .max(MAX_ROWS),
   fundAccounts: z.record(z.string(), z.string()),
-  defaultAccountId: z.string().nullable(),
-  selectedRowIndexes: z.array(z.number().int().nonnegative()).default([]),
+  selectedRowNumbers: z.array(z.number().int().positive()).default([]),
 });
 
 export async function action(args: ActionFunctionArgs) {
@@ -95,22 +101,22 @@ export async function action(args: ActionFunctionArgs) {
     });
   }
 
-  const { records, fundAccounts, defaultAccountId, selectedRowIndexes } = payload;
+  const { records, fundAccounts, selectedRowNumbers } = payload;
 
   if (intent === "analyze") {
-    const analyses = await DonationImportService.analyze({ records, fundAccounts, defaultAccountId, orgId });
-    return { analyses };
+    try {
+      const analyses = await DonationImportService.analyze({ records, fundAccounts, orgId });
+      return { analyses };
+    } catch (error) {
+      Sentry.captureException(error, { extra: { orgId } });
+      logger.error("Error checking donation import", { orgId });
+      return Toasts.dataWithError(null, { message: "Couldn't check donations", description: "Please try again." });
+    }
   }
 
   if (intent === "execute") {
     try {
-      const summary = await DonationImportService.execute({
-        records,
-        fundAccounts,
-        defaultAccountId,
-        selectedRowIndexes,
-        orgId,
-      });
+      const summary = await DonationImportService.execute({ records, fundAccounts, selectedRowNumbers, orgId });
       return Toasts.dataWithSuccess(
         { summary },
         {
@@ -120,7 +126,9 @@ export async function action(args: ActionFunctionArgs) {
             : "No new contacts were needed.",
         },
       );
-    } catch {
+    } catch (error) {
+      Sentry.captureException(error, { extra: { orgId } });
+      logger.error("Error importing donations", { orgId });
       return Toasts.dataWithError(null, {
         message: "Import failed",
         description: "Nothing was imported. Please try again or file a bug report.",
@@ -167,8 +175,14 @@ export default function TransactionsImportPage() {
       return;
     }
 
-    const text = await file.text();
-    const result = parseCsv(text);
+    let result: ParsedCsv;
+    try {
+      result = parseCsv(await file.text());
+    } catch (e) {
+      if (!(e instanceof CsvParseError)) throw e;
+      setError(`That file couldn't be read. ${e.message} Try exporting it from Tithe.ly again.`);
+      return;
+    }
     if (result.headers.length === 0 || result.rows.length === 0) {
       setError("That file needs a header row and at least one row of data.");
       return;
@@ -192,21 +206,12 @@ export default function TransactionsImportPage() {
     setExcluded(new Set());
     setError("");
     if (inputRef.current) inputRef.current.value = "";
-    // Clear the previous analysis/summary so the wizard returns to step one.
-    void fetcher.load(window.location.pathname);
+    fetcher.reset();
   }
 
-  function submit(intent: "analyze" | "execute", selectedRowIndexes: Array<number> = []) {
+  function submit(intent: "analyze" | "execute", selectedRowNumbers: Array<number> = []) {
     void fetcher.submit(
-      {
-        _action: intent,
-        payload: JSON.stringify({
-          records,
-          fundAccounts,
-          defaultAccountId: fundAccounts[NO_FUND] || null,
-          selectedRowIndexes,
-        }),
-      },
+      { _action: intent, payload: JSON.stringify({ records, fundAccounts, selectedRowNumbers }) },
       { method: "post" },
     );
   }
@@ -227,16 +232,16 @@ export default function TransactionsImportPage() {
             records={records}
             excluded={excluded}
             isBusy={isBusy}
-            onToggle={(rowIndex) =>
+            onToggle={(rowNumber) =>
               setExcluded((prev) => {
                 const next = new Set(prev);
-                if (next.has(rowIndex)) next.delete(rowIndex);
-                else next.add(rowIndex);
+                if (next.has(rowNumber)) next.delete(rowNumber);
+                else next.add(rowNumber);
                 return next;
               })
             }
-            onBack={() => submit("analyze")}
-            onImport={(selectedRowIndexes) => submit("execute", selectedRowIndexes)}
+            onBack={() => fetcher.reset()}
+            onImport={(selectedRowNumbers) => submit("execute", selectedRowNumbers)}
           />
         ) : !parsed || !mapping ? (
           <UploadStep
@@ -349,7 +354,7 @@ function MapStep({
   hasUnfunded: boolean;
   fundAccounts: Record<string, string>;
   recordCount: number;
-  rowErrors: Array<{ rowIndex: number; message: string }>;
+  rowErrors: Array<RowError>;
   isBusy: boolean;
   onMappingChange: (mapping: ColumnMapping) => void;
   onFundAccountChange: (fund: string, accountId: string) => void;
@@ -400,7 +405,7 @@ function MapStep({
               </div>
               <Select
                 value={String(mapping[field.key])}
-                onValueChange={(value) => onMappingChange({ ...mapping, [field.key]: Number(value) })}
+                onValueChange={(value) => onMappingChange(assignColumn(mapping, field.key, Number(value)))}
               >
                 <SelectTrigger id={`map-${field.key}`} aria-label={field.label}>
                   <SelectValue />
@@ -468,8 +473,8 @@ function MapStep({
 
       {rowErrors.length > 0 ? (
         <Callout variant="warning">
-          {rowErrors.length} row{rowErrors.length === 1 ? "" : "s"} will be skipped because the date or amount
-          couldn&apos;t be read — for example row {rowErrors[0].rowIndex + 2}: {rowErrors[0].message}.
+          {rowErrors.length} row{rowErrors.length === 1 ? "" : "s"} will be skipped — for example row{" "}
+          {rowErrors[0].rowNumber}: {rowErrors[0].message}.
         </Callout>
       ) : null}
 
@@ -526,24 +531,26 @@ function PreviewStep({
   records: Array<ImportRecord>;
   excluded: Set<number>;
   isBusy: boolean;
-  onToggle: (rowIndex: number) => void;
+  onToggle: (rowNumber: number) => void;
   onBack: () => void;
-  onImport: (selectedRowIndexes: Array<number>) => void;
+  onImport: (selectedRowNumbers: Array<number>) => void;
 }) {
-  const recordByRow = useMemo(() => new Map(records.map((r) => [r.rowIndex, r])), [records]);
+  const recordByRow = useMemo(() => new Map(records.map((r) => [r.rowNumber, r])), [records]);
 
   const readyRows = analyses.filter((a) => a.status === "ready");
-  const selected = readyRows.filter((a) => !excluded.has(a.rowIndex));
+  const selected = readyRows.filter((a) => !excluded.has(a.rowNumber));
   const duplicates = analyses.filter((a) => a.status === "duplicate");
   const errored = analyses.filter((a) => a.status === "error");
   const newContacts = new Set(selected.filter((a) => a.willCreateContact).map((a) => a.contactLabel)).size;
-  const totalCents = selected.reduce((sum, a) => sum + (recordByRow.get(a.rowIndex)?.amountInCents ?? 0), 0);
+  const selectedRecords = selected.flatMap((a) => recordByRow.get(a.rowNumber) ?? []);
+  const feeCents = selectedRecords.reduce((sum, r) => sum + r.feeInCents, 0);
+  const netCents = selectedRecords.reduce((sum, r) => sum + r.amountInCents, 0) - feeCents;
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="To import" value={String(selected.length)} />
-        <Stat label="Total" value={formatCentsAsDollars(totalCents)} />
+        <Stat label={feeCents > 0 ? "Total after fees" : "Total"} value={formatCentsAsDollars(netCents)} />
         <Stat label="Already in Causeway" value={String(duplicates.length)} />
         <Stat label="New contacts" value={String(newContacts)} />
       </div>
@@ -581,20 +588,20 @@ function PreviewStep({
             </TableHeader>
             <TableBody>
               {analyses.map((analysis) => {
-                const record = recordByRow.get(analysis.rowIndex);
+                const record = recordByRow.get(analysis.rowNumber);
                 const isReady = analysis.status === "ready";
-                const isChecked = isReady && !excluded.has(analysis.rowIndex);
+                const isChecked = isReady && !excluded.has(analysis.rowNumber);
                 return (
-                  <TableRow key={analysis.rowIndex} className={cn(!isReady && "opacity-60")}>
+                  <TableRow key={analysis.rowNumber} className={cn(!isReady && "opacity-60")}>
                     <TableCell>
                       <Checkbox
                         checked={isChecked}
                         disabled={!isReady}
-                        onCheckedChange={() => onToggle(analysis.rowIndex)}
-                        aria-label={`Import row ${analysis.rowIndex + 2}`}
+                        onCheckedChange={() => onToggle(analysis.rowNumber)}
+                        aria-label={`Import row ${analysis.rowNumber}`}
                       />
                     </TableCell>
-                    <TableCell className="text-muted-foreground tabular-nums">{analysis.rowIndex + 2}</TableCell>
+                    <TableCell className="text-muted-foreground tabular-nums">{analysis.rowNumber}</TableCell>
                     <TableCell>
                       <span className="flex items-center gap-1.5">
                         <span className="truncate">{analysis.contactLabel}</span>
@@ -608,6 +615,11 @@ function PreviewStep({
                     <TableCell className="whitespace-nowrap tabular-nums">{record?.date}</TableCell>
                     <TableCell className="text-right tabular-nums">
                       {formatCentsAsDollars(record?.amountInCents ?? 0)}
+                      {record?.feeInCents ? (
+                        <span className="text-muted-foreground block text-xs">
+                          −{formatCentsAsDollars(record.feeInCents)} fee
+                        </span>
+                      ) : null}
                     </TableCell>
                     <TableCell>
                       <StatusCell analysis={analysis} />
@@ -624,7 +636,7 @@ function PreviewStep({
         <Button variant="outline" onClick={onBack} disabled={isBusy}>
           Back
         </Button>
-        <Button onClick={() => onImport(selected.map((a) => a.rowIndex))} disabled={isBusy || selected.length === 0}>
+        <Button onClick={() => onImport(selected.map((a) => a.rowNumber))} disabled={isBusy || selected.length === 0}>
           {isBusy ? "Importing…" : `Import ${selected.length} donation${selected.length === 1 ? "" : "s"}`}
         </Button>
       </div>
@@ -640,6 +652,9 @@ function StatusCell({ analysis }: { analysis: RowAnalysis }) {
         {analysis.message}
       </span>
     );
+  }
+  if (analysis.status === "skipped") {
+    return <span className="text-muted-foreground text-xs">{analysis.message}</span>;
   }
   if (analysis.status === "error") {
     return (
@@ -702,7 +717,7 @@ function ResultStep({
   );
 }
 
-function PreviewCell({ fieldKey, value }: { fieldKey: string; value: string }) {
+function PreviewCell({ fieldKey, value }: { fieldKey: ImportFieldKey; value: string }) {
   if (fieldKey === "amount" || fieldKey === "fee") {
     const cents = parseCurrencyToCents(value);
     if (cents === null) {

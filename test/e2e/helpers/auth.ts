@@ -1,66 +1,54 @@
+import { clerk } from "@clerk/testing/playwright";
 import { faker } from "@faker-js/faker";
+import type { Page } from "@playwright/test";
 import { MembershipRole, UserRole } from "@prisma/client";
-import bcrypt from "bcryptjs";
-
 import prisma from "test/e2e/helpers/db";
+
 import { clerkClient } from "~/integrations/clerk.server";
 import { ContactType } from "~/lib/constants";
 
-export async function createAdmin() {
-  const user = {
+export const E2E_ORG_EMAIL = "e2e-test@teamcauseway.com";
+
+/** Teardown deletes users, contacts, and Clerk users by this prefix. */
+export function e2eEmail(label: string) {
+  return `e2e-${label}-${faker.string.alphanumeric(8).toLowerCase()}@example.com`;
+}
+
+export function createClerkUser(email: string) {
+  return clerkClient.users.createUser({
+    emailAddress: [email],
     firstName: "Admin",
     lastName: "E2E",
-    username: `e2e-admin-${faker.internet.email().toLowerCase()}`,
-    password: faker.internet.password(),
-  };
-  let org = await prisma.organization.findFirst({ where: { primaryEmail: "e2e-test@teamcauseway.com" } });
-  org ??= await prisma.organization.create({
-    data: {
-      primaryEmail: "e2e-test@teamcauseway.com",
-      name: "E2E Test Organization",
-    },
+    skipPasswordRequirement: true,
+    privateMetadata: { isTest: true },
   });
-  const passwordHash = await bcrypt.hash(user.password, 10);
-  const clerkUser = await clerkClient.users.createUser({
-    externalId: faker.string.uuid(),
-    passwordDigest: passwordHash,
-    passwordHasher: "bcrypt",
-    emailAddress: [user.username],
-    lastName: user.lastName,
-    firstName: user.firstName,
-    privateMetadata: {
-      isTest: true,
-    },
-  });
-  const createdUser = await prisma.user.create({
+}
+
+/**
+ * Creates an org admin. With `linked: false` the user has no `clerkId`,
+ * like an invited user who hasn't signed in yet.
+ */
+export async function createAdmin({ linked = true }: { linked?: boolean } = {}) {
+  const email = e2eEmail("admin");
+  const org = await prisma.organization.findFirstOrThrow({ where: { primaryEmail: E2E_ORG_EMAIL } });
+  const clerkUser = await createClerkUser(email);
+
+  const user = await prisma.user.create({
     data: {
-      clerkId: clerkUser.id,
+      clerkId: linked ? clerkUser.id : null,
       role: UserRole.USER,
-      username: user.username,
-      password: {
-        create: {
-          hash: passwordHash,
-        },
-      },
-      memberships: {
-        create: {
-          orgId: org.id,
-          role: MembershipRole.ADMIN,
-        },
-      },
+      username: email,
+      memberships: { create: { orgId: org.id, role: MembershipRole.ADMIN } },
       contact: {
-        create: {
-          orgId: org.id,
-          typeId: ContactType.Staff,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.username,
-        },
+        create: { orgId: org.id, typeId: ContactType.Staff, firstName: "Admin", lastName: "E2E", email },
       },
     },
   });
-  return {
-    ...createdUser,
-    password: user.password,
-  };
+  return { ...user, clerkUserId: clerkUser.id };
+}
+
+/** `/no-access` has no loader, so it's a safe place to load Clerk before signing in. */
+export async function signIn(page: Page, email: string) {
+  await page.goto("/no-access");
+  await clerk.signIn({ page, emailAddress: email });
 }

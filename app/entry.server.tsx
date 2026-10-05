@@ -1,5 +1,4 @@
 import "../instrument.server.mjs";
-
 import { createReadableStreamFromReadable } from "@react-router/node";
 import * as Sentry from "@sentry/react-router";
 import { renderToPipeableStream } from "react-dom/server";
@@ -15,8 +14,8 @@ export const handleError: HandleErrorFunction = (error, { request }) => {
     return;
   }
   if (!request.signal.aborted) {
-    Sentry.captureException(error);
-    logger.error("Request handling error", { error });
+    Sentry.captureException(error, { extra: { path: new URL(request.url).pathname } });
+    logger.error("Request handling error", { path: new URL(request.url).pathname });
   }
 };
 

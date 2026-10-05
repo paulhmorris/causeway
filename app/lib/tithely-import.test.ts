@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { TransactionItemMethod } from "~/lib/constants";
 import {
   analyzeRecords,
+  assignColumn,
   autoDetectMapping,
   contactLabel,
   distinctFunds,
@@ -10,8 +11,10 @@ import {
   matchContact,
   matchPaymentMethod,
   missingRequiredFields,
+  NO_FUND,
   normalizeHeader,
   parseImportDate,
+  SKIP_FUND,
   toImportRecords,
   UNMAPPED,
   type ImportRecord,
@@ -63,6 +66,7 @@ describe("parseImportDate", () => {
     expect(parseImportDate("3/4/2026")).toBe("2026-03-04");
     expect(parseImportDate("03/04/2026")).toBe("2026-03-04");
     expect(parseImportDate("2026-03-04T12:30:00Z")).toBe("2026-03-04");
+    expect(parseImportDate("2026-03-04T23:30:00-08:00")).toBe("2026-03-04");
   });
 
   it("returns null for blank or unparseable values", () => {
@@ -84,27 +88,31 @@ describe("toImportRecords", () => {
         ["bad date", "$50.00", "Bob", "Smith", "", "General"],
         ["3/5/2026", "", "Ann", "Lee", "", "General"],
         ["3/6/2026", "$0.00", "Zero", "Gift", "", "General"],
+        ["3/7/2026", "-$20.00", "Re", "Fund", "", "General"],
       ],
+      rowNumbers: [2, 3, 5, 6, 7],
     };
 
     const { records, errors } = toImportRecords(parsed, mapping);
 
     expect(records).toHaveLength(1);
     expect(records[0]).toMatchObject({
-      rowIndex: 0,
+      rowNumber: 2,
       date: "2026-03-04",
       amountInCents: 125000,
       firstName: "Jane",
       email: "jane@example.com",
       fund: "General",
     });
-    expect(errors.map((e) => e.rowIndex)).toEqual([1, 2, 3]);
+    expect(errors.map((e) => e.rowNumber)).toEqual([3, 5, 6, 7]);
+    expect(errors[3].message).toContain("Negative");
   });
 
   it("ignores fully blank rows without reporting an error", () => {
     const parsed = {
       headers: ["Date", "Amount", "First Name", "Last Name", "Email", "Fund"],
       rows: [["", "", "", "", "", ""]],
+      rowNumbers: [2],
     };
     const { records, errors } = toImportRecords(parsed, mapping);
     expect(records).toEqual([]);
@@ -113,10 +121,47 @@ describe("toImportRecords", () => {
 
   it("leaves unmapped optional fields null", () => {
     const dateAmountOnly = autoDetectMapping(["Date", "Amount"]);
-    const parsed = { headers: ["Date", "Amount"], rows: [["3/4/2026", "10"]] };
+    const parsed = { headers: ["Date", "Amount"], rows: [["3/4/2026", "10"]], rowNumbers: [2] };
     const { records } = toImportRecords(parsed, dateAmountOnly);
     expect(records[0].email).toBeNull();
     expect(records[0].fund).toBeNull();
+    expect(records[0].feeInCents).toBe(0);
+  });
+
+  it("skips payments that didn't complete or were refunded", () => {
+    const headers = ["Gross", "Transaction Status", "Created At Date", "Refunded At Date"];
+    const parsed = {
+      headers,
+      rows: [
+        ["50.00", "succeeded", "2026-09-25", ""],
+        ["50.00", "failed", "2026-09-25", ""],
+        ["50.00", "succeeded", "2026-09-25", "2026-09-27"],
+      ],
+      rowNumbers: [2, 3, 4],
+    };
+    const { records, errors } = toImportRecords(parsed, autoDetectMapping(headers));
+    expect(records.map((r) => r.rowNumber)).toEqual([2]);
+    expect(errors).toEqual([
+      { rowNumber: 3, message: 'Payment status is "failed"' },
+      { rowNumber: 4, message: "Refunded 2026-09-27" },
+    ]);
+  });
+
+  it("reads the fee as a positive amount and rejects unusable fees", () => {
+    const withFee = autoDetectMapping(["Date", "Amount", "Fee"]);
+    const parsed = {
+      headers: ["Date", "Amount", "Fee"],
+      rows: [
+        ["3/4/2026", "$100.00", "$3.20"],
+        ["3/4/2026", "$100.00", "-3.20"],
+        ["3/4/2026", "$100.00", "n/a"],
+        ["3/4/2026", "$1.00", "$1.00"],
+      ],
+      rowNumbers: [2, 3, 4, 5],
+    };
+    const { records, errors } = toImportRecords(parsed, withFee);
+    expect(records.map((r) => r.feeInCents)).toEqual([320, 320]);
+    expect(errors.map((e) => e.rowNumber)).toEqual([4, 5]);
   });
 });
 
@@ -157,14 +202,25 @@ describe("findDuplicateTransaction", () => {
   const existing = [{ id: "t1", date: new Date("2026-03-04T00:00:00Z"), amountInCents: 5000, contactId: "c1" }];
 
   it("flags same day, same amount, same contact", () => {
-    const dup = findDuplicateTransaction({ date: "2026-03-04", amountInCents: 5000 }, "c1", existing);
+    const dup = findDuplicateTransaction({ date: "2026-03-04", amountInCents: 5000, feeInCents: 0 }, "c1", existing);
     expect(dup?.id).toBe("t1");
   });
 
   it("does not flag a different contact, amount, or day", () => {
-    expect(findDuplicateTransaction({ date: "2026-03-04", amountInCents: 5000 }, "c2", existing)).toBeNull();
-    expect(findDuplicateTransaction({ date: "2026-03-04", amountInCents: 7500 }, "c1", existing)).toBeNull();
-    expect(findDuplicateTransaction({ date: "2026-03-05", amountInCents: 5000 }, "c1", existing)).toBeNull();
+    expect(
+      findDuplicateTransaction({ date: "2026-03-04", amountInCents: 5000, feeInCents: 0 }, "c2", existing),
+    ).toBeNull();
+    expect(
+      findDuplicateTransaction({ date: "2026-03-04", amountInCents: 7500, feeInCents: 0 }, "c1", existing),
+    ).toBeNull();
+    expect(
+      findDuplicateTransaction({ date: "2026-03-05", amountInCents: 5000, feeInCents: 0 }, "c1", existing),
+    ).toBeNull();
+  });
+
+  it("compares the net amount, since imported transactions are stored net of fees", () => {
+    const dup = findDuplicateTransaction({ date: "2026-03-04", amountInCents: 5175, feeInCents: 175 }, "c1", existing);
+    expect(dup?.id).toBe("t1");
   });
 });
 
@@ -201,13 +257,13 @@ describe("analyzeRecords", () => {
     contacts: [{ id: "c1", firstName: "Jane", lastName: "Doe", email: "jane@example.com" }],
     transactions: [{ id: "t1", date: "2026-03-04", amountInCents: 5000, contactId: "c1" }],
     fundAccounts: { General: "acct-1" },
-    defaultAccountId: null,
   };
 
   const record = (over: Partial<ImportRecord> = {}): ImportRecord => ({
-    rowIndex: 0,
+    rowNumber: 2,
     date: "2026-03-10",
     amountInCents: 2500,
+    feeInCents: 0,
     firstName: "New",
     lastName: "Donor",
     email: "new@example.com",
@@ -245,10 +301,47 @@ describe("analyzeRecords", () => {
     expect(row.message).toContain("Missions");
   });
 
-  it("uses the default account for records with no fund", () => {
-    const [row] = analyzeRecords({ ...base, defaultAccountId: "acct-9", records: [record({ fund: null })] });
+  it("uses the NO_FUND account for records with no fund", () => {
+    const [row] = analyzeRecords({
+      ...base,
+      fundAccounts: { [NO_FUND]: "acct-9" },
+      records: [record({ fund: null })],
+    });
     expect(row.status).toBe("ready");
     expect(row.accountId).toBe("acct-9");
+  });
+
+  it("skips rows whose fund is excluded", () => {
+    const [row] = analyzeRecords({ ...base, fundAccounts: { General: SKIP_FUND }, records: [record()] });
+    expect(row.status).toBe("skipped");
+    expect(row.accountId).toBeNull();
+  });
+
+  it("does not flag a new donor against an anonymous gift on the same day", () => {
+    const [row] = analyzeRecords({
+      ...base,
+      transactions: [{ id: "t2", date: "2026-03-10", amountInCents: 2500, contactId: null }],
+      records: [record()],
+    });
+    expect(row.status).toBe("ready");
+  });
+
+  it("flags a re-imported anonymous gift as a duplicate", () => {
+    const [row] = analyzeRecords({
+      ...base,
+      transactions: [{ id: "t2", date: "2026-03-10", amountInCents: 2500, contactId: null }],
+      records: [record({ firstName: null, lastName: null, email: null })],
+    });
+    expect(row.status).toBe("duplicate");
+  });
+
+  it("lets each existing transaction match only one row", () => {
+    const gift = { email: "jane@example.com", date: "2026-03-04", amountInCents: 5000 };
+    const rows = analyzeRecords({
+      ...base,
+      records: [record({ ...gift, rowNumber: 2 }), record({ ...gift, rowNumber: 3 })],
+    });
+    expect(rows.map((r) => r.status)).toEqual(["duplicate", "ready"]);
   });
 
   it("does not create a contact for an anonymous gift", () => {
@@ -258,5 +351,22 @@ describe("analyzeRecords", () => {
     });
     expect(row.willCreateContact).toBe(false);
     expect(row.contactLabel).toBe("Anonymous");
+  });
+});
+
+describe("assignColumn", () => {
+  it("unmaps any other field already using the column", () => {
+    const mapping = autoDetectMapping(["Date", "Amount", "Fee"]);
+    const next = assignColumn(mapping, "fee", 1);
+    expect(next.fee).toBe(1);
+    expect(next.amount).toBe(UNMAPPED);
+    expect(next.date).toBe(0);
+  });
+
+  it("allows unmapping without touching other fields", () => {
+    const mapping = autoDetectMapping(["Date", "Amount"]);
+    const next = assignColumn(mapping, "date", UNMAPPED);
+    expect(next.date).toBe(UNMAPPED);
+    expect(next.amount).toBe(1);
   });
 });

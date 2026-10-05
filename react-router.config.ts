@@ -6,6 +6,9 @@ const isVercel = process.env.VERCEL === "1";
 
 export default {
   ssr: true,
+  future: {
+    v8_middleware: true,
+  },
   ...(isVercel && { presets: [vercelPreset()] }),
   buildEnd: async ({ viteConfig, reactRouterConfig, buildManifest }) => {
     if (process.env.CI) {

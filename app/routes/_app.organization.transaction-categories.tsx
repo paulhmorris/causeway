@@ -45,7 +45,7 @@ const schema = z.object({
 
 export async function action(args: ActionFunctionArgs) {
   const orgId = await SessionService.requireOrgId(args);
-  await SessionService.requireAdmin(args);
+  const admin = await SessionService.requireAdmin(args);
   const result = await parseFormData(args.request, schema);
   if (result.error) {
     return validationError(result.error);
@@ -87,8 +87,8 @@ export async function action(args: ActionFunctionArgs) {
 
     return Toasts.dataWithSuccess(null, { message: "Transaction categories updated" });
   } catch (error) {
-    logger.error("Error updating transaction categories", { error });
-    Sentry.captureException(error);
+    logger.error("Error updating transaction categories");
+    Sentry.captureException(error, { extra: { userId: admin.id, orgId } });
     return Toasts.dataWithError(null, {
       message: "Unknown error",
       description: "Error updating transaction categories",

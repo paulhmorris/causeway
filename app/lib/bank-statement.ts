@@ -71,13 +71,13 @@ export function statementMappingProblem(mapping: StatementMapping): string | nul
 }
 
 export type StatementLine = {
-  rowIndex: number;
+  rowNumber: number;
   date: string;
   description: string | null;
   amountInCents: number;
 };
 
-export type StatementRowError = { rowIndex: number; message: string };
+export type StatementRowError = { rowNumber: number; message: string };
 
 function cell(row: Array<string>, index: number): string | null {
   if (index === UNMAPPED) return null;
@@ -126,24 +126,25 @@ export function toStatementLines(
   const lines: Array<StatementLine> = [];
   const errors: Array<StatementRowError> = [];
 
-  parsed.rows.forEach((row, rowIndex) => {
+  parsed.rows.forEach((row, i) => {
+    const rowNumber = parsed.rowNumbers[i];
     if (row.every((c) => c.trim() === "")) return;
 
     const rawDate = cell(row, mapping.date);
     const date = parseImportDate(rawDate);
     if (!date) {
-      errors.push({ rowIndex, message: rawDate ? `Unrecognized date "${rawDate}"` : "Missing date" });
+      errors.push({ rowNumber, message: rawDate ? `Unrecognized date "${rawDate}"` : "Missing date" });
       return;
     }
 
     const amountInCents = readAmountInCents(row, mapping);
     if (amountInCents === null) {
-      errors.push({ rowIndex, message: "Couldn't read an amount" });
+      errors.push({ rowNumber, message: "Couldn't read an amount" });
       return;
     }
 
     lines.push({
-      rowIndex,
+      rowNumber,
       date,
       description: cell(row, mapping.description),
       amountInCents: reverseSigns ? -amountInCents : amountInCents,

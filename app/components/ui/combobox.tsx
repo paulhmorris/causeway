@@ -25,6 +25,7 @@ export function Combobox(props: Props) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
+          id={props.id}
           ref={props.ref}
           disabled={props.disabled}
           role="combobox"
@@ -35,7 +36,7 @@ export function Combobox(props: Props) {
             "disabled:cursor-not-allowed disabled:opacity-50",
           )}
         >
-          {props.value ? selectedOption?.label : (props.placeholder ?? "Select an option")}
+          {selectedOption?.label ?? props.placeholder ?? "Select an option"}
           <IconSelector className="ml-2 size-4 shrink-0 opacity-50" />
         </button>
       </PopoverTrigger>
@@ -88,7 +89,7 @@ export function ComboboxItem({ option, value, onChange, setOpen }: ComboboxItemP
       {option.label}
       <IconCheck
         aria-hidden="true"
-        className={cn("ml-auto size-4", value === option.label ? "opacity-100" : "opacity-0")}
+        className={cn("ml-auto size-4", value === option.value ? "opacity-100" : "opacity-0")}
       />
     </CommandItem>
   );

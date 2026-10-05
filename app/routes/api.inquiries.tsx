@@ -1,9 +1,9 @@
 import { render } from "@react-email/render";
 import { parseFormData, validationError } from "@rvf/react-router";
+import { NewInquiryEmail } from "emails/new-inquiry";
 import { ActionFunctionArgs, data } from "react-router";
 import { z } from "zod/v4";
 
-import { NewInquiryEmail } from "emails/new-inquiry";
 import { Mailer } from "~/integrations/email.server";
 import { createLogger } from "~/integrations/logger.server";
 import { Sentry } from "~/integrations/sentry";
@@ -61,6 +61,7 @@ export async function action(args: ActionFunctionArgs) {
       to: org.primaryEmail!,
       subject: "New Inquiry",
       html,
+      context: { userId: user.id, orgId: org.id },
     });
 
     return Toasts.dataWithSuccess(
@@ -68,8 +69,8 @@ export async function action(args: ActionFunctionArgs) {
       { message: "Inquiry sent", description: "We'll be in touch soon!" },
     );
   } catch (error) {
-    logger.error("Error processing inquiry", { error });
-    Sentry.captureException(error);
+    logger.error("Error processing inquiry");
+    Sentry.captureException(error, { extra: { userId: user.id, orgId: user.org.id } });
     return Toasts.dataWithSuccess(
       { success: false, message: JSON.stringify(error) },
       {

@@ -114,7 +114,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
       accountsThatCanBeSubscribedTo,
     };
   } catch (e) {
-    handleLoaderError(e);
+    handleLoaderError(e, { userId: authorizedUser.id, orgId });
   }
 };
 

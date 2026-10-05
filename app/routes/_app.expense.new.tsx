@@ -20,6 +20,7 @@ import { Toasts } from "~/lib/toast.server";
 import { formatCentsAsDollars, getToday } from "~/lib/utils";
 import { TransactionSchema } from "~/schemas";
 import { ContactService } from "~/services.server/contact";
+import { countSelectableReceipts, getSelectableReceipts, receiptGalleryOptions } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
 import { TransactionService } from "~/services.server/transaction";
 
@@ -29,27 +30,32 @@ export const loader = async (args: LoaderFunctionArgs) => {
   const user = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
-  const [contacts, contactTypes, accounts, transactionItemMethods, transactionItemTypes, categories, receipts] =
-    await db.$transaction([
-      db.contact.findMany({ where: { orgId }, include: { type: true } }),
-      ContactService.getTypes(orgId),
-      db.account.findMany({ where: { orgId }, orderBy: { code: "asc" } }),
-      TransactionService.getItemMethods(orgId),
-      TransactionService.getItemTypes(orgId),
-      db.transactionCategory.findMany({ orderBy: { id: "asc" } }),
-      db.receipt.findMany({
-        // Admins can see all receipts, users can only see their own
-        where: {
-          orgId,
-          userId: user.isMember ? user.id : undefined,
-        },
-        include: {
-          user: { select: { contact: { select: { email: true } } } },
-          reimbursementRequests: { select: { id: true } },
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-    ]);
+  // Admins can see all receipts, users can only see their own
+  const receiptQuery = {
+    orgId,
+    userId: user.isMember ? user.id : undefined,
+    ...receiptGalleryOptions(args.request),
+  };
+
+  const [
+    contacts,
+    contactTypes,
+    accounts,
+    transactionItemMethods,
+    transactionItemTypes,
+    categories,
+    receipts,
+    receiptCount,
+  ] = await db.$transaction([
+    db.contact.findMany({ where: { orgId }, include: { type: true } }),
+    ContactService.getTypes(orgId),
+    db.account.findMany({ where: { orgId }, orderBy: { code: "asc" } }),
+    TransactionService.getItemMethods(orgId),
+    TransactionService.getItemTypes(orgId),
+    TransactionService.getCategories(orgId),
+    getSelectableReceipts(receiptQuery),
+    countSelectableReceipts(receiptQuery),
+  ]);
 
   return {
     contacts,
@@ -59,11 +65,12 @@ export const loader = async (args: LoaderFunctionArgs) => {
     transactionItemTypes,
     categories,
     receipts,
+    receiptCount,
   };
 };
 
 export const action = async (args: ActionFunctionArgs) => {
-  await SessionService.requireAdmin(args);
+  const admin = await SessionService.requireAdmin(args);
   const orgId = await SessionService.requireOrgId(args);
 
   const result = await parseFormData(args.request, TransactionSchema);
@@ -103,15 +110,23 @@ export const action = async (args: ActionFunctionArgs) => {
       description: `Expense of ${formatCentsAsDollars(totalInCents)} charged to account ${transaction.account.code}`,
     });
   } catch (error) {
-    logger.error("Error creating expense", { error });
-    Sentry.captureException(error);
+    logger.error("Error creating expense");
+    Sentry.captureException(error, { extra: { userId: admin.id, orgId } });
     return Toasts.dataWithError({ success: false }, { message: "An unknown error occurred" });
   }
 };
 
 export default function AddExpensePage() {
-  const { contacts, contactTypes, accounts, transactionItemMethods, transactionItemTypes, categories, receipts } =
-    useLoaderData<typeof loader>();
+  const {
+    contacts,
+    contactTypes,
+    accounts,
+    transactionItemMethods,
+    transactionItemTypes,
+    categories,
+    receipts,
+    receiptCount,
+  } = useLoaderData<typeof loader>();
   const form = useForm({
     schema: TransactionSchema,
     method: "post",
@@ -209,7 +224,7 @@ export default function AddExpensePage() {
               <span>Add item</span>
             </Button>
             <Separator className="my-4" />
-            <ReceiptSelector receipts={receipts} />
+            <ReceiptSelector receipts={receipts} receiptCount={receiptCount} />
             <div className="space-y-1">
               <p className="text-primary text-sm font-bold">Total: {formatCentsAsDollars(total)}</p>
               <SubmitButton isSubmitting={form.formState.isSubmitting}>Submit Expense</SubmitButton>
