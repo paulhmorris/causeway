@@ -122,18 +122,29 @@ export const DonationImportService = {
         accountId,
         contactId,
         date: dayjs.utc(record.date).startOf("day").toDate(),
-        amountInCents: record.amountInCents,
+        amountInCents: record.amountInCents - record.feeInCents,
         categoryId: TransactionCategory.Donation_Standard,
         description: record.note,
       });
+      const methodId = matchPaymentMethod(record.paymentMethod);
       items.push({
         orgId,
         transactionId,
         amountInCents: record.amountInCents,
         typeId: TransactionItemType.Donation,
-        methodId: matchPaymentMethod(record.paymentMethod),
+        methodId,
         description: record.note,
       });
+      if (record.feeInCents > 0) {
+        // Fee items are outgoing, so they're stored negative and the transaction total is net.
+        items.push({
+          orgId,
+          transactionId,
+          amountInCents: -record.feeInCents,
+          typeId: TransactionItemType.Fee,
+          methodId,
+        });
+      }
     }
 
     await db.$transaction([

@@ -125,6 +125,24 @@ describe("toImportRecords", () => {
     const { records } = toImportRecords(parsed, dateAmountOnly);
     expect(records[0].email).toBeNull();
     expect(records[0].fund).toBeNull();
+    expect(records[0].feeInCents).toBe(0);
+  });
+
+  it("reads the fee as a positive amount and rejects unusable fees", () => {
+    const withFee = autoDetectMapping(["Date", "Amount", "Fee"]);
+    const parsed = {
+      headers: ["Date", "Amount", "Fee"],
+      rows: [
+        ["3/4/2026", "$100.00", "$3.20"],
+        ["3/4/2026", "$100.00", "-3.20"],
+        ["3/4/2026", "$100.00", "n/a"],
+        ["3/4/2026", "$1.00", "$1.00"],
+      ],
+      rowNumbers: [2, 3, 4, 5],
+    };
+    const { records, errors } = toImportRecords(parsed, withFee);
+    expect(records.map((r) => r.feeInCents)).toEqual([320, 320]);
+    expect(errors.map((e) => e.rowNumber)).toEqual([4, 5]);
   });
 });
 
@@ -165,14 +183,25 @@ describe("findDuplicateTransaction", () => {
   const existing = [{ id: "t1", date: new Date("2026-03-04T00:00:00Z"), amountInCents: 5000, contactId: "c1" }];
 
   it("flags same day, same amount, same contact", () => {
-    const dup = findDuplicateTransaction({ date: "2026-03-04", amountInCents: 5000 }, "c1", existing);
+    const dup = findDuplicateTransaction({ date: "2026-03-04", amountInCents: 5000, feeInCents: 0 }, "c1", existing);
     expect(dup?.id).toBe("t1");
   });
 
   it("does not flag a different contact, amount, or day", () => {
-    expect(findDuplicateTransaction({ date: "2026-03-04", amountInCents: 5000 }, "c2", existing)).toBeNull();
-    expect(findDuplicateTransaction({ date: "2026-03-04", amountInCents: 7500 }, "c1", existing)).toBeNull();
-    expect(findDuplicateTransaction({ date: "2026-03-05", amountInCents: 5000 }, "c1", existing)).toBeNull();
+    expect(
+      findDuplicateTransaction({ date: "2026-03-04", amountInCents: 5000, feeInCents: 0 }, "c2", existing),
+    ).toBeNull();
+    expect(
+      findDuplicateTransaction({ date: "2026-03-04", amountInCents: 7500, feeInCents: 0 }, "c1", existing),
+    ).toBeNull();
+    expect(
+      findDuplicateTransaction({ date: "2026-03-05", amountInCents: 5000, feeInCents: 0 }, "c1", existing),
+    ).toBeNull();
+  });
+
+  it("compares the net amount, since imported transactions are stored net of fees", () => {
+    const dup = findDuplicateTransaction({ date: "2026-03-04", amountInCents: 5175, feeInCents: 175 }, "c1", existing);
+    expect(dup?.id).toBe("t1");
   });
 });
 
@@ -215,6 +244,7 @@ describe("analyzeRecords", () => {
     rowNumber: 2,
     date: "2026-03-10",
     amountInCents: 2500,
+    feeInCents: 0,
     firstName: "New",
     lastName: "Donor",
     email: "new@example.com",

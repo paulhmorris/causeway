@@ -133,7 +133,9 @@ export type ImportRecord = {
   /** The row's spreadsheet row number; unique within a file, so it doubles as the row's id. */
   rowNumber: number;
   date: string;
+  /** The gross gift, before Tithe.ly's processing fee. */
   amountInCents: number;
+  feeInCents: number;
   firstName: string | null;
   lastName: string | null;
   email: string | null;
@@ -187,10 +189,24 @@ export function toImportRecords(parsed: ParsedCsv, mapping: ColumnMapping) {
       return;
     }
 
+    const rawFee = cell(row, mapping.fee);
+    const fee = rawFee ? parseCurrencyToCents(rawFee) : 0;
+    if (fee === null) {
+      errors.push({ rowNumber, message: `Unrecognized fee "${rawFee}"` });
+      return;
+    }
+    // Some exports show the fee as a negative deduction.
+    const feeInCents = Math.abs(fee);
+    if (feeInCents >= amountInCents) {
+      errors.push({ rowNumber, message: "Fee is as large as the gift" });
+      return;
+    }
+
     records.push({
       rowNumber,
       date,
       amountInCents,
+      feeInCents,
       firstName: cell(row, mapping.firstName),
       lastName: cell(row, mapping.lastName),
       email: cell(row, mapping.email),
@@ -262,7 +278,7 @@ export function matchContact(
 
 /**
  * A row is treated as already imported when a non-voided transaction exists on
- * the same day, for the same amount, against the same contact. Voided
+ * the same day, for the same net amount, against the same contact. Voided
  * transactions are excluded by the caller so a corrected gift can be re-imported.
  *
  * Dates are compared in UTC because transactions are stored at UTC midnight
@@ -270,14 +286,14 @@ export function matchContact(
  * the previous day west of UTC and let a duplicate through.
  */
 export function findDuplicateTransaction(
-  record: Pick<ImportRecord, "date" | "amountInCents">,
+  record: Pick<ImportRecord, "date" | "amountInCents" | "feeInCents">,
   contactId: string | null,
   transactions: Array<ExistingTransaction>,
 ): ExistingTransaction | null {
   return (
     transactions.find(
       (t) =>
-        t.amountInCents === record.amountInCents &&
+        t.amountInCents === record.amountInCents - record.feeInCents &&
         t.contactId === contactId &&
         dayjs.utc(t.date).format("YYYY-MM-DD") === record.date,
     ) ?? null

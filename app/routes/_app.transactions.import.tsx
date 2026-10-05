@@ -64,6 +64,7 @@ const importRecordSchema = z.object({
   rowNumber: z.number().int().positive(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   amountInCents: z.number().int().positive(),
+  feeInCents: z.number().int().nonnegative(),
   firstName: z.string().nullable(),
   lastName: z.string().nullable(),
   email: z.string().nullable(),
@@ -73,7 +74,10 @@ const importRecordSchema = z.object({
 });
 
 const payloadSchema = z.object({
-  records: z.array(importRecordSchema).min(1).max(MAX_ROWS),
+  records: z
+    .array(importRecordSchema.refine((r) => r.feeInCents < r.amountInCents))
+    .min(1)
+    .max(MAX_ROWS),
   fundAccounts: z.record(z.string(), z.string()),
   selectedRowNumbers: z.array(z.number().int().positive()).default([]),
 });
@@ -538,13 +542,15 @@ function PreviewStep({
   const duplicates = analyses.filter((a) => a.status === "duplicate");
   const errored = analyses.filter((a) => a.status === "error");
   const newContacts = new Set(selected.filter((a) => a.willCreateContact).map((a) => a.contactLabel)).size;
-  const totalCents = selected.reduce((sum, a) => sum + (recordByRow.get(a.rowNumber)?.amountInCents ?? 0), 0);
+  const selectedRecords = selected.flatMap((a) => recordByRow.get(a.rowNumber) ?? []);
+  const feeCents = selectedRecords.reduce((sum, r) => sum + r.feeInCents, 0);
+  const netCents = selectedRecords.reduce((sum, r) => sum + r.amountInCents, 0) - feeCents;
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="To import" value={String(selected.length)} />
-        <Stat label="Total" value={formatCentsAsDollars(totalCents)} />
+        <Stat label={feeCents > 0 ? "Total after fees" : "Total"} value={formatCentsAsDollars(netCents)} />
         <Stat label="Already in Causeway" value={String(duplicates.length)} />
         <Stat label="New contacts" value={String(newContacts)} />
       </div>
@@ -609,6 +615,11 @@ function PreviewStep({
                     <TableCell className="whitespace-nowrap tabular-nums">{record?.date}</TableCell>
                     <TableCell className="text-right tabular-nums">
                       {formatCentsAsDollars(record?.amountInCents ?? 0)}
+                      {record?.feeInCents ? (
+                        <span className="text-muted-foreground block text-xs">
+                          −{formatCentsAsDollars(record.feeInCents)} fee
+                        </span>
+                      ) : null}
                     </TableCell>
                     <TableCell>
                       <StatusCell analysis={analysis} />
