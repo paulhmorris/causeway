@@ -11,9 +11,15 @@ dayjs.extend(utc);
 
 const logger = createLogger("ReconciliationService");
 
-/** Widen the engine's date window to the whole period; candidates are already
- * bounded to it, so the window only needs to break ties, not exclude. */
+/** Wide enough to auto-match items that clear a statement or two late; older
+ * outstanding items can still be matched manually. */
 const PERIOD_DATE_WINDOW_DAYS = 45;
+
+function assertEditable(reconciliation: { status: ReconciliationStatus }) {
+  if (reconciliation.status === ReconciliationStatus.COMPLETED) {
+    throw new Error("This reconciliation is completed. Reopen it to make changes.");
+  }
+}
 
 export const ReconciliationService = {
   /**
@@ -97,9 +103,11 @@ export const ReconciliationService = {
 
   /**
    * The transactions eligible to match this reconciliation: same account, not
-   * voided, dated within the period, and not already matched to any line. The
-   * period runs from the day after the previous reconciliation for this account
-   * through the statement date, so old cleared activity can't be re-matched.
+   * voided, dated on or before the statement date, and not already matched to
+   * any line. Unmatched transactions from earlier line-based reconciliations
+   * stay eligible because they were outstanding (e.g. a check that cleared after
+   * its statement). A balance-only reconciliation records nothing about what
+   * cleared, so activity on or before the latest one is excluded.
    */
   async getCandidateTransactions(reconciliation: {
     id: string;
@@ -107,18 +115,19 @@ export const ReconciliationService = {
     orgId: string;
     statementDate: Date;
   }) {
-    const previous = await db.reconciliation.findFirst({
+    const lastBalanceOnly = await db.reconciliation.findFirst({
       where: {
         accountId: reconciliation.accountId,
         orgId: reconciliation.orgId,
         statementDate: { lt: reconciliation.statementDate },
         id: { not: reconciliation.id },
+        lines: { none: {} },
       },
       orderBy: { statementDate: "desc" },
       select: { statementDate: true },
     });
 
-    const gte = previous ? dayjs.utc(previous.statementDate).endOf("day").toDate() : undefined;
+    const gte = lastBalanceOnly ? dayjs.utc(lastBalanceOnly.statementDate).endOf("day").toDate() : undefined;
     const lte = dayjs.utc(reconciliation.statementDate).endOf("day").toDate();
 
     return db.transaction.findMany({
@@ -153,6 +162,7 @@ export const ReconciliationService = {
         accountId: true,
         orgId: true,
         statementDate: true,
+        status: true,
         lines: {
           where: { transactionId: null, ignoredAt: null },
           select: { id: true, date: true, amountInCents: true },
@@ -160,6 +170,7 @@ export const ReconciliationService = {
       },
     });
 
+    assertEditable(reconciliation);
     if (reconciliation.lines.length === 0) return 0;
 
     const candidates = await this.getCandidateTransactions(reconciliation);
@@ -191,8 +202,9 @@ export const ReconciliationService = {
   async matchLine(reconciliationId: string, lineId: string, transactionId: string, orgId: string) {
     const reconciliation = await db.reconciliation.findUniqueOrThrow({
       where: { id: reconciliationId, orgId },
-      select: { accountId: true },
+      select: { accountId: true, status: true },
     });
+    assertEditable(reconciliation);
 
     const line = await db.reconciliationLine.findUniqueOrThrow({
       where: { id: lineId, orgId, reconciliationId },
@@ -221,17 +233,28 @@ export const ReconciliationService = {
   },
 
   /** Clear a line's match, returning its transaction to the candidate pool. */
-  async unmatchLine(lineId: string, orgId: string) {
+  async unmatchLine(reconciliationId: string, lineId: string, orgId: string) {
+    await this.getEditableLine(reconciliationId, lineId, orgId);
     await db.reconciliationLine.update({ where: { id: lineId, orgId }, data: { transactionId: null } });
-    logger.info("Unmatched line", { orgId, lineId });
+    logger.info("Unmatched line", { orgId, reconciliationId, lineId });
   },
 
   /** Toggle whether a line is ignored (needs no matching transaction). */
-  async setLineIgnored(lineId: string, orgId: string, ignored: boolean) {
+  async setLineIgnored(reconciliationId: string, lineId: string, orgId: string, ignored: boolean) {
+    await this.getEditableLine(reconciliationId, lineId, orgId);
     await db.reconciliationLine.update({
       where: { id: lineId, orgId },
       data: { ignoredAt: ignored ? new Date() : null },
     });
-    logger.info("Set line ignored", { orgId, lineId, ignored });
+    logger.info("Set line ignored", { orgId, reconciliationId, lineId, ignored });
+  },
+
+  async getEditableLine(reconciliationId: string, lineId: string, orgId: string) {
+    const line = await db.reconciliationLine.findUniqueOrThrow({
+      where: { id: lineId, orgId, reconciliationId },
+      select: { id: true, reconciliation: { select: { status: true } } },
+    });
+    assertEditable(line.reconciliation);
+    return line;
   },
 };

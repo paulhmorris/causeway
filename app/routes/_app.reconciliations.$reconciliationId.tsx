@@ -127,13 +127,13 @@ export async function action(args: ActionFunctionArgs) {
         await ReconciliationService.matchLine(reconciliationId, data.lineId, data.transactionId, orgId);
         return { ok: true };
       case "unmatch":
-        await ReconciliationService.unmatchLine(data.lineId, orgId);
+        await ReconciliationService.unmatchLine(reconciliationId, data.lineId, orgId);
         return { ok: true };
       case "ignore":
-        await ReconciliationService.setLineIgnored(data.lineId, orgId, true);
+        await ReconciliationService.setLineIgnored(reconciliationId, data.lineId, orgId, true);
         return { ok: true };
       case "unignore":
-        await ReconciliationService.setLineIgnored(data.lineId, orgId, false);
+        await ReconciliationService.setLineIgnored(reconciliationId, data.lineId, orgId, false);
         return { ok: true };
     }
   } catch (error) {
