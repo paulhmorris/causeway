@@ -8,7 +8,7 @@ dayjs.extend(utc);
 import { DataTable } from "~/components/ui/data-table/data-table";
 import { DataTableColumnHeader } from "~/components/ui/data-table/data-table-column-header";
 import { Facet } from "~/components/ui/data-table/data-table-toolbar";
-import { formatCentsAsDollars } from "~/lib/utils";
+import { formatCentsAsDollars, transactionContactName } from "~/lib/utils";
 
 type Transaction = Prisma.TransactionGetPayload<{
   select: {
@@ -16,11 +16,14 @@ type Transaction = Prisma.TransactionGetPayload<{
     date: true;
     amountInCents: true;
     category: true;
+    isAnonymous: true;
     contact: {
       select: {
         id: true;
         firstName: true;
         lastName: true;
+        organizationName: true;
+        typeId: true;
       };
     };
   };
@@ -84,14 +87,17 @@ const columns: Array<ColumnDef<Transaction>> = [
   },
   {
     accessorKey: "contact",
-    accessorFn: (row) => (row.contact ? `${row.contact.firstName} ${row.contact.lastName}` : ""),
+    accessorFn: transactionContactName,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Contact" />,
     cell: ({ row }) => {
+      if (!row.original.contact) {
+        return <span className="font-medium">{row.getValue("contact")}</span>;
+      }
       return (
         <div>
           <Link
             prefetch="intent"
-            to={`/contacts/${row.original.contact?.id}`}
+            to={`/contacts/${row.original.contact.id}`}
             className="text-primary max-w-[500px] truncate font-medium"
           >
             {row.getValue("contact")}

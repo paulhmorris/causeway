@@ -7,8 +7,7 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "~/components/ui/card";
 import { useUser } from "~/hooks/useUser";
-import { ContactType } from "~/lib/constants";
-import { formatPhoneNumber, getInitials } from "~/lib/utils";
+import { contactName, formatPhoneNumber, getInitials } from "~/lib/utils";
 
 type Contact = Prisma.ContactGetPayload<{ include: { address: true; type: true } }>;
 export function ContactCard({ contact }: { contact: Contact }) {
@@ -19,11 +18,7 @@ export function ContactCard({ contact }: { contact: Contact }) {
       <CardHeader className="flex-row items-center gap-4 space-y-0">
         <div className="space-y-1.5">
           <CardTitle className="flex items-center gap-2">
-            <span>
-              {(contact.typeId as ContactType) === ContactType.Organization
-                ? contact.organizationName
-                : `${contact.firstName} ${contact.lastName ?? ""}`}
-            </span>
+            <span>{contactName(contact)}</span>
             {user.contact.id === contact.id ? <Badge variant="outline">This is you</Badge> : null}
           </CardTitle>
           <CardDescription>

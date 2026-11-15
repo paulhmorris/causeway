@@ -2,7 +2,7 @@ import { type Contact, type ContactType as PContactType } from "@prisma/client";
 import { FormScope } from "@rvf/react-router";
 
 import { FormCombobox, FormSelectProps } from "~/components/ui/form";
-import { ContactType } from "~/lib/constants";
+import { contactName } from "~/lib/utils";
 
 export function ContactDropdown(
   props: {
@@ -18,7 +18,7 @@ export function ContactDropdown(
       scope={scope}
       options={contacts.map((c) => ({
         value: c.id,
-        label: c.typeId === ContactType.Organization ? c.organizationName : `${c.firstName} ${c.lastName ?? ""}`,
+        label: contactName(c),
       }))}
     />
   );

@@ -14,8 +14,9 @@ import { DataTable, DEFAULT_PAGE_SIZE } from "~/components/ui/data-table/data-ta
 import { DataTableColumnHeader } from "~/components/ui/data-table/data-table-column-header";
 import { Facet } from "~/components/ui/data-table/data-table-toolbar";
 import { db } from "~/integrations/prisma.server";
-import { formatCentsAsDollars } from "~/lib/utils";
+import { formatCentsAsDollars, transactionContactName } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
+import { TransactionService } from "~/services.server/transaction";
 
 export async function loader(args: LoaderFunctionArgs) {
   const user = await SessionService.requireUser(args);
@@ -65,11 +66,14 @@ export async function loader(args: LoaderFunctionArgs) {
         amountInCents: true,
         description: true,
         category: true,
+        isAnonymous: true,
         contact: {
           select: {
             id: true,
             firstName: true,
             lastName: true,
+            organizationName: true,
+            typeId: true,
           },
         },
         account: {
@@ -83,7 +87,7 @@ export async function loader(args: LoaderFunctionArgs) {
       orderBy: [{ date: "desc" }, { account: { code: "asc" } }],
     }),
   ]);
-  return { rowCount, transactions };
+  return { rowCount, transactions: transactions.map((t) => TransactionService.hideAnonymousDonor(t, user)) };
 }
 
 export default function TransactionsIndexPage() {
@@ -175,13 +179,16 @@ const columns = [
   },
   {
     accessorKey: "contact",
-    accessorFn: (row) => (row.contact ? `${row.contact.firstName} ${row.contact.lastName}` : ""),
+    accessorFn: transactionContactName,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Contact" />,
     cell: ({ row }) => {
+      if (!row.original.contact) {
+        return <span className="font-medium">{row.getValue("contact")}</span>;
+      }
       return (
         <div>
           <Link
-            to={`/contacts/${row.original.contact?.id}`}
+            to={`/contacts/${row.original.contact.id}`}
             prefetch="intent"
             className="text-primary max-w-[500px] truncate font-medium"
           >

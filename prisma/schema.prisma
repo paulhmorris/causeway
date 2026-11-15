@@ -238,6 +238,8 @@ model Transaction {
   reimbursement         ReimbursementRequest? @relation(fields: [reimbursementId], references: [id])
   reimbursementId       String?               @unique
   voidedAt              DateTime?
+  /// Donor is hidden from non-admins, who see "Anonymous" instead.
+  isAnonymous           Boolean               @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

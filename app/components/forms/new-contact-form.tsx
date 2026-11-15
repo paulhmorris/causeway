@@ -11,6 +11,7 @@ import { Separator } from "~/components/ui/separator";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useUser } from "~/hooks/useUser";
 import { ContactType } from "~/lib/constants";
+import { contactName } from "~/lib/utils";
 import {
   number,
   optionalCheckboxGroup,
@@ -149,7 +150,7 @@ export function NewContactForm({ contactTypes, usersWhoCanBeAssigned }: Props) {
                 <Checkbox
                   name="assignedUserIds"
                   value={u.id}
-                  aria-label={`${u.contact.firstName} ${u.contact.lastName}`}
+                  aria-label={contactName(u.contact)}
                   defaultChecked={user.isMember ? u.id === user.id : false}
                 />
                 <span>

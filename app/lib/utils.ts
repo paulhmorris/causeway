@@ -4,6 +4,8 @@ import { FilterFn } from "@tanstack/react-table";
 import { ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+import { ContactType } from "~/lib/constants";
+
 const DEFAULT_REDIRECT = "/";
 
 export type Prettify<T> = {
@@ -104,7 +106,35 @@ export const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
 };
 
 export function getInitials(contact: Contact) {
-  return `${contact.firstName?.charAt(0)}${contact.lastName?.charAt(0) ?? ""}`;
+  return `${contact.firstName?.charAt(0) ?? ""}${contact.lastName?.charAt(0) ?? ""}`;
+}
+
+type NamedContact = {
+  firstName: string | null;
+  lastName: string | null;
+  organizationName?: string | null;
+  typeId?: number;
+};
+
+export function contactName(contact: NamedContact) {
+  const orgName = contact.organizationName?.trim();
+  if (contact.typeId === ContactType.Organization && orgName) {
+    return orgName;
+  }
+  const personal = [contact.firstName, contact.lastName]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" ");
+  return personal || orgName || "";
+}
+
+/** Members receive anonymous gifts with the contact stripped, so they only ever see "Anonymous". */
+export function transactionContactName(transaction: { isAnonymous: boolean; contact: NamedContact | null }) {
+  if (!transaction.contact) {
+    return transaction.isAnonymous ? "Anonymous" : "";
+  }
+  const name = contactName(transaction.contact);
+  return transaction.isAnonymous ? `${name} (Anonymous)` : name;
 }
 
 export function isArray(value: unknown): value is Array<unknown> {

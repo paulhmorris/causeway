@@ -18,9 +18,10 @@ import { useUser } from "~/hooks/useUser";
 import { db } from "~/integrations/prisma.server";
 import { handleLoaderError, Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
-import { cn, formatCentsAsDollars } from "~/lib/utils";
+import { cn, formatCentsAsDollars, transactionContactName } from "~/lib/utils";
 import { generateS3Urls } from "~/services.server/receipt";
 import { SessionService } from "~/services.server/session";
+import { TransactionService } from "~/services.server/transaction";
 
 const schema = z.object({ _action: z.literal("delete") });
 
@@ -39,6 +40,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
         description: true,
         amountInCents: true,
         contactId: true,
+        isAnonymous: true,
         category: {
           select: {
             id: true,
@@ -71,6 +73,8 @@ export const loader = async (args: LoaderFunctionArgs) => {
             id: true,
             firstName: true,
             lastName: true,
+            organizationName: true,
+            typeId: true,
           },
         },
         reimbursementId: true,
@@ -100,7 +104,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     }
 
     transaction.receipts = await generateS3Urls(transaction.receipts);
-    return { transaction };
+    return { transaction: TransactionService.hideAnonymousDonor(transaction, user) };
   } catch (e) {
     handleLoaderError(e, { userId: user.id, orgId });
   }
@@ -174,8 +178,12 @@ export default function TransactionDetailsPage() {
                     to={`/contacts/${transaction.contactId}`}
                     prefetch="intent"
                     className="text-primary font-medium"
-                  >{`${transaction.contact.firstName} ${transaction.contact.lastName}`}</Link>
+                  >
+                    {transactionContactName(transaction)}
+                  </Link>
                 </DetailItem>
+              ) : transaction.isAnonymous ? (
+                <DetailItem label="Contact" value="Anonymous" />
               ) : null}
               <DetailItem label="Category" value={transaction.category?.name} />
               {transaction.reimbursementId && !authorizedUser.isMember ? (
