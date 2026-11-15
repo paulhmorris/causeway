@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { TransactionService } from "~/services.server/transaction";
 
 vi.mock("~/integrations/prisma.server", () => ({ db: {} }));
+vi.mock("~/integrations/logger.server", () => ({ createLogger: () => ({ debug: vi.fn(), error: vi.fn() }) }));
 
 describe("hideAnonymousDonor", () => {
   const gift = { id: "t1", isAnonymous: true, contactId: "c1", contact: { id: "c1" } };
