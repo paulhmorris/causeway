@@ -14,6 +14,7 @@ import { db } from "~/integrations/prisma.server";
 import { AccountType } from "~/lib/constants";
 import { handleLoaderError, Responses } from "~/lib/responses.server";
 import { SessionService } from "~/services.server/session";
+import { TransactionService } from "~/services.server/transaction";
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const { params } = args;
@@ -66,11 +67,14 @@ export const loader = async (args: LoaderFunctionArgs) => {
             date: true,
             amountInCents: true,
             category: true,
+            isAnonymous: true,
             contact: {
               select: {
                 id: true,
                 firstName: true,
                 lastName: true,
+                organizationName: true,
+                typeId: true,
               },
             },
           },
@@ -86,7 +90,10 @@ export const loader = async (args: LoaderFunctionArgs) => {
 
     return {
       total: total._sum.amountInCents,
-      account,
+      account: {
+        ...account,
+        transactions: account.transactions.map((t) => TransactionService.hideAnonymousDonor(t, user)),
+      },
     };
   } catch (e) {
     handleLoaderError(e, { userId: user.id, orgId });

@@ -15,6 +15,7 @@ import { Sentry } from "~/integrations/sentry";
 import { AccountType } from "~/lib/constants";
 import { handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
+import { contactName } from "~/lib/utils";
 import { number, optionalSelect, text } from "~/schemas/fields";
 import { AccountService } from "~/services.server/account";
 import { SessionService } from "~/services.server/session";
@@ -128,7 +129,7 @@ export default function NewAccountPage() {
             scope={form.scope("userId")}
             placeholder="Select user"
             description="Link this account to a user. They will be able to see this account and all related transactions."
-            options={users.map((a) => ({ label: `${a.contact.firstName} ${a.contact.lastName}`, value: a.id }))}
+            options={users.map((a) => ({ label: contactName(a.contact), value: a.id }))}
           />
 
           <ButtonGroup>

@@ -13,6 +13,7 @@ import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
 import { handleLoaderError } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
+import { contactName } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
 
 const logger = createLogger("Routes.ContactNew");
@@ -86,7 +87,7 @@ export const action = async (args: ActionFunctionArgs) => {
       if (existingContact) {
         return validationError({
           fieldErrors: {
-            email: `A contact with this email already exists - ${existingContact.firstName} ${existingContact.lastName}`,
+            email: `A contact with this email already exists - ${contactName(existingContact)}`,
           },
         });
       }
@@ -105,7 +106,7 @@ export const action = async (args: ActionFunctionArgs) => {
 
     return Toasts.redirectWithSuccess(`/contacts/${contact.id}`, {
       message: "Contact created",
-      description: `${contact.firstName} ${contact.lastName} was created successfully.`,
+      description: `${contactName(contact)} was created successfully.`,
     });
   } catch (error) {
     logger.error("Error creating contact");

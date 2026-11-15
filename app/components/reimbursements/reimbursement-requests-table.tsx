@@ -9,7 +9,7 @@ import { Badge } from "~/components/ui/badge";
 import { DataTable } from "~/components/ui/data-table/data-table";
 import { DataTableColumnHeader } from "~/components/ui/data-table/data-table-column-header";
 import { Facet } from "~/components/ui/data-table/data-table-toolbar";
-import { capitalize, formatCentsAsDollars } from "~/lib/utils";
+import { capitalize, contactName, formatCentsAsDollars } from "~/lib/utils";
 
 type ReimbursementRequest = Prisma.ReimbursementRequestGetPayload<{
   include: {
@@ -39,7 +39,7 @@ const columns: Array<ColumnDef<ReimbursementRequest>> = [
   },
   {
     accessorKey: "user",
-    accessorFn: (row) => `${row.user.contact.firstName} ${row.user.contact.lastName}`,
+    accessorFn: (row) => contactName(row.user.contact),
     header: ({ column }) => <DataTableColumnHeader column={column} title="User" />,
     cell: ({ row }) => {
       return (

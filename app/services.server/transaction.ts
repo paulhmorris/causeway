@@ -8,6 +8,17 @@ import { TransactionItemSchema } from "~/schemas";
 const logger = createLogger("TransactionService");
 
 export const TransactionService = {
+  /** Only admins may know who gave an anonymous gift, so the donor never reaches a member's browser. */
+  hideAnonymousDonor<T extends { isAnonymous: boolean; contact: object | null; contactId?: string | null }>(
+    transaction: T,
+    user: { isMember: boolean },
+  ): T {
+    if (!user.isMember || !transaction.isAnonymous) {
+      return transaction;
+    }
+    return { ...transaction, contact: null, ...("contactId" in transaction ? { contactId: null } : {}) };
+  },
+
   getItemMethods(orgId: string) {
     logger.debug("Fetching transaction item methods", { orgId });
     return db.transactionItemMethod.findMany({ where: { OR: [{ orgId }, { orgId: null }] } });

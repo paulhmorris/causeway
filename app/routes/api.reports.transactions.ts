@@ -110,7 +110,7 @@ export async function loader(args: LoaderFunctionArgs) {
     })
     .column("Contact", {
       key: "transaction.contact",
-      transform: (c) => (c?.firstName || c?.lastName ? `${c.firstName} ${c.lastName}` : "N/A"),
+      transform: (c) => [c?.firstName, c?.lastName].filter(Boolean).join(" ") || "N/A",
     })
     .build();
 

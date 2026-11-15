@@ -34,7 +34,7 @@ import { TransactionService } from "~/services.server/transaction";
 
 const logger = createLogger("Routes.IncomeNew");
 
-const schema = TransactionSchema.extend({ shouldNotifyUser: checkbox });
+const schema = TransactionSchema.extend({ shouldNotifyUser: checkbox, isAnonymous: checkbox });
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const user = await SessionService.requireAdmin(args);
@@ -269,6 +269,11 @@ export default function AddIncomePage() {
                 scope={form.scope("contactId")}
                 label="Contact"
               />
+              <Label className="inline-flex cursor-pointer items-center gap-2">
+                <Checkbox name="isAnonymous" aria-label="Anonymous gift" />
+                <span>Anonymous gift</span>
+              </Label>
+              <p className="text-muted-foreground text-xs">Account holders will see the contact as "Anonymous".</p>
             </div>
             <ul className="flex flex-col gap-4">
               {form.array("transactionItems").map((key, item, index) => {

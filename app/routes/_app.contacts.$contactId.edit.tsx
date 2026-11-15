@@ -24,6 +24,7 @@ import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
 import { handleLoaderError, Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
+import { contactName } from "~/lib/utils";
 import { UpdateContactSchema } from "~/schemas";
 import { ContactService } from "~/services.server/contact";
 import { SessionService } from "~/services.server/session";
@@ -162,7 +163,7 @@ export const action = async (args: ActionFunctionArgs) => {
       if (existingContact && existingContact.id !== formData.id) {
         return validationError({
           fieldErrors: {
-            email: `A contact with this email already exists - ${existingContact.firstName} ${existingContact.lastName}`,
+            email: `A contact with this email already exists - ${contactName(existingContact)}`,
           },
         });
       }
@@ -193,7 +194,7 @@ export const action = async (args: ActionFunctionArgs) => {
 
     return Toasts.redirectWithSuccess(`/contacts/${contact.id}`, {
       message: "Contact updated",
-      description: `${contact.firstName} ${contact.lastName} was updated successfully.`,
+      description: `${contactName(contact)} was updated successfully.`,
     });
   } catch (error) {
     logger.error("Error updating contact");
@@ -243,9 +244,7 @@ export default function EditContactPage() {
 
   return (
     <>
-      <title>
-        Edit {contact.firstName}${contact.lastName ? " " + contact.lastName : ""}
-      </title>
+      <title>Edit {contactName(contact)}</title>
       <PageHeader title="Edit Contact" />
       <div className="mt-1">
         {user.contact.id === contact.id ? (

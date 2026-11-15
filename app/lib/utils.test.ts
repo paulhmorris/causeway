@@ -1,8 +1,11 @@
 import { Contact } from "@prisma/client";
 import { describe, expect, it } from "vitest";
 
+import { ContactType } from "~/lib/constants";
 import {
   capitalize,
+  contactName,
+  transactionContactName,
   safeRedirect,
   cn,
   formatCentsAsDollars,
@@ -94,4 +97,36 @@ describe("safeRedirect", () => {
       expect(safeRedirect(to, "/home")).toBe("/home");
     },
   );
+});
+
+describe("contactName", () => {
+  it("never prints null for a missing last name", () => {
+    expect(contactName({ firstName: "Jane", lastName: null })).toBe("Jane");
+  });
+
+  it("uses the organization name for organizations", () => {
+    expect(
+      contactName({ firstName: "Jane", lastName: null, organizationName: "Acme", typeId: ContactType.Organization }),
+    ).toBe("Acme");
+  });
+
+  it("falls back to the organization name when there is no personal name", () => {
+    expect(contactName({ firstName: null, lastName: null, organizationName: "Acme" })).toBe("Acme");
+  });
+});
+
+describe("transactionContactName", () => {
+  const contact = { firstName: "Jane", lastName: "Doe" };
+
+  it("shows Anonymous when the donor was hidden", () => {
+    expect(transactionContactName({ isAnonymous: true, contact: null })).toBe("Anonymous");
+  });
+
+  it("flags anonymous gifts for admins who can see the donor", () => {
+    expect(transactionContactName({ isAnonymous: true, contact })).toBe("Jane Doe (Anonymous)");
+  });
+
+  it("shows the donor for normal gifts", () => {
+    expect(transactionContactName({ isAnonymous: false, contact })).toBe("Jane Doe");
+  });
 });

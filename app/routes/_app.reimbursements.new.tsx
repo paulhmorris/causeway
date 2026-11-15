@@ -21,6 +21,7 @@ import { Sentry } from "~/integrations/sentry";
 import { TransactionItemMethod } from "~/lib/constants";
 import { CONFIG } from "~/lib/env.server";
 import { Toasts } from "~/lib/toast.server";
+import { contactName } from "~/lib/utils";
 import { checkboxGroup, cuid, currency, date, number, optionalLongText, optionalText } from "~/schemas/fields";
 import {
   countSelectableReceipts,
@@ -136,7 +137,7 @@ export const action = async (args: ActionFunctionArgs) => {
           url={CONFIG.baseUrl}
           accountName={rr.account.code}
           amountInCents={rr.amountInCents}
-          requesterName={`${contact.firstName} ${contact.lastName}`}
+          requesterName={contactName(contact)}
         />,
       ),
       context: { userId: user.id, orgId },

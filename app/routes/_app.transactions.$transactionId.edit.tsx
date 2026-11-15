@@ -10,7 +10,9 @@ import { PageHeader } from "~/components/common/page-header";
 import { ErrorComponent } from "~/components/error-component";
 import { PageContainer } from "~/components/page-container";
 import { BackButton } from "~/components/ui/back-button";
+import { Checkbox } from "~/components/ui/checkbox";
 import { FormField, FormSelect, FormTextarea } from "~/components/ui/form";
+import { Label } from "~/components/ui/label";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { createLogger } from "~/integrations/logger.server";
@@ -18,8 +20,8 @@ import { db } from "~/integrations/prisma.server";
 import { Sentry } from "~/integrations/sentry";
 import { Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
-import { cn, formatCentsAsDollars } from "~/lib/utils";
-import { cuid, optionalText, text } from "~/schemas/fields";
+import { cn, contactName, formatCentsAsDollars } from "~/lib/utils";
+import { checkbox, cuid, optionalText, text } from "~/schemas/fields";
 import { SessionService } from "~/services.server/session";
 import { TransactionService } from "~/services.server/transaction";
 
@@ -30,6 +32,7 @@ const schema = z.object({
   date: text,
   categoryId: text,
   description: optionalText,
+  isAnonymous: checkbox,
 });
 
 export const loader = async (args: LoaderFunctionArgs) => {
@@ -71,7 +74,7 @@ export const action = async (args: ActionFunctionArgs) => {
     return validationError(result.error);
   }
 
-  const { date, description, categoryId, id } = result.data;
+  const { date, description, categoryId, id, isAnonymous } = result.data;
 
   try {
     await db.transaction.update({
@@ -80,6 +83,7 @@ export const action = async (args: ActionFunctionArgs) => {
         date: new Date(date),
         description: description ?? undefined,
         categoryId: +categoryId,
+        isAnonymous,
       },
     });
 
@@ -123,7 +127,9 @@ export default function TransactionDetailsPage() {
                     to={`/contacts/${transaction.contactId}`}
                     prefetch="intent"
                     className="text-primary font-medium"
-                  >{`${transaction.contact.firstName} ${transaction.contact.lastName}`}</Link>
+                  >
+                    {contactName(transaction.contact)}
+                  </Link>
                 </DetailItem>
               ) : null}
               <ValidatedForm
@@ -168,6 +174,17 @@ export default function TransactionDetailsPage() {
                           <FormTextarea scope={form.scope("description")} label="Description" hideLabel />
                         </dd>
                       </div>
+                      {transaction.contact ? (
+                        <div className="items-center py-1.5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                          <dt className="text-sm font-semibold capitalize">Anonymous</dt>
+                          <dd className={cn("mt-1 sm:col-span-2 sm:mt-0")}>
+                            <Label className="inline-flex cursor-pointer items-center gap-2">
+                              <Checkbox name="isAnonymous" defaultChecked={transaction.isAnonymous} />
+                              <span>Hide donor from account holders</span>
+                            </Label>
+                          </dd>
+                        </div>
+                      ) : null}
                     </div>
                     <SubmitButton isSubmitting={form.formState.isSubmitting} className="ml-auto self-start">
                       Save

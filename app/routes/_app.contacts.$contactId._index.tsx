@@ -23,7 +23,7 @@ import { Sentry } from "~/integrations/sentry";
 import { ContactType } from "~/lib/constants";
 import { handleLoaderError, Responses } from "~/lib/responses.server";
 import { Toasts } from "~/lib/toast.server";
-import { cn } from "~/lib/utils";
+import { cn, contactName } from "~/lib/utils";
 import { SessionService } from "~/services.server/session";
 
 const logger = createLogger("Routes.ContactShow");
@@ -73,6 +73,10 @@ export const loader = async (args: LoaderFunctionArgs) => {
 
     if (shouldHideTransactions) {
       return { contact: { ...contact, transactions: [] } };
+    }
+
+    if (user.isMember) {
+      return { contact: { ...contact, transactions: contact.transactions.filter((t) => !t.isAnonymous) } };
     }
 
     return { contact };
@@ -131,7 +135,7 @@ export async function action(args: ActionFunctionArgs) {
       ]);
       return Toasts.redirectWithSuccess("/contacts", {
         message: "Contact deleted",
-        description: `${contact.firstName} ${contact.lastName} was deleted successfully.`,
+        description: `${contactName(contact)} was deleted successfully.`,
       });
     } catch (error) {
       logger.error("Error deleting contact");
@@ -150,14 +154,11 @@ export default function ContactDetailsPage() {
 
   return (
     <>
-      <title>
-        {contact.firstName}
-        {contact.lastName ? " " + contact.lastName : ""}
-      </title>
+      <title>{contactName(contact)}</title>
       <PageHeader title="View Contact">
         {canDelete ? (
           <ConfirmDestructiveModal
-            description={`This action cannot be undone. This will delete ${contact.firstName} ${contact.lastName ?? ""} and all associated engagements. Assigned users will be unassigned.`}
+            description={`This action cannot be undone. This will delete ${contactName(contact)} and all associated engagements. Assigned users will be unassigned.`}
           />
         ) : null}
       </PageHeader>

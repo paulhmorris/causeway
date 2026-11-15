@@ -8,6 +8,7 @@ dayjs.extend(utc);
 import { DataTable } from "~/components/ui/data-table/data-table";
 import { DataTableColumnHeader } from "~/components/ui/data-table/data-table-column-header";
 import { Facet } from "~/components/ui/data-table/data-table-toolbar";
+import { contactName } from "~/lib/utils";
 
 export function EngagementsTable({ data }: { data: Array<Engagement> }) {
   return <DataTable data={data} columns={columns} facets={facets} />;
@@ -52,7 +53,7 @@ const columns: Array<ColumnDef<Engagement>> = [
   },
   {
     accessorKey: "contact",
-    accessorFn: (row) => `${row.contact.firstName} ${row.contact.lastName}`,
+    accessorFn: (row) => contactName(row.contact),
     header: ({ column }) => <DataTableColumnHeader column={column} title="Contact" />,
     cell: ({ row }) => {
       return (
@@ -65,7 +66,7 @@ const columns: Array<ColumnDef<Engagement>> = [
   },
   {
     accessorKey: "user",
-    accessorFn: (row) => `${row.user.contact.firstName} ${row.user.contact.lastName}`,
+    accessorFn: (row) => contactName(row.user.contact),
     header: ({ column }) => <DataTableColumnHeader column={column} title="Staff" />,
     cell: ({ row }) => {
       return (
